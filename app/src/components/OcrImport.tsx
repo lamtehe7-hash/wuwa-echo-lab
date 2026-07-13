@@ -44,7 +44,15 @@ function guessCost(mainStat: MainStatKey): EchoCost {
 }
 
 function draftToItem(fileName: string, draft: ReturnType<typeof parseEchoText>): DraftItem {
-  const cost: EchoCost = draft.mainStat ? guessCost(draft.mainStat) : 3
+  // Cost đọc từ dòng "COST n" là tín hiệu chính (guessCost trả 4 cho ATK%/HP%/DEF% vì các stat
+  // này tồn tại ở mọi cost); chỉ rơi về guessCost khi thiếu dòng COST hoặc main stat mâu thuẫn
+  // với cost đọc được (một trong hai misread → tin main stat để select main không bị trống).
+  const costCompatible =
+    draft.cost !== undefined &&
+    (!draft.mainStat || MAINSTATS[draft.cost].some((m) => m.key === draft.mainStat))
+  const cost: EchoCost = costCompatible
+    ? draft.cost!
+    : draft.mainStat ? guessCost(draft.mainStat) : 3
   const mainStat = draft.mainStat ?? MAINSTATS[cost][0].key
   return {
     id: newId(),

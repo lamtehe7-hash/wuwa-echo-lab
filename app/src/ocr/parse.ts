@@ -1,4 +1,4 @@
-import type { LocMessage, MainStatKey, SubstatKey } from '../types'
+import type { EchoCost, LocMessage, MainStatKey, SubstatKey } from '../types'
 import { SONATA_SETS } from '../data/sonata'
 import { SUBSTATS } from '../data/substats'
 
@@ -18,6 +18,8 @@ import { SUBSTATS } from '../data/substats'
 export interface EchoDraft {
   mainStat?: MainStatKey
   level?: number
+  /** Cost đọc từ dòng "COST n" của panel (đáng tin hơn suy từ main stat — ATK%/HP%/DEF% tồn tại ở mọi cost) */
+  cost?: EchoCost
   /** Tên echo đọc từ dòng "Tên +25" (nếu có) */
   name?: string
   /** Id sonata set — chỉ có khi ảnh/frame chứa mục Sonata Effect (fuzzy match tên set) */
@@ -179,6 +181,20 @@ function extractLevel(text: string): number | undefined {
   return undefined
 }
 
+/**
+ * Cost từ dòng "COST n" của panel. Lấy chữ số ĐẦU TIÊN sau "cost" (không phải số cuối dòng —
+ * sau digit hay có rác OCR từ icon rarity, vd "COST 3 % 8"). Chỉ nhận giá trị hợp lệ 1/3/4.
+ */
+function extractCost(lines: string[]): EchoCost | undefined {
+  for (const line of lines) {
+    const m = line.match(/^cost\b\D*(\d)/i)
+    if (!m) continue
+    const n = Number(m[1])
+    if (n === 1 || n === 3 || n === 4) return n
+  }
+  return undefined
+}
+
 /** Tên echo từ dòng "Tên +25" của panel chi tiết; lọc ký tự rác OCR (icon, dấu lạ) */
 function extractName(lines: string[]): string | undefined {
   for (const line of lines) {
@@ -248,6 +264,7 @@ export function parseEchoText(text: string): EchoDraft {
     .filter((l) => l.length > 0)
 
   const level = extractLevel(text)
+  const cost = extractCost(lines)
   const name = extractName(lines)
   const sonataSet = matchSonataSet(lines)
   const candidates: Candidate[] = []
@@ -347,7 +364,7 @@ export function parseEchoText(text: string): EchoDraft {
   })
 
   if (!mainStat && snapped.length === 0) {
-    return { mainStat: undefined, level, name, set: sonataSet, substats: [], warnings: [{ key: 'ocrParse.noContent' }], confidence: 0 }
+    return { mainStat: undefined, level, cost, name, set: sonataSet, substats: [], warnings: [{ key: 'ocrParse.noContent' }], confidence: 0 }
   }
 
   let confidence = 0
@@ -357,5 +374,5 @@ export function parseEchoText(text: string): EchoDraft {
   if (warnings.length === 0) confidence += 0.1
   confidence = Math.max(0, Math.min(1, confidence))
 
-  return { mainStat, level, name, set: sonataSet, substats: snapped, warnings, confidence }
+  return { mainStat, level, cost, name, set: sonataSet, substats: snapped, warnings, confidence }
 }

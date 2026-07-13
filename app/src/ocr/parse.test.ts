@@ -20,6 +20,7 @@ X ATK 100
 + Heavy Attack DMG Bonus 8.6%`)
     expect(d.mainStat).toBe('havocDmg')
     expect(d.level).toBe(25)
+    expect(d.cost).toBe(3) // từ dòng "COST 3 % 8" — rác OCR sau digit không phá
     expect(d.name).toBe('Forbidden Bastion')
     expect(d.set).toBeUndefined() // khung quay không chứa mục Sonata Effect
     expect(d.substats).toHaveLength(5)
@@ -45,6 +46,7 @@ QQ HP 2280
 + ATK 50`)
     expect(d.mainStat).toBe('atkPct')
     expect(d.level).toBe(25)
+    expect(d.cost).toBe(1) // main ATK% tồn tại ở mọi cost — phải đọc từ dòng COST, không đoán
     expect(d.name).toBe('Smolder')
     expect(d.substats).toHaveLength(5)
     expect(d.substats).toContainEqual({ stat: 'critDmg', value: 17.4 })
@@ -69,6 +71,37 @@ Lv. 25/25
 Havoc DMG Bonus 30.0%`)
     expect(d.level).toBe(25)
     expect(d.mainStat).toBe('havocDmg')
+    expect(d.cost).toBe(4) // format "Cost: 4" cũng đọc được
+  })
+
+  it('Fog Lionarch (cost 1, main ATK%): cost đọc từ dòng COST — không bị đoán thành 4', () => {
+    const d = parseEchoText(`Fog Lionarch: Body +25
+COST 1 % 8
+X ATK 18.0%
+QQ HP 2280
++ Heavy Attack DMG Bonus 7.1%
++ Crit. Rate 6.9%
++ Crit. DMG 12.6%
++ ATK 9.4%
++ HP 430`)
+    expect(d.cost).toBe(1)
+    expect(d.mainStat).toBe('atkPct')
+    expect(d.level).toBe(25)
+    expect(d.substats).toHaveLength(5)
+  })
+
+  it('digit cost không hợp lệ (misread "COST 2") → cost undefined, không đoán bừa', () => {
+    const d = parseEchoText(`Smolder +25
+COST 2
+ATK 18.0%`)
+    expect(d.cost).toBeUndefined()
+  })
+
+  it('không có dòng COST → cost undefined (caller tự fallback)', () => {
+    const d = parseEchoText(`Smolder +25
+ATK 18.0%
++ Crit. Rate 6.3%`)
+    expect(d.cost).toBeUndefined()
   })
 
   it('ảnh chứa mục Sonata Effect → tự nhận set (fuzzy, chịu được lỗi OCR nhỏ)', () => {

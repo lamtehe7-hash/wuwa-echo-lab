@@ -113,6 +113,15 @@ describe('mergeDrafts: gộp bản đọc nhiều frame về 1 echo', () => {
     expect(merged[0].draft.name).toBe('Forbidden Bastion')
   })
 
+  it('bản đại diện thiếu cost → lấy cost từ frame khác trong cụm (backfill)', () => {
+    const merged = mergeDrafts([
+      draft({ substats: SUBS5 }), // bản đầy đủ nhưng OCR không đọc được dòng COST
+      draft({ substats: SUBS5, cost: 1, confidence: 0.7 }),
+    ])
+    expect(merged).toHaveLength(1)
+    expect(merged[0].draft.cost).toBe(1)
+  })
+
   it('draft không main + không gộp được vào đâu → loại (frame rác)', () => {
     const merged = mergeDrafts([
       draft({ mainStat: undefined, substats: [{ stat: 'defPct', value: 8.1 }] }),

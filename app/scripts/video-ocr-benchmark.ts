@@ -50,7 +50,7 @@ for (const f of files) {
   }
   drafts.push(d)
   console.log(
-    `${f}: name="${d.name ?? '?'}" set=${d.set ?? '?'} main=${d.mainStat ?? '?'} lv=${d.level ?? '?'} subs=[${d.substats.map(fmtSub).join(' ')}] conf=${d.confidence.toFixed(2)} warn=${d.warnings.length}`,
+    `${f}: name="${d.name ?? '?'}" set=${d.set ?? '?'} cost=${d.cost ?? '?'} main=${d.mainStat ?? '?'} lv=${d.level ?? '?'} subs=[${d.substats.map(fmtSub).join(' ')}] conf=${d.confidence.toFixed(2)} warn=${d.warnings.length}`,
   )
 }
 
@@ -58,7 +58,7 @@ const merged = mergeDrafts(drafts)
 console.log(`\n===== ${merged.length} echo sau khi gộp / ${files.length} frame =====`)
 merged.forEach(({ draft, frames }, i) => {
   console.log(`\n#${i + 1} — thấy ở ${frames} frame`)
-  console.log(`  name="${draft.name ?? '?'}" set=${draft.set ?? '?'} main=${draft.mainStat} lv=${draft.level ?? '?'} conf=${draft.confidence.toFixed(2)}`)
+  console.log(`  name="${draft.name ?? '?'}" set=${draft.set ?? '?'} cost=${draft.cost ?? '?'} main=${draft.mainStat} lv=${draft.level ?? '?'} conf=${draft.confidence.toFixed(2)}`)
   console.log(`  subs: ${draft.substats.map(fmtSub).join(', ') || '(không)'}`)
   for (const w of draft.warnings) console.log(`  ⚠ ${w.key}${w.params ? ' ' + JSON.stringify(w.params) : ''}`)
 })

@@ -1,0 +1,198 @@
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import type { LocMessage } from './types'
+
+// Lớp i18n tối giản (không thêm dependency): context + hook useT/useLang, dict phẳng
+// VI/EN, nội suy tham số dạng {name}. Ngôn ngữ lưu localStorage. Message của engine
+// (score.ts tuneAdvice, solver.ts note) trả về { key, params } và được dịch tại UI.
+
+export type Lang = 'vi' | 'en'
+export type TParams = Record<string, string | number>
+
+interface Entry { vi: string; en: string }
+
+const DICT: Record<string, Entry> = {
+  // ── common ──
+  'common.exportJson': { vi: 'Export JSON', en: 'Export JSON' },
+  'common.importJson': { vi: 'Import JSON', en: 'Import JSON' },
+
+  // ── App ──
+  'app.subtitle': { vi: 'bản 3.5 · dữ liệu lưu trong trình duyệt', en: 'v3.5 · data stored in your browser' },
+  'app.importError': { vi: 'Import lỗi: {msg}', en: 'Import failed: {msg}' },
+  'app.importConfirmReplace': { vi: 'Kho hiện có {n} echo — import sẽ THAY THẾ toàn bộ bằng nội dung file. Tiếp tục?', en: 'Inventory has {n} echoes — importing will REPLACE them all with the file contents. Continue?' },
+  'app.importDropped': { vi: 'Đã bỏ qua {n} mục không hợp lệ trong file.', en: 'Skipped {n} invalid entry(ies) in the file.' },
+  'app.importInvalidFormat': { vi: 'File không đúng định dạng (không có echo hợp lệ).', en: 'Invalid file format (no valid echoes found).' },
+  'app.importFromImage': { vi: '📷 Import từ ảnh (beta)', en: '📷 Import from image (beta)' },
+  'app.inventoryCount': { vi: 'Kho: {n} echo (cost 4: {c4} · cost 3: {c3} · cost 1: {c1})', en: 'Inventory: {n} echoes (cost 4: {c4} · cost 3: {c3} · cost 1: {c1})' },
+  'app.loadDemo': { vi: 'Nạp 10 echo mẫu để xem thử', en: 'Load 10 sample echoes to try' },
+  'app.character': { vi: 'Nhân vật:', en: 'Character:' },
+  'app.weights': { vi: '⚖ trọng số', en: '⚖ weights' },
+  'app.all': { vi: 'Tất cả', en: 'All' },
+  'app.costFilter': { vi: 'Cost {c}', en: 'Cost {c}' },
+  'app.findBest5': { vi: '🧩 Tìm bộ 5 tối ưu', en: '🧩 Find best 5-set' },
+  'app.scoreHelp': {
+    vi: 'Điểm 0–100 = chất lượng substat so với echo hoàn hảo lý thuyết cho nhân vật này. Main stat: ✓ chuẩn · ～ tạm dùng (điểm ×0.6 khi ghép bộ) · ✗ sai (×0.25). Bonus set/ER là heuristic — xem PROPOSAL.md.',
+    en: 'Score 0–100 = substat quality vs the theoretically-perfect echo for this character. Main stat: ✓ ideal · ～ usable (×0.6 in set) · ✗ wrong (×0.25). Set/ER bonus is heuristic — see PROPOSAL.md.',
+  },
+
+  // ── EchoForm ──
+  'echoForm.title': { vi: 'Thêm echo', en: 'Add echo' },
+  'echoForm.sonataSet': { vi: 'Sonata set', en: 'Sonata set' },
+  'echoForm.echoName': { vi: 'Tên echo (tuỳ chọn, để xét trùng set)', en: 'Echo name (optional, for duplicate-set check)' },
+  'echoForm.echoNamePlaceholder': { vi: 'vd: Crownless', en: 'e.g. Crownless' },
+  'echoForm.cost': { vi: 'Cost', en: 'Cost' },
+  'echoForm.mainStat': { vi: 'Main stat', en: 'Main stat' },
+  'echoForm.rarity': { vi: 'Rarity', en: 'Rarity' },
+  'echoForm.level': { vi: 'Level (+0…+25)', en: 'Level (+0…+25)' },
+  'echoForm.substatCount': { vi: 'Substat ({n}/{max})', en: 'Substat ({n}/{max})' },
+  'echoForm.addRow': { vi: '+ thêm dòng', en: '+ add row' },
+  'echoForm.save': { vi: 'Lưu echo vào kho', en: 'Save echo to inventory' },
+
+  // ── RankingTable ──
+  'ranking.verdict.keep-tuning': { vi: 'Tune tiếp', en: 'Keep tuning' },
+  'ranking.verdict.done': { vi: 'Hoàn tất', en: 'Done' },
+  'ranking.verdict.usable': { vi: 'Tạm dùng', en: 'Usable' },
+  'ranking.verdict.trash': { vi: 'Bỏ', en: 'Trash' },
+  'ranking.emptyAll': { vi: 'Chưa có echo nào trong kho.', en: 'No echoes in inventory.' },
+  'ranking.emptyCost': { vi: 'Chưa có echo nào cost {cost} trong kho.', en: 'No cost-{cost} echoes in inventory.' },
+  'ranking.colEcho': { vi: 'Echo', en: 'Echo' },
+  'ranking.colMain': { vi: 'Main', en: 'Main' },
+  'ranking.colSubstat': { vi: 'Substat', en: 'Substat' },
+  'ranking.colScore': { vi: 'Điểm', en: 'Score' },
+  'ranking.colAdvice': { vi: 'Tư vấn', en: 'Advice' },
+  'ranking.expected': { vi: 'kỳ vọng {n}', en: 'expected {n}' },
+  'ranking.delete': { vi: 'xóa', en: 'delete' },
+  'ranking.deleteConfirm': { vi: 'Xóa echo này khỏi kho?', en: 'Delete this echo from the inventory?' },
+
+  // ── LoadoutView ──
+  'loadout.empty': { vi: 'Kho chưa có echo nào để ghép bộ.', en: 'No echoes in inventory to build a set.' },
+  'loadout.title': { vi: 'Bộ echo tối ưu — layout {layout} (cost {cost})', en: 'Optimal echo set — layout {layout} (cost {cost})' },
+  'loadout.points': { vi: '{n} điểm', en: '{n} pts' },
+  'loadout.summary': { vi: 'Substat {sub} + set bonus {bonus}', en: 'Substat {sub} + set bonus {bonus}' },
+  'loadout.erFromEcho': { vi: 'ER từ echo: {er}%', en: 'ER from echoes: {er}%' },
+  'loadout.setPrefix': { vi: 'Set', en: 'Set' },
+  'loadout.damageLabel': { vi: 'Damage tương đối', en: 'Relative damage' },
+  'loadout.damageTip': {
+    vi: 'Ước lượng damage tương đối so với khi không đeo echo — mô hình bắt CR×CD (tích) và các bracket %DMG (nhân). Chỉ để so sánh phương án, không phải damage tuyệt đối. Baseline giả định, xem engine/damage.ts.',
+    en: 'Estimated damage relative to wearing no echoes — the model captures CR×CD (product) and %DMG brackets (multiplicative). For comparing options only, not absolute damage. Assumed baseline, see engine/damage.ts.',
+  },
+
+  // ── RosterPanel ──
+  'roster.help': { vi: 'Gán cả đội (mỗi echo chỉ 1 người dùng — ưu tiên từ trên xuống)', en: 'Assign whole team (each echo used by one only — priority top-down)' },
+  'roster.addMember': { vi: '+ thêm vào đội', en: '+ add to team' },
+  'roster.assign': { vi: '🧩 Gán echo cho cả đội', en: '🧩 Assign echoes to team' },
+  'roster.noResult': { vi: 'Không đủ echo để ghép bộ.', en: 'Not enough echoes to build a set.' },
+
+  // ── WeightEditor ──
+  'weights.title': { vi: 'Trọng số — {name}', en: 'Weights — {name}' },
+  'weights.reset': { vi: '↺ về preset gốc', en: '↺ reset to preset' },
+  'weights.erTarget': { vi: 'Mục tiêu tổng ER% (gồm 100 gốc; bỏ trống = không gate)', en: 'Target total ER% (incl. 100 base; blank = no gate)' },
+  'weights.help': {
+    vi: 'Thang 0–1: 1 roll MAX của stat = w điểm. CR = CD = 1 cho DPS (1 roll CD ≈ 1 roll CR về EV quanh tỉ lệ crit 1:2).',
+    en: 'Scale 0–1: 1 MAX roll of a stat = w points. CR = CD = 1 for DPS (1 CD roll ≈ 1 CR roll in EV around the 1:2 crit ratio).',
+  },
+
+  // ── OcrImport ──
+  'ocr.title': { vi: '📷 Import từ ảnh (beta)', en: '📷 Import from image (beta)' },
+  'ocr.help': {
+    vi: 'Beta — hoạt động tốt nhất với screenshot panel echo tiếng Anh, độ phân giải 1920×1080. Luôn kiểm tra lại kết quả trước khi lưu — OCR có thể đọc sai số/nhãn.',
+    en: 'Beta — works best with English echo-panel screenshots at 1920×1080. Always double-check results before saving — OCR can misread numbers/labels.',
+  },
+  'ocr.run': { vi: 'Chạy OCR ({n} ảnh)', en: 'Run OCR ({n} images)' },
+  'ocr.starting': { vi: 'đang khởi động…', en: 'starting…' },
+  'ocr.modeImage': { vi: 'Ảnh', en: 'Images' },
+  'ocr.modeVideo': { vi: 'Video (beta)', en: 'Video (beta)' },
+  'ocr.preprocessToggle': { vi: 'Tiền xử lý ảnh (phóng to + nhị phân hoá) — tắt nếu kết quả tệ hơn', en: 'Preprocess image (upscale + binarize) — turn off if results get worse' },
+  'ocr.videoHelp': {
+    vi: 'Quay màn hình (Win+G/OBS…) trong lúc mở panel chi tiết echo và bấm lần lượt qua từng echo (dừng ~1–2s mỗi con), rồi chọn file video. Tool KHÔNG tự điều khiển/chụp game — bạn tự quay.',
+    en: 'Record your screen (Win+G/OBS…) while the echo detail panel is open and click through each echo (pause ~1–2s each), then pick the video file. The tool does NOT control or capture the game — you record it yourself.',
+  },
+  'ocr.videoCropHint': { vi: 'Kéo chuột trên khung hình để khoanh vùng panel echo (chọn đúng vùng chữ → nhanh + chính xác hơn nhiều). Bỏ trống = cả màn hình.', en: 'Drag on the frame to select the echo panel region (a tight region is much faster + more accurate). Empty = full frame.' },
+  'ocr.videoCropClear': { vi: 'Xoá vùng chọn', en: 'Clear selection' },
+  'ocr.videoStep': { vi: 'Bước giữa 2 frame (giây)', en: 'Step between frames (s)' },
+  'ocr.videoRun': { vi: 'Quét video (~{n} frame)', en: 'Scan video (~{n} frames)' },
+  'ocr.videoSummary': { vi: 'Xong: {added} echo mới · {skipped} frame bỏ qua (trùng/không đọc được).', en: 'Done: {added} new echoes · {skipped} frames skipped (duplicate/unreadable).' },
+  'ocr.videoLoadError': { vi: 'Không đọc được video này (định dạng trình duyệt không hỗ trợ?).', en: 'Could not load this video (unsupported format?).' },
+  'ocr.cancel': { vi: '⏹ Dừng', en: '⏹ Stop' },
+  'ocr.discard': { vi: 'bỏ', en: 'discard' },
+  'ocr.processing': { vi: 'Đang xử lý {i}/{total}: {file} — {status} ({pct}%)', en: 'Processing {i}/{total}: {file} — {status} ({pct}%)' },
+  'ocr.confidence': { vi: 'độ tin cậy ~{pct}%', en: 'confidence ~{pct}%' },
+  'ocr.echoNameOptional': { vi: 'Tên echo (tuỳ chọn)', en: 'Echo name (optional)' },
+  'ocr.added': { vi: '✓ Đã thêm vào kho', en: '✓ Added to inventory' },
+  'ocr.add': { vi: 'Thêm vào kho', en: 'Add to inventory' },
+
+  // ── Engine: tune advice (score.ts) ──
+  'advice.trash': { vi: 'Main stat không hợp nhân vật này — tune thêm cũng không cứu được (main stat không đổi được).', en: 'Main stat does not fit this character — more tuning cannot fix it (main stat is immutable).' },
+  'advice.doneGood': { vi: 'Đã tune đủ. Cân nhắc Transducer (khóa stat ngon, reroll phần còn lại) nếu điểm thấp.', en: 'Fully tuned. Consider a Transducer (lock good stats, reroll the rest) if the score is low.' },
+  'advice.doneFair': { vi: 'Đã tune đủ. Main stat chỉ ở mức tạm dùng — thay khi farm được bản main chuẩn.', en: 'Fully tuned. Main stat is only a stopgap — replace once you farm the correct main stat.' },
+  'advice.usable': { vi: 'Đã {dead} substat chết, chưa có stat ưu tiên — chỉ tune tiếp nếu thiếu echo thay thế.', en: '{dead} dead substats and no priority stat yet — keep tuning only if you lack a replacement.' },
+  'advice.keepTuning': { vi: 'Main stat đúng — tune tiếp là +EV (kỳ vọng ~{expected} điểm khi hoàn tất).', en: 'Main stat is correct — keep tuning is +EV (expected ~{expected} points when finished).' },
+  'advice.keepTuningGood': { vi: 'Main stat đúng, {good} substat ưu tiên — tune tiếp là +EV (kỳ vọng ~{expected} điểm khi hoàn tất).', en: 'Main stat correct, {good} priority substat(s) — keep tuning is +EV (expected ~{expected} points when finished).' },
+
+  // ── Engine: solver note (solver.ts) ──
+  'note.partialSlots': { vi: 'Chỉ ghép được {n}/5 slot từ kho hiện tại.', en: 'Only {n}/5 slots filled from current inventory.' },
+  'note.erShort': { vi: 'ER từ echo {er}% < mục tiêu {need}% (chưa tính vũ khí/passive).', en: 'ER from echoes {er}% < target {need}% (weapon/passive not counted).' },
+  'note.mainStatOff': { vi: 'Có echo main stat chưa chuẩn — thay khi farm được bản đúng.', en: 'Some echo main stats are off — replace when you farm the correct ones.' },
+
+  // ── Engine: OCR parser warnings (ocr/parse.ts) + OcrImport ──
+  'ocrParse.unmatched': { vi: 'Có {n} dòng chứa số nhưng không khớp nhãn nào — kiểm tra lại thủ công (có thể thiếu substat).', en: '{n} line(s) contain numbers but match no label — please double-check (a substat may be missing).' },
+  'ocrParse.noMainStat': { vi: 'Không nhận diện được main stat — vui lòng chọn thủ công.', en: 'Could not detect the main stat — please pick it manually.' },
+  'ocrParse.multiMainStat': { vi: 'Phát hiện {n} dòng có thể là main stat — đã chọn dòng đầu tiên, kiểm tra lại nếu sai.', en: 'Detected {n} possible main-stat lines — picked the first, verify if wrong.' },
+  'ocrParse.dupSubs': { vi: 'Bỏ qua {n} dòng phụ trùng loại (chỉ giữ lần xuất hiện đầu tiên).', en: 'Skipped {n} duplicate substat line(s) (kept the first occurrence only).' },
+  'ocrParse.tooManySubs': { vi: 'Nhận diện được {n} dòng phụ (>5) — đã cắt bớt, kiểm tra lại thủ công.', en: 'Detected {n} substat lines (>5) — trimmed, please double-check.' },
+  'ocrParse.snapOff': { vi: 'Dòng phụ {label} = {value}{pct} lệch {off}% so với mốc gần nhất ({snapped}) — đã tự làm tròn, kiểm tra lại.', en: 'Substat {label} = {value}{pct} is {off}% off the nearest tier ({snapped}) — auto-rounded, please verify.' },
+  'ocrParse.noContent': { vi: 'Không nhận diện được nội dung hợp lệ trong ảnh này — hãy thử chụp rõ hơn hoặc nhập tay.', en: 'No valid content recognized in this image — try a clearer screenshot or enter manually.' },
+  'ocr.error': { vi: 'Lỗi OCR: {msg}', en: 'OCR error: {msg}' },
+}
+
+function interpolate(s: string, params?: TParams): string {
+  if (!params) return s
+  return s.replace(/\{(\w+)\}/g, (_, k) => (k in params ? String(params[k]) : `{${k}}`))
+}
+
+interface I18nCtx {
+  lang: Lang
+  setLang: (l: Lang) => void
+  t: (key: string, params?: TParams) => string
+}
+const Ctx = createContext<I18nCtx | null>(null)
+const LANG_KEY = 'wuwa-lang'
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>(() => {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(LANG_KEY) : null
+    return saved === 'en' || saved === 'vi' ? saved : 'vi'
+  })
+  const setLang = useCallback((l: Lang) => {
+    setLangState(l)
+    try { localStorage.setItem(LANG_KEY, l) } catch { /* ignore */ }
+  }, [])
+  const t = useCallback((key: string, params?: TParams) => {
+    const entry = DICT[key]
+    if (!entry) return key // fallback: hiện key nếu thiếu bản dịch (dễ phát hiện)
+    return interpolate(entry[lang], params)
+  }, [lang])
+  return <Ctx.Provider value={{ lang, setLang, t }}>{children}</Ctx.Provider>
+}
+
+function useCtx(): I18nCtx {
+  const c = useContext(Ctx)
+  if (!c) throw new Error('useT/useLang phải nằm trong <I18nProvider>')
+  return c
+}
+
+/** Hàm dịch: t('key', { param }) */
+export function useT(): (key: string, params?: TParams) => string {
+  return useCtx().t
+}
+
+/** Trạng thái ngôn ngữ + hàm đổi */
+export function useLang(): { lang: Lang; setLang: (l: Lang) => void } {
+  const { lang, setLang } = useCtx()
+  return { lang, setLang }
+}
+
+/** Dịch một LocMessage do engine trả về */
+export function useTMessage(): (m: LocMessage) => string {
+  const t = useT()
+  return (m: LocMessage) => t(m.key, m.params)
+}

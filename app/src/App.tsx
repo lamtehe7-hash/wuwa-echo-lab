@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import EchoEditModal from './components/EchoEditModal'
 import EchoForm from './components/EchoForm'
 import LoadoutView from './components/LoadoutView'
 import OcrImport from './components/OcrImport'
@@ -10,7 +11,7 @@ import { DEMO_ECHOES } from './data/demo'
 import { solveBest5 } from './engine/solver'
 import { useLang, useT } from './i18n'
 import { exportJson, importJson, mergeProfile, useEchoInventory, useOverrides } from './store'
-import type { LoadoutResult } from './types'
+import type { Echo, LoadoutResult } from './types'
 
 export default function App() {
   const t = useT()
@@ -23,7 +24,11 @@ export default function App() {
   const [solved, setSolved] = useState(false)
   const [showWeights, setShowWeights] = useState(false)
   const [showOcr, setShowOcr] = useState(false)
+  const [editingEcho, setEditingEcho] = useState<Echo | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Functional update để lưu HÀNG LOẠT từ OCR không mất echo (closure stale khi gọi liên tiếp)
+  const addEcho = (echo: Echo) => setEchoes((prev) => [...prev, echo])
 
   const resolve = (id: string) => mergeProfile(CHARACTER_BY_ID[id], overrides[id])
   const profile = resolve(charId)
@@ -74,11 +79,11 @@ export default function App() {
         {/* Panel OCR chiếm cả hàng (kết quả dạng lưới nhiều cột cần bề ngang) */}
         {showOcr && (
           <div className="lg:col-span-2">
-            <OcrImport onAdd={(echo) => setEchoes([...echoes, echo])} />
+            <OcrImport onAdd={addEcho} />
           </div>
         )}
         <aside className="space-y-3">
-          <EchoForm onAdd={(echo) => setEchoes([...echoes, echo])} />
+          <EchoForm onAdd={addEcho} />
           <button
             className={`w-full rounded px-2 py-1.5 text-xs ${showOcr ? 'bg-sky-700 text-white' : 'border border-dashed border-slate-700 text-slate-400 hover:bg-slate-900'}`}
             onClick={() => setShowOcr(!showOcr)}
@@ -143,6 +148,7 @@ export default function App() {
               profile={profile}
               costFilter={costFilter}
               onDelete={(id) => setEchoes(echoes.filter((e) => e.id !== id))}
+              onEdit={setEditingEcho}
             />
           </div>
 
@@ -153,6 +159,17 @@ export default function App() {
           </p>
         </main>
       </div>
+
+      {editingEcho && (
+        <EchoEditModal
+          echo={editingEcho}
+          onClose={() => setEditingEcho(null)}
+          onSave={(updated) => {
+            setEchoes((prev) => prev.map((e) => (e.id === updated.id ? updated : e)))
+            setEditingEcho(null)
+          }}
+        />
+      )}
     </div>
   )
 }

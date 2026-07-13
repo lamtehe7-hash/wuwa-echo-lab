@@ -1,8 +1,8 @@
 import type { CharacterProfile, LoadoutResult } from '../types'
-import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
 import { useT, useTMessage } from '../i18n'
+import EchoCard from './EchoCard'
 
 // Hiển thị bộ 5 tối ưu do solver trả về
 
@@ -30,18 +30,22 @@ export default function LoadoutView({ result, profile }: { result: LoadoutResult
       <div className="text-xs text-slate-400" title={t('loadout.damageTip')}>
         ⚔ {t('loadout.damageLabel')}: <span className="cursor-help font-mono text-amber-300">×{dmg.multiplier.toFixed(2)}</span>
       </div>
-      <ol className="space-y-1">
+      {/* Bộ 5 hiển thị dạng card in-game (grid 5 cột trên màn rộng, như hàng echo đang đeo) */}
+      <div className="grid items-start gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {result.echoes.map((s) => (
-          <li key={s.echo.id} className="flex justify-between rounded bg-slate-900/70 px-2 py-1 text-sm">
-            <span>
-              <span className="mr-2 inline-block w-10 text-center text-xs text-slate-500">c{s.echo.cost}</span>
-              <span className="font-medium">{s.echo.name || SONATA_BY_ID[s.echo.set]?.name}</span>
-              <span className={`ml-2 text-xs ${s.mainStatFit ? 'text-slate-400' : 'text-rose-400'}`}>{MAINSTAT_LABELS[s.echo.mainStat]}</span>
-            </span>
-            <span className="font-mono text-slate-300" title={`substat ${s.score.toFixed(1)} + main ${s.mainScore.toFixed(1)}`}>{s.totalScore.toFixed(1)}</span>
-          </li>
+          <EchoCard
+            key={s.echo.id}
+            echo={s.echo}
+            compact
+            footer={
+              <span
+                className={`rounded px-1 py-0.5 font-mono text-[10px] font-semibold ${s.mainStatFit ? 'bg-emerald-900/60 text-emerald-300' : 'bg-rose-950/60 text-rose-300'}`}
+                title={`substat ${s.score.toFixed(1)} + main ${s.mainScore.toFixed(1)}`}
+              >{s.totalScore.toFixed(1)}</span>
+            }
+          />
         ))}
-      </ol>
+      </div>
       {result.note.map((n, i) => <p key={i} className="text-xs text-amber-400">⚠ {tm(n)}</p>)}
     </div>
   )

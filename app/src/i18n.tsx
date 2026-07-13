@@ -62,6 +62,23 @@ const DICT: Record<string, Entry> = {
   'ranking.expected': { vi: 'kỳ vọng {n}', en: 'expected {n}' },
   'ranking.delete': { vi: 'xóa', en: 'delete' },
   'ranking.deleteConfirm': { vi: 'Xóa echo này khỏi kho?', en: 'Delete this echo from the inventory?' },
+  'ranking.edit': { vi: 'sửa', en: 'edit' },
+  'ranking.editTip': { vi: 'Xem chi tiết / sửa echo này', en: 'View details / edit this echo' },
+
+  // ── EchoCard (hiển thị echo kiểu in-game) ──
+  'card.mainAt25': { vi: 'Giá trị main stat tại +25 (engine chấm theo +25)', en: 'Main-stat value at +25 (the engine scores at +25)' },
+  'card.rollTier': { vi: 'Mốc roll {i}/{n} — mốc càng cao giá trị càng lớn', en: 'Roll tier {i}/{n} — higher tier = higher value' },
+  'card.rv': { vi: 'RV {pct}%', en: 'RV {pct}%' },
+  'card.rvTip': {
+    vi: 'Roll Value — chất lượng roll trung bình của các substat so với mốc cao nhất (100% = mọi dòng đều roll max)',
+    en: 'Roll Value — average substat roll quality vs the max tier (100% = every line rolled max)',
+  },
+  'card.noSubs': { vi: '(chưa có substat)', en: '(no substats yet)' },
+
+  // ── EchoEditModal (sửa echo trong kho) ──
+  'echoEdit.title': { vi: 'Sửa echo trong kho', en: 'Edit inventory echo' },
+  'echoEdit.save': { vi: '💾 Lưu thay đổi', en: '💾 Save changes' },
+  'echoEdit.cancel': { vi: 'Huỷ', en: 'Cancel' },
 
   // ── LoadoutView ──
   'loadout.empty': { vi: 'Kho chưa có echo nào để ghép bộ.', en: 'No echoes in inventory to build a set.' },
@@ -126,6 +143,18 @@ const DICT: Record<string, Entry> = {
   'ocr.echoNameOptional': { vi: 'Tên echo (tuỳ chọn)', en: 'Echo name (optional)' },
   'ocr.added': { vi: '✓ Đã thêm vào kho', en: '✓ Added to inventory' },
   'ocr.add': { vi: 'Thêm vào kho', en: 'Add to inventory' },
+  'ocr.edit': { vi: '✎ Sửa', en: '✎ Edit' },
+  'ocr.doneEdit': { vi: '✓ Xong', en: '✓ Done' },
+  'ocr.pendingCount': { vi: '{n} echo chờ xác nhận', en: '{n} echoes awaiting review' },
+  'ocr.saveAll': { vi: '💾 Lưu tất cả ({n})', en: '💾 Save all ({n})' },
+  'ocr.saveComplete': { vi: '✅ Lưu echo 100% ({n})', en: '✅ Save 100% echoes ({n})' },
+  'ocr.saveCompleteTip': {
+    vi: 'Chỉ lưu những echo đọc trọn vẹn: độ tin cậy 100% (đủ main stat + 5 substat, không cảnh báo) và tên + set + cost đều nhận từ OCR (hoặc đã được bạn sửa tay).',
+    en: 'Save only fully-read echoes: 100% confidence (main stat + 5 substats, no warnings) with name + set + cost detected by OCR (or manually corrected by you).',
+  },
+  'ocr.complete100': { vi: 'đủ 100%', en: '100% read' },
+  'ocr.savedSection': { vi: '✓ Đã lưu vào kho ({n} echo) — bấm để xem lại', en: '✓ Saved to inventory ({n} echoes) — click to review' },
+  'ocr.clearSaved': { vi: 'dọn danh sách', en: 'clear list' },
 
   // ── Engine: tune advice (score.ts) ──
   'advice.trash': { vi: 'Main stat không hợp nhân vật này — tune thêm cũng không cứu được (main stat không đổi được).', en: 'Main stat does not fit this character — more tuning cannot fix it (main stat is immutable).' },

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
-import type { Echo, EchoCost, LocMessage, MainStatKey, Substat, SubstatKey } from '../types'
-import { MAINSTATS } from '../data/mainstats'
-import { SONATA_SETS } from '../data/sonata'
-import { MAX_SUBSTATS, SUBSTATS, SUBSTAT_KEYS } from '../data/substats'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import type { Echo, EchoCost, LocMessage, MainStatKey, Substat } from '../types'
+import { MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
+import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
+import { MAX_SUBSTATS } from '../data/substats'
 import { recognizeImage, recognizeImageWithBoxes, terminateOcrEngine, type OcrProgress } from '../ocr/engine'
 import { parseEchoText, type EchoDraft } from '../ocr/parse'
 import { fileToPreprocessedCanvas, normalizeRect, type Rect } from '../ocr/preprocess'
@@ -10,6 +10,8 @@ import { detectSetFromCanvas } from '../ocr/seticon'
 import { captureFrame, frameTimestamps, loadVideo, mergeDrafts, releaseVideo, seekFrame } from '../ocr/video'
 import { newId } from '../store'
 import { useT, useTMessage } from '../i18n'
+import EchoCard from './EchoCard'
+import EchoFields, { type EchoFieldsValue } from './EchoFields'
 
 // Import từ ảnh/video (beta): OCR client-side bằng tesseract.js, passive-only — user tự
 // chụp/quay màn hình rồi tải lên, tool không tự động hoá hay tương tác với game. Mỗi echo
@@ -33,6 +35,17 @@ interface DraftItem {
   warnings: LocMessage[]
   confidence: number
   added: boolean
+  /** Set/cost lấy được từ OCR (hoặc user đã sửa tay) — điều kiện của nút "lưu echo 100%" */
+  setDetected: boolean
+  costDetected: boolean
+  /** Đang mở dạng form sửa (mặc định card; tự mở form khi kết quả đọc quá kém) */
+  editing: boolean
+}
+
+/** Echo "100%": OCR đọc trọn vẹn — confidence 1.0 (đủ main + 5 sub, không cảnh báo) và tên/set/cost đều có */
+function isComplete(item: DraftItem): boolean {
+  return item.confidence >= 0.999 && item.warnings.length === 0 &&
+    item.setDetected && item.costDetected && item.name.trim() !== ''
 }
 
 /** Đoán cost hợp lý từ main stat nhận diện được (main stat chỉ tồn tại ở một số cost nhất định) */
@@ -67,6 +80,9 @@ function draftToItem(fileName: string, draft: ReturnType<typeof parseEchoText>):
     warnings: draft.warnings,
     confidence: draft.confidence,
     added: false,
+    setDetected: draft.set !== undefined,
+    costDetected: costCompatible,
+    editing: draft.confidence < 0.4,
   }
 }
 
@@ -100,8 +116,6 @@ export default function OcrImport({ onAdd }: Props) {
   }, [])
   // Đổi/đóng video → nhả objectURL của video cũ
   useEffect(() => () => { if (video) releaseVideo(video.el) }, [video])
-
-  const sel = 'bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm w-full'
 
   const runOcr = async () => {
     if (files.length === 0 || running) return
@@ -209,7 +223,14 @@ export default function OcrImport({ onAdd }: Props) {
   }
 
   const updateItem = (id: string, patch: Partial<DraftItem>) => {
-    setResults((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+    setResults((prev) => prev.map((r) => {
+      if (r.id !== id) return r
+      const next = { ...r, ...patch }
+      // User sửa tay set/cost = đã xác nhận → đủ điều kiện cho nút "lưu echo 100%"
+      if ('set' in patch) next.setDetected = true
+      if ('cost' in patch) next.costDetected = true
+      return next
+    }))
   }
 
   const addToInventory = (item: DraftItem) => {
@@ -225,6 +246,10 @@ export default function OcrImport({ onAdd }: Props) {
     })
     updateItem(item.id, { added: true })
   }
+
+  const pending = results.filter((r) => !r.added)
+  const saved = results.filter((r) => r.added)
+  const complete = pending.filter(isComplete)
 
   return (
     <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-3">
@@ -339,18 +364,65 @@ export default function OcrImport({ onAdd }: Props) {
         </div>
       )}
 
+      {/* Toolbar lưu hàng loạt — hiện khi có draft chờ xác nhận */}
+      {pending.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded border border-slate-800 bg-slate-950/60 p-2">
+          <span className="text-xs text-slate-400">{t('ocr.pendingCount', { n: pending.length })}</span>
+          <span className="ml-auto flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={complete.length === 0}
+              title={t('ocr.saveCompleteTip')}
+              onClick={() => complete.forEach(addToInventory)}
+            >{t('ocr.saveComplete', { n: complete.length })}</button>
+            <button
+              type="button"
+              className="rounded border border-emerald-700 px-3 py-1 text-xs font-semibold text-emerald-400 hover:bg-emerald-950/60"
+              onClick={() => pending.forEach(addToInventory)}
+            >{t('ocr.saveAll', { n: pending.length })}</button>
+          </span>
+        </div>
+      )}
+
       <div className="grid items-start gap-2 md:grid-cols-2 xl:grid-cols-3">
-        {results.map((item) => (
+        {pending.map((item) => (
           <DraftForm
             key={item.id}
             item={item}
-            sel={sel}
+            complete={isComplete(item)}
             onChange={(patch) => updateItem(item.id, patch)}
             onAdd={() => addToInventory(item)}
             onRemove={() => setResults((prev) => prev.filter((r) => r.id !== item.id))}
           />
         ))}
       </div>
+
+      {/* Echo đã lưu: thu về dải chip gọn (bấm mở xem lại) — không chiếm chỗ trong lưới nữa */}
+      {saved.length > 0 && (
+        <details className="rounded border border-emerald-900/50 bg-emerald-950/10">
+          <summary className="cursor-pointer select-none px-2 py-1.5 text-xs font-medium text-emerald-400">
+            {t('ocr.savedSection', { n: saved.length })}
+          </summary>
+          <div className="flex flex-wrap items-center gap-1.5 p-2 pt-1">
+            {saved.map((s) => (
+              <span
+                key={s.id}
+                className="inline-flex items-center gap-1 rounded-full border border-emerald-800/50 bg-emerald-950/40 px-2 py-0.5 text-xs text-slate-300"
+                title={`${s.name.trim() || SONATA_BY_ID[s.set]?.name} · cost ${s.cost} · ${MAINSTAT_LABELS[s.mainStat]} · +${s.level}`}
+              >
+                ✓ {s.name.trim() || SONATA_BY_ID[s.set]?.name || s.set}
+                <span className="text-slate-500">◆{s.cost}</span>
+              </span>
+            ))}
+            <button
+              type="button"
+              className="ml-1 text-xs text-slate-500 hover:text-rose-400"
+              onClick={() => setResults((prev) => prev.filter((r) => !r.added))}
+            >{t('ocr.clearSaved')}</button>
+          </div>
+        </details>
+      )}
     </div>
   )
 }
@@ -421,49 +493,38 @@ function CropSelector({ video, crop, onCrop }: { video: HTMLVideoElement; crop: 
 
 function DraftForm({
   item,
-  sel,
+  complete,
   onChange,
   onAdd,
   onRemove,
 }: {
   item: DraftItem
-  sel: string
+  /** Đạt chuẩn "echo 100%" (đọc trọn vẹn) — hiện badge xanh */
+  complete: boolean
   onChange: (patch: Partial<DraftItem>) => void
   onAdd: () => void
   onRemove: () => void
 }) {
   const t = useT()
   const tm = useTMessage()
-  const maxSubs = MAX_SUBSTATS[item.rarity] ?? 5
-  const usedStats = useMemo(() => new Set(item.substats.map((s) => s.stat)), [item.substats])
-
-  const changeCost = (c: EchoCost) => {
-    const stillValid = MAINSTATS[c].some((m) => m.key === item.mainStat)
-    onChange({ cost: c, mainStat: stillValid ? item.mainStat : MAINSTATS[c][0].key })
-  }
-
-  const addSub = () => {
-    if (item.substats.length >= maxSubs) return
-    const free = SUBSTAT_KEYS.find((k) => !usedStats.has(k)) ?? 'critRate'
-    onChange({ substats: [...item.substats, { stat: free, value: SUBSTATS[free].rolls[0] }] })
-  }
-
-  const setSub = (i: number, patch: Partial<Substat>) => {
-    const next = [...item.substats]
-    next[i] = { ...next[i], ...patch }
-    onChange({ substats: next })
-  }
-
-  const removeSub = (i: number) => onChange({ substats: item.substats.filter((_, j) => j !== i) })
-
   const confidencePct = Math.round(item.confidence * 100)
   const confColor = item.confidence >= 0.7 ? 'text-emerald-400' : item.confidence >= 0.4 ? 'text-amber-400' : 'text-rose-400'
+  // Cùng shape với EchoCardData/EchoFieldsValue — card xem và form sửa dùng chung dữ liệu
+  const fields: EchoFieldsValue = {
+    name: item.name, cost: item.cost, set: item.set, rarity: item.rarity,
+    level: item.level, mainStat: item.mainStat, substats: item.substats,
+  }
 
   return (
-    <div className={`space-y-2 rounded border p-2 ${item.added ? 'border-emerald-700/50 bg-emerald-950/20' : 'border-slate-700 bg-slate-800/40'}`}>
+    <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-800/40 p-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-xs text-slate-400" title={item.fileName}>{item.fileName}</span>
-        <span className="flex items-center gap-2">
+        <span className="truncate text-xs text-slate-500" title={item.fileName}>{item.fileName}</span>
+        <span className="flex shrink-0 items-center gap-2">
+          {complete && (
+            <span className="rounded bg-emerald-900/60 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400" title={t('ocr.saveCompleteTip')}>
+              ✓ {t('ocr.complete100')}
+            </span>
+          )}
           <span className={`text-xs font-semibold ${confColor}`}>{t('ocr.confidence', { pct: confidencePct })}</span>
           <button type="button" className="text-xs text-slate-600 hover:text-rose-400" onClick={onRemove}>{t('ocr.discard')}</button>
         </span>
@@ -475,74 +536,24 @@ function DraftForm({
         </ul>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.sonataSet')}</span>
-          <select className={sel} value={item.set} onChange={(e) => onChange({ set: e.target.value })}>
-            {SONATA_SETS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('ocr.echoNameOptional')}</span>
-          <input className={sel} value={item.name} onChange={(e) => onChange({ name: e.target.value })} placeholder={t('echoForm.echoNamePlaceholder')} />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.cost')}</span>
-          <select className={sel} value={item.cost} onChange={(e) => changeCost(Number(e.target.value) as EchoCost)}>
-            {[1, 3, 4].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.mainStat')}</span>
-          <select className={sel} value={item.mainStat} onChange={(e) => onChange({ mainStat: e.target.value as MainStatKey })}>
-            {MAINSTATS[item.cost].map((m) => <option key={m.key} value={m.key}>{m.label} (max {m.max}%)</option>)}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.rarity')}</span>
-          <select className={sel} value={item.rarity} onChange={(e) => {
-            const r = Number(e.target.value) as 3 | 4 | 5
-            // Hạ rarity → cắt bớt substat vượt giới hạn slot
-            onChange({ rarity: r, substats: item.substats.slice(0, MAX_SUBSTATS[r] ?? 5) })
-          }}>
-            {[5, 4, 3].map((r) => <option key={r} value={r}>{r}★</option>)}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.level')}</span>
-          <input type="number" min={0} max={25} className={sel} value={item.level} onChange={(e) => onChange({ level: Number(e.target.value) })} />
-        </label>
-      </div>
+      {item.editing ? (
+        <EchoFields value={fields} onChange={onChange} nameLabelKey="ocr.echoNameOptional" />
+      ) : (
+        <EchoCard echo={fields} />
+      )}
 
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-400">{t('echoForm.substatCount', { n: item.substats.length, max: maxSubs })}</span>
-          <button type="button" className="text-xs text-sky-400 hover:text-sky-300" onClick={addSub} disabled={item.substats.length >= maxSubs}>{t('echoForm.addRow')}</button>
-        </div>
-        {item.substats.map((s, i) => (
-          <div key={i} className="flex gap-2">
-            <select
-              className={sel}
-              value={s.stat}
-              onChange={(e) => {
-                const stat = e.target.value as SubstatKey
-                setSub(i, { stat, value: SUBSTATS[stat].rolls[0] })
-              }}
-            >
-              {SUBSTAT_KEYS.filter((k) => k === s.stat || !usedStats.has(k)).map((k) => (
-                <option key={k} value={k}>{SUBSTATS[k].label}</option>
-              ))}
-            </select>
-            <select className={sel} value={s.value} onChange={(e) => setSub(i, { value: Number(e.target.value) })}>
-              {SUBSTATS[s.stat].rolls.map((v) => <option key={v} value={v}>{v}{SUBSTATS[s.stat].isPct ? '%' : ''}</option>)}
-            </select>
-            <button type="button" className="px-2 text-xs text-rose-400 hover:text-rose-300" onClick={() => removeSub(i)}>✕</button>
-          </div>
-        ))}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="flex-1 rounded bg-emerald-700 py-1.5 text-sm font-semibold hover:bg-emerald-600"
+          onClick={onAdd}
+        >{t('ocr.add')}</button>
+        <button
+          type="button"
+          className="rounded border border-slate-600 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700/50"
+          onClick={() => onChange({ editing: !item.editing })}
+        >{item.editing ? t('ocr.doneEdit') : t('ocr.edit')}</button>
       </div>
-
-      <button
-        type="button"
-        className="w-full rounded bg-emerald-700 py-1.5 text-sm font-semibold hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={item.added}
-        onClick={onAdd}
-      >
-        {item.added ? t('ocr.added') : t('ocr.add')}
-      </button>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { CharacterProfile, Echo } from '../types'
+import { findEchoInfo } from '../data/echoIndex'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS } from '../data/substats'
@@ -13,6 +14,8 @@ interface Props {
   profile: CharacterProfile
   costFilter: number | null
   onDelete: (id: string) => void
+  /** Mở modal xem chi tiết/sửa echo (bấm tên hoặc nút sửa) */
+  onEdit: (echo: Echo) => void
 }
 
 const VERDICT_CLS: Record<string, string> = {
@@ -22,7 +25,7 @@ const VERDICT_CLS: Record<string, string> = {
   trash: 'text-rose-400',
 }
 
-export default function RankingTable({ echoes, profile, costFilter, onDelete }: Props) {
+export default function RankingTable({ echoes, profile, costFilter, onDelete, onEdit }: Props) {
   const t = useT()
   const tm = useTMessage()
   // Memo: tránh chấm điểm lại toàn kho mỗi render (WeightEditor gõ phím → App re-render)
@@ -54,7 +57,22 @@ export default function RankingTable({ echoes, profile, costFilter, onDelete }: 
             <tr key={r.echo.id} className="border-b border-slate-800/60 align-top hover:bg-slate-900/60">
               <td className="py-1.5 pr-2 text-slate-500">{i + 1}</td>
               <td className="pr-2">
-                <div className="font-medium text-slate-200">{r.echo.name || SONATA_BY_ID[r.echo.set]?.name || r.echo.set}</div>
+                <div className="flex items-center gap-1.5">
+                  {(() => {
+                    const info = findEchoInfo(r.echo.name)
+                    return info ? (
+                      <img src={info.icon} alt="" loading="lazy" referrerPolicy="no-referrer"
+                        className="h-6 w-6 shrink-0 rounded-full border border-slate-700 bg-slate-800 object-cover"
+                        onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                    ) : null
+                  })()}
+                  <button
+                    type="button"
+                    className="cursor-pointer font-medium text-slate-200 hover:text-sky-300 hover:underline"
+                    title={t('ranking.editTip')}
+                    onClick={() => onEdit(r.echo)}
+                  >{r.echo.name || SONATA_BY_ID[r.echo.set]?.name || r.echo.set}</button>
+                </div>
                 <div className="text-xs text-slate-500">cost {r.echo.cost} · {r.echo.rarity}★ +{r.echo.level} · {SONATA_BY_ID[r.echo.set]?.name}</div>
               </td>
               <td className={`pr-2 ${r.fitLevel === 1 ? 'text-emerald-400' : r.fitLevel >= 0.6 ? 'text-amber-400' : 'text-rose-400'}`}>
@@ -72,7 +90,8 @@ export default function RankingTable({ echoes, profile, costFilter, onDelete }: 
                 {t(`ranking.verdict.${advice.verdict}`)}
                 {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}
               </td>
-              <td className="text-right">
+              <td className="whitespace-nowrap text-right">
+                <button className="mr-2 text-xs text-slate-500 hover:text-sky-300" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>{t('ranking.edit')}</button>
                 <button className="text-xs text-slate-600 hover:text-rose-400" onClick={() => { if (window.confirm(t('ranking.deleteConfirm'))) onDelete(r.echo.id) }}>{t('ranking.delete')}</button>
               </td>
             </tr>

@@ -130,6 +130,22 @@ function findFamily(labelNorm: string): Family | null {
 }
 
 /**
+ * Icon đầu dòng của UI game hay bị OCR thành chữ dính vào nhãn ("NX ATK", "QQ HP", "(3 Havoc…").
+ * Nhãn dài fuzzy chịu được, nhưng nhãn ngắn (ATK/HP/DEF, ngưỡng 1 lỗi) thì fail → thử lại
+ * sau khi bỏ dần 1-2 token đầu (giữ tối thiểu 1 token).
+ */
+function findFamilyNoisy(rawLabel: string): Family | null {
+  const tokens = rawLabel.trim().split(/\s+/)
+  for (let drop = 0; drop <= Math.min(2, tokens.length - 1); drop++) {
+    const norm = normalizeLabel(tokens.slice(drop).join(''))
+    if (norm.length < 2) continue
+    const family = findFamily(norm)
+    if (family) return family
+  }
+  return null
+}
+
+/**
  * Tách "giá trị số" ở cuối dòng. Trong UI game, giá trị LUÔN là con số cuối cùng của dòng,
  * nên mọi ký tự KHÔNG-phải-số theo sau nó được coi là rác OCR (%%, %o, |, ·, *, dấu câu…).
  * Regex cũ chỉ chấp nhận một `%` + `[.,:]` nên dòng có ký tự lạ dính đuôi bị bỏ qua êm.
@@ -145,7 +161,12 @@ function extractTrailingValue(line: string): { label: string; value: number; isP
 }
 
 function extractLevel(text: string): number | undefined {
-  const m = text.match(/lv\.?\s*\+?\s*(\d{1,2})\s*(?:\/\s*25)?/i) ?? text.match(/level\s*\+?\s*(\d{1,2})/i)
+  // "+25" cuối dòng tên ("Smolder +25") — format panel chi tiết trong game; các dòng substat
+  // ("+ HP 430") có nhãn chen giữa dấu + và số nên không match nhầm.
+  const m =
+    text.match(/lv\.?\s*\+?\s*(\d{1,2})\s*(?:\/\s*25)?/i) ??
+    text.match(/level\s*\+?\s*(\d{1,2})/i) ??
+    text.match(/\+\s*(\d{1,2})\s*$/m)
   if (m) {
     const n = Number(m[1])
     if (n >= 0 && n <= 25) return n
@@ -190,8 +211,7 @@ export function parseEchoText(text: string): EchoDraft {
   lines.forEach((line, lineIndex) => {
     const extracted = extractTrailingValue(line)
     if (!extracted) return
-    const labelNorm = normalizeLabel(extracted.label)
-    const family = findFamily(labelNorm)
+    const family = findFamilyNoisy(extracted.label)
     if (!family) {
       unmatchedNumericLines++
       return
@@ -211,9 +231,11 @@ export function parseEchoText(text: string): EchoDraft {
       const key = extracted.isPercent ? pair.pct : pair.flat
       const maxRoll = SUBSTATS[key].rolls[SUBSTATS[key].rolls.length - 1]
       if (extracted.value > maxRoll * 1.2) {
-        // Giá trị flat/percent nhưng lớn hơn hẳn mốc roll — khả năng cao là main stat %
-        // (chỉ xảy ra với biến thể %, vì main stat luôn là %).
-        candidates.push({ kind: 'main', mainKey: key as MainStatKey, value: extracted.value, lineIndex })
+        // % vượt hẳn mốc roll substat → main stat. FLAT vượt mốc thì KHÔNG phải main
+        // (main luôn là %): đó là dòng stat cố định của panel echo (ATK 100/150, HP 2280) → bỏ qua.
+        if (extracted.isPercent) {
+          candidates.push({ kind: 'main', mainKey: key as MainStatKey, value: extracted.value, lineIndex })
+        }
       } else {
         candidates.push({ kind: 'sub', subKey: key, value: extracted.value, lineIndex })
       }

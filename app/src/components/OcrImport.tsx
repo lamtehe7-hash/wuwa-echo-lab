@@ -4,9 +4,9 @@ import { MAINSTATS } from '../data/mainstats'
 import { SONATA_SETS } from '../data/sonata'
 import { MAX_SUBSTATS, SUBSTATS, SUBSTAT_KEYS } from '../data/substats'
 import { recognizeImage, terminateOcrEngine, type OcrProgress } from '../ocr/engine'
-import { parseEchoText } from '../ocr/parse'
+import { parseEchoText, type EchoDraft } from '../ocr/parse'
 import { fileToPreprocessedCanvas, normalizeRect, type Rect } from '../ocr/preprocess'
-import { captureFrame, draftSignature, frameTimestamps, loadVideo, releaseVideo, seekFrame } from '../ocr/video'
+import { captureFrame, frameTimestamps, loadVideo, mergeDrafts, releaseVideo, seekFrame } from '../ocr/video'
 import { newId } from '../store'
 import { useT, useTMessage } from '../i18n'
 
@@ -73,7 +73,7 @@ export default function OcrImport({ onAdd }: Props) {
   // ---- video mode ----
   const [video, setVideo] = useState<{ el: HTMLVideoElement; name: string } | null>(null)
   const [crop, setCrop] = useState<Rect | null>(null)
-  const [stepSec, setStepSec] = useState(1)
+  const [stepSec, setStepSec] = useState(0.5)
   const [videoSummary, setVideoSummary] = useState<{ added: number; skipped: number } | null>(null)
   const cancelRef = useRef(false)
 
@@ -130,9 +130,8 @@ export default function OcrImport({ onAdd }: Props) {
     setVideoSummary(null)
     cancelRef.current = false
     const times = frameTimestamps(video.el.duration, stepSec)
-    const seen = new Set<string>()
-    let added = 0
-    let skipped = 0
+    const drafts: EchoDraft[] = []
+    let scanned = 0
     for (let i = 0; i < times.length; i++) {
       if (cancelRef.current) break
       const label = `${video.name} — ${i + 1}/${times.length}`
@@ -140,22 +139,22 @@ export default function OcrImport({ onAdd }: Props) {
         await seekFrame(video.el, times[i])
         const canvas = captureFrame(video.el, { crop: crop ?? undefined, scale: 'auto', binarize: preprocessOn })
         const text = await recognizeImage(canvas, (p) => setProgress({ file: label, index: i, total: times.length, p }))
-        const draft = parseEchoText(text)
-        const sig = draftSignature(draft)
-        if (!sig || seen.has(sig)) {
-          skipped++
-          continue
-        }
-        seen.add(sig)
-        added++
-        setResults((prev) => [...prev, draftToItem(`${video.name} @${times[i].toFixed(1)}s`, draft)])
+        drafts.push(parseEchoText(text))
       } catch {
-        skipped++
+        // frame lỗi (seek/OCR) → bỏ, vẫn tính vào scanned
       }
+      scanned++
     }
+    // Gộp các frame của cùng một echo (trùng tuyệt đối + bản đọc thiếu/misread main) → 1 draft tốt nhất.
+    // Kết quả chỉ hiện sau khi quét xong để tránh echo ma từ frame chuyển cảnh.
+    const merged = mergeDrafts(drafts)
+    setResults((prev) => [
+      ...prev,
+      ...merged.map((m) => draftToItem(t('ocr.videoDraftLabel', { name: video.name, frames: m.frames }), m.draft)),
+    ])
     setProgress(null)
     setRunning(false)
-    setVideoSummary({ added, skipped })
+    setVideoSummary({ added: merged.length, skipped: scanned - merged.length })
   }
 
   const updateItem = (id: string, patch: Partial<DraftItem>) => {
@@ -251,7 +250,7 @@ export default function OcrImport({ onAdd }: Props) {
                     type="number" min={0.2} max={10} step={0.2}
                     className="w-16 rounded border border-slate-700 bg-slate-800 px-1 py-0.5"
                     value={stepSec}
-                    onChange={(e) => setStepSec(Math.max(0.2, Number(e.target.value) || 1))}
+                    onChange={(e) => setStepSec(Math.max(0.2, Number(e.target.value) || 0.5))}
                   />
                 </label>
                 {running ? (
@@ -426,25 +425,25 @@ function DraftForm({
       )}
 
       <div className="grid grid-cols-2 gap-2">
-        <label className="text-xs text-slate-400">{t('echoForm.sonataSet')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.sonataSet')}</span>
           <select className={sel} value={item.set} onChange={(e) => onChange({ set: e.target.value })}>
             {SONATA_SETS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </label>
-        <label className="text-xs text-slate-400">{t('ocr.echoNameOptional')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('ocr.echoNameOptional')}</span>
           <input className={sel} value={item.name} onChange={(e) => onChange({ name: e.target.value })} placeholder={t('echoForm.echoNamePlaceholder')} />
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.cost')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.cost')}</span>
           <select className={sel} value={item.cost} onChange={(e) => changeCost(Number(e.target.value) as EchoCost)}>
             {[1, 3, 4].map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.mainStat')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.mainStat')}</span>
           <select className={sel} value={item.mainStat} onChange={(e) => onChange({ mainStat: e.target.value as MainStatKey })}>
             {MAINSTATS[item.cost].map((m) => <option key={m.key} value={m.key}>{m.label} (max {m.max}%)</option>)}
           </select>
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.rarity')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.rarity')}</span>
           <select className={sel} value={item.rarity} onChange={(e) => {
             const r = Number(e.target.value) as 3 | 4 | 5
             // Hạ rarity → cắt bớt substat vượt giới hạn slot
@@ -453,7 +452,7 @@ function DraftForm({
             {[5, 4, 3].map((r) => <option key={r} value={r}>{r}★</option>)}
           </select>
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.level')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.level')}</span>
           <input type="number" min={0} max={25} className={sel} value={item.level} onChange={(e) => onChange({ level: Number(e.target.value) })} />
         </label>
       </div>

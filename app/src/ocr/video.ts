@@ -33,6 +33,69 @@ export function draftSignature(d: EchoDraft): string | null {
   return `${d.mainStat}|${d.level ?? '?'}|${subs}`
 }
 
+export interface MergedDraft {
+  draft: EchoDraft
+  /** Số frame đã thấy echo này (tin cậy hơn khi ≥2) */
+  frames: number
+}
+
+/** Chất lượng bản đọc: có main > nhiều substat hơn > confidence cao hơn */
+function draftQuality(d: EchoDraft): number {
+  return (d.mainStat ? 1000 : 0) + d.substats.length * 100 + d.confidence
+}
+
+function subsSet(d: EchoDraft): Set<string> {
+  return new Set(d.substats.map((s) => `${s.stat}:${s.value}`))
+}
+
+function isSubset(small: Set<string>, big: Set<string>): boolean {
+  for (const v of small) if (!big.has(v)) return false
+  return true
+}
+
+/** Tối thiểu số substat để một bản đọc THIẾU được phép gộp vào bản đầy đủ hơn */
+export const MIN_SUBSET_SUBS = 3
+/** Tối thiểu số substat trùng nhau để gộp 2 bản có main KHÁC nhau (main misread) */
+const MIN_SUBS_MAIN_CONFLICT = 4
+
+/**
+ * Chống "echo ma" từ frame chụp giữa lúc chuyển panel: gom các bản đọc của cùng một echo
+ * về 1 draft tốt nhất, thay cho dedup chữ-ký-tuyệt-đối. Quy tắc gộp (level đã biết mà khác
+ * nhau thì KHÔNG bao giờ gộp — 2 echo thật):
+ * - Bộ substat BẰNG NHAU + main trùng hoặc một bên thiếu → cùng echo.
+ * - Bộ substat bằng nhau ≥4 dòng nhưng main khác → một bên misread main (trùng ngẫu nhiên
+ *   cả 4-5 roll gần như không xảy ra); bộ ngắn 1-2 dòng thì giữ riêng (2 echo thật dễ trùng).
+ * - Bộ substat là TẬP CON THẬT ≥3 dòng, main không xung khắc → bản đọc thiếu dòng.
+ * Draft không có main và không gộp được vào đâu → bỏ (như trước).
+ */
+export function mergeDrafts(drafts: EchoDraft[]): MergedDraft[] {
+  const clusters: { draft: EchoDraft; frames: number; subs: Set<string> }[] = []
+  // Duyệt bản đọc tốt trước để đại diện cụm luôn là bản đầy đủ nhất (không phụ thuộc thứ tự frame)
+  const ordered = [...drafts].sort((a, b) => draftQuality(b) - draftQuality(a))
+  for (const d of ordered) {
+    if (!d.mainStat && d.substats.length === 0) continue
+    const subs = subsSet(d)
+    let merged = false
+    for (const c of clusters) {
+      const levelConflict = d.level !== undefined && c.draft.level !== undefined && d.level !== c.draft.level
+      if (levelConflict) continue
+      const mainOk = !d.mainStat || !c.draft.mainStat || d.mainStat === c.draft.mainStat
+      const equal = subs.size === c.subs.size && isSubset(subs, c.subs)
+      const asSubset = !equal && subs.size >= MIN_SUBSET_SUBS && isSubset(subs, c.subs)
+      if ((equal && (mainOk || subs.size >= MIN_SUBS_MAIN_CONFLICT)) || (asSubset && mainOk)) {
+        c.frames++
+        merged = true
+        break
+      }
+    }
+    if (!merged) {
+      if (!d.mainStat) continue
+      clusters.push({ draft: d, frames: 1, subs })
+    }
+  }
+  return clusters.map(({ draft, frames }) => ({ draft, frames }))
+}
+
 /** Nạp file video vào <video> ẩn (objectURL — caller phải gọi releaseVideo khi xong) */
 export function loadVideo(file: File): Promise<HTMLVideoElement> {
   const url = URL.createObjectURL(file)

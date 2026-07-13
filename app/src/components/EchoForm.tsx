@@ -57,30 +57,30 @@ export default function EchoForm({ onAdd }: Props) {
     >
       <div className="text-sm font-semibold text-slate-300">{t('echoForm.title')}</div>
       <div className="grid grid-cols-2 gap-2">
-        <label className="text-xs text-slate-400">{t('echoForm.sonataSet')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.sonataSet')}</span>
           <select className={sel} value={set} onChange={(e) => setSet(e.target.value)}>
             {SONATA_SETS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.echoName')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.echoName')}</span>
           <input className={sel} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('echoForm.echoNamePlaceholder')} />
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.cost')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.cost')}</span>
           <select className={sel} value={cost} onChange={(e) => changeCost(Number(e.target.value) as EchoCost)}>
             {[1, 3, 4].map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.mainStat')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.mainStat')}</span>
           <select className={sel} value={mainStat} onChange={(e) => setMainStat(e.target.value as MainStatKey)}>
             {MAINSTATS[cost].map((m) => <option key={m.key} value={m.key}>{m.label} (max {m.max}%)</option>)}
           </select>
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.rarity')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.rarity')}</span>
           <select className={sel} value={rarity} onChange={(e) => changeRarity(Number(e.target.value) as 3 | 4 | 5)}>
             {[5, 4, 3].map((r) => <option key={r} value={r}>{r}★</option>)}
           </select>
         </label>
-        <label className="text-xs text-slate-400">{t('echoForm.level')}
+        <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.level')}</span>
           <input type="number" min={0} max={25} className={sel} value={level} onChange={(e) => setLevel(Number(e.target.value))} />
         </label>
       </div>

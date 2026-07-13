@@ -1,7 +1,9 @@
 # Hướng dẫn deploy lên GitHub Pages
 
-Repo hiện **chưa phải git repo** và chưa được đẩy lên GitHub. Các bước dưới đây bạn tự chạy (agent
-không tự `git init`/`commit`/`push` thay bạn).
+> **Trạng thái:** đã deploy — repo https://github.com/lamtehe7-hash/wuwa-echo-lab, trang live
+> https://lamtehe7-hash.github.io/wuwa-echo-lab/. Các bước 1–5 dưới đây giữ lại làm tài liệu
+> tham khảo khi cần dựng lại từ đầu; cập nhật hằng ngày chỉ cần bước 6. Đóng gói bản
+> portable Windows: bước 7.
 
 ## 1. Tạo repo trên GitHub
 
@@ -58,3 +60,25 @@ không cần chỉnh gì thêm.)
 ## 6. Cập nhật sau này
 
 Mỗi lần muốn deploy bản mới: commit + push lên nhánh `main` như bình thường, workflow tự chạy lại.
+
+## 7. Đóng gói bản portable Windows (.exe, giải nén là chạy)
+
+Bản portable = server tĩnh nhúng (`portable/server.cjs`) + `app/dist` đóng gói thành **1 file
+.exe** bằng [@yao-pkg/pkg](https://github.com/yao-pkg/pkg) — người dùng cuối giải nén, chạy exe,
+trình duyệt tự mở app tại `http://localhost:36925`, **không cần cài Node hay mạng** (tài nguyên
+OCR tesseract tự chứa trong `app/public/tesseract/`, xem `app/scripts/copy-tesseract-assets.mjs`).
+
+```bash
+cd app && npm run build        # build web (prebuild tự copy tài nguyên tesseract)
+cd ../portable && node build.mjs
+```
+
+Output: `portable/build/WuWaEchoOptimizer.exe` + `WuWaEchoOptimizer-win64-portable.zip`
+(kèm `HUONG-DAN.txt`). Đăng bản mới: đính zip vào GitHub Release
+(`gh release create vX.Y.Z portable/build/WuWaEchoOptimizer-win64-portable.zip`).
+
+Lưu ý:
+- Port mặc định **36925 cố định** để `localStorage` (kho echo) giữ nguyên giữa các lần mở
+  (đổi port = đổi origin = trình duyệt coi là site khác). Tuỳ chọn: `--port N`, `--no-open`.
+- Exe không ký số → Windows SmartScreen có thể cảnh báo lần chạy đầu (More info → Run anyway);
+  một số antivirus đôi khi báo nhầm exe đóng gói bằng pkg.

@@ -18,7 +18,15 @@ const CHAR_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123
 async function getWorker(): Promise<Worker> {
   if (!workerPromise) {
     const p = import('tesseract.js').then(async ({ createWorker }) => {
+      // Tài nguyên tesseract tự phục vụ từ public/tesseract (script copy-tesseract-assets.mjs
+      // + lang commit sẵn) — app chạy OFFLINE hoàn toàn, không gọi CDN jsdelivr. Đường dẫn
+      // tương đối được tesseract resolvePaths đổi thành tuyệt đối theo location.href
+      // (blob-worker importScripts cần URL tuyệt đối).
+      const assetBase = `${import.meta.env.BASE_URL}tesseract/`
       const w = await createWorker('eng', undefined, {
+        workerPath: `${assetBase}worker.min.js`,
+        corePath: `${assetBase}core`,
+        langPath: `${assetBase}lang`,
         logger: (m) => currentOnProgress?.({ status: m.status, progress: m.progress }),
       })
       await w.setParameters({ tessedit_char_whitelist: CHAR_WHITELIST })

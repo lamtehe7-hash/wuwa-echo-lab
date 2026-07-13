@@ -1,0 +1,10 @@
+{
+  "name": "wuwa-echo-optimizer-portable",
+  "version": "1.0.0",
+  "private": true,
+  "bin": "server.cjs",
+  "pkg": {
+    "assets": ["dist/**/*"],
+    "targets": ["node22-win-x64"]
+  }
+}

@@ -3,6 +3,13 @@ node_modules/
 
 # Build output
 app/dist/
+portable/build/
+portable/dist/
+
+# Tài nguyên tesseract SINH TỰ ĐỘNG từ node_modules (scripts/copy-tesseract-assets.mjs,
+# chạy ở predev/prebuild). Riêng lang/eng.traineddata.gz thì COMMIT (tải 1 lần, không có trong node_modules).
+app/public/tesseract/worker.min.js
+app/public/tesseract/core/
 
 # TypeScript incremental build info
 *.tsbuildinfo

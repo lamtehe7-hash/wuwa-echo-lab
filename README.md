@@ -6,6 +6,12 @@ dùng con nào cho nhân vật nào?"* — thay vì đoán mò hoặc tính tay 
 Chạy hoàn toàn phía client (không backend, không thu thập dữ liệu), kho Echo lưu trong
 `localStorage` của trình duyệt.
 
+**🌐 Dùng ngay trên web:** https://lamtehe7-hash.github.io/wuwa-echo-lab/
+
+**📦 Bản portable Windows (không cần cài gì):** tải file zip ở mục
+[Releases](https://github.com/lamtehe7-hash/wuwa-echo-lab/releases), giải nén, chạy
+`WuWaEchoOptimizer.exe` — trình duyệt tự mở app, hoạt động **offline hoàn toàn** (kể cả OCR).
+
 > Xem kiến trúc & lộ trình đầy đủ ở [`PROPOSAL.md`](./PROPOSAL.md), và các báo cáo nghiên cứu nền
 > tảng ở [`research/`](./research).
 
@@ -24,6 +30,10 @@ Chạy hoàn toàn phía client (không backend, không thu thập dữ liệu),
   (lock) Echo đã dùng để không bị nhân vật khác giành mất.
 - **Chỉnh trọng số theo ý riêng** — ghi đè bộ trọng số substat / mục tiêu ER mặc định cho từng nhân
   vật, lưu riêng theo trình duyệt.
+- **Import bằng OCR từ ảnh / video (beta)** — chụp/quay màn hình panel Echo rồi thả vào tool:
+  tự nhận tên Echo, sonata set (từ icon), cost, level, main stat và substat (snap về mốc roll hợp
+  lệ). OCR chạy **ngay trên máy** (tesseract.js, tài nguyên tự chứa — không gọi CDN, không upload
+  ảnh đi đâu); kết quả hiện dạng card như in-game, có nút *Lưu tất cả / Lưu echo 100%*.
 - **Export / Import JSON** — sao lưu hoặc chuyển kho Echo giữa các thiết bị bằng file JSON tự định
   nghĩa (chưa có chuẩn chung cho cộng đồng WuWa).
 - **Dữ liệu demo** — nút nạp sẵn vài Echo mẫu để thử nhanh không cần nhập tay.
@@ -50,13 +60,16 @@ WuWa Echo/
 │   ├── src/
 │   │   ├── data/         # Dữ liệu tĩnh: substat, main stat, sonata set, nhân vật
 │   │   ├── engine/       # Logic chấm điểm, solver bộ-5, gán roster
-│   │   ├── components/   # UI: form nhập, bảng xếp hạng, panel roster, chỉnh trọng số...
+│   │   ├── components/   # UI: form nhập, card echo, bảng xếp hạng, panel roster, OCR import...
+│   │   ├── ocr/          # OCR ảnh/video: parse text, tiền xử lý, nhận set từ icon
 │   │   ├── store.ts      # Lưu trữ localStorage (kho Echo, override trọng số)
 │   │   └── types.ts      # Kiểu dữ liệu dùng chung
+│   ├── public/tesseract/ # Tài nguyên OCR tự chứa (worker/core sinh từ node_modules + langdata)
 │   └── scripts/smoke.ts  # Smoke test engine (không cần trình duyệt)
+├── portable/             # Đóng gói bản Windows portable (server nhúng + pkg → 1 file .exe)
 ├── research/             # Báo cáo nghiên cứu: cơ chế Echo, tool hiện có, cách chấm điểm, nguồn dữ liệu
 ├── PROPOSAL.md           # Đề xuất nền tảng, kiến trúc, lộ trình các phase
-├── DEPLOY.md             # Hướng dẫn đưa app lên GitHub Pages
+├── DEPLOY.md             # Hướng dẫn đưa app lên GitHub Pages + build bản portable
 └── .github/workflows/    # GitHub Actions build + deploy Pages
 ```
 

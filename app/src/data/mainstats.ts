@@ -59,12 +59,3 @@ export const FIXED_SECONDARY: Record<EchoCost, { label: string; max: number }> =
 
 /** Tổng cost tối đa (Data Bank level 9) */
 export const COST_CAP = 12
-
-/** Các layout cost hợp lệ cho 5 slot, tổng ≤ 12 (sắp giảm dần) */
-export const LAYOUTS: number[][] = [
-  [4, 3, 3, 1, 1], // 12 — chuẩn endgame
-  [4, 4, 1, 1, 1], // 11 — 2 echo cost-4 cùng sonata (Nightmare + thường)
-  [3, 3, 3, 1, 1], // 11
-  [4, 3, 1, 1, 1], // 10
-  [3, 3, 1, 1, 1], // 9
-]

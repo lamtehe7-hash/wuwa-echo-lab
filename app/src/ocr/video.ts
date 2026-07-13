@@ -39,9 +39,10 @@ export interface MergedDraft {
   frames: number
 }
 
-/** Chất lượng bản đọc: có main > nhiều substat hơn > confidence cao hơn */
+/** Chất lượng bản đọc: có main > nhiều substat hơn > có level > confidence cao hơn
+ *  (level được xét để đại diện cụm giữ được guard "level khác → 2 echo thật") */
 function draftQuality(d: EchoDraft): number {
-  return (d.mainStat ? 1000 : 0) + d.substats.length * 100 + d.confidence
+  return (d.mainStat ? 1000 : 0) + d.substats.length * 100 + (d.level !== undefined ? 50 : 0) + d.confidence
 }
 
 function subsSet(d: EchoDraft): Set<string> {
@@ -65,7 +66,10 @@ const MIN_SUBS_MAIN_CONFLICT = 4
  * - Bộ substat BẰNG NHAU + main trùng hoặc một bên thiếu → cùng echo.
  * - Bộ substat bằng nhau ≥4 dòng nhưng main khác → một bên misread main (trùng ngẫu nhiên
  *   cả 4-5 roll gần như không xảy ra); bộ ngắn 1-2 dòng thì giữ riêng (2 echo thật dễ trùng).
- * - Bộ substat là TẬP CON THẬT ≥3 dòng, main không xung khắc → bản đọc thiếu dòng.
+ * - Bộ substat là TẬP CON THẬT ≥3 dòng (theo CẢ 2 chiều — bản mới thiếu dòng, hoặc bản mới
+ *   ĐẦY ĐỦ HƠN đại diện cụm), main không xung khắc → cùng echo; bản nhiều substat hơn
+ *   thay làm đại diện, field còn trống (main/level/name/set/cost/setCandidates) được bổ sung
+ *   từ bản kia (level backfill giữ cho guard "level khác" hoạt động với các frame sau).
  * Draft không có main và không gộp được vào đâu → bỏ (như trước).
  */
 export function mergeDrafts(drafts: EchoDraft[]): MergedDraft[] {
@@ -82,12 +86,23 @@ export function mergeDrafts(drafts: EchoDraft[]): MergedDraft[] {
       const mainOk = !d.mainStat || !c.draft.mainStat || d.mainStat === c.draft.mainStat
       const equal = subs.size === c.subs.size && isSubset(subs, c.subs)
       const asSubset = !equal && subs.size >= MIN_SUBSET_SUBS && isSubset(subs, c.subs)
-      if ((equal && (mainOk || subs.size >= MIN_SUBS_MAIN_CONFLICT)) || (asSubset && mainOk)) {
+      const asSuperset = !equal && c.subs.size >= MIN_SUBSET_SUBS && isSubset(c.subs, subs)
+      if ((equal && (mainOk || subs.size >= MIN_SUBS_MAIN_CONFLICT)) || ((asSubset || asSuperset) && mainOk)) {
         c.frames++
-        // Bản đại diện thiếu tên/set/cost mà bản gộp vào có (frame khác đọc được) → bổ sung
-        if ((!c.draft.name && d.name) || (!c.draft.set && d.set) || (c.draft.cost === undefined && d.cost !== undefined)) {
-          c.draft = { ...c.draft, name: c.draft.name ?? d.name, set: c.draft.set ?? d.set, cost: c.draft.cost ?? d.cost }
+        // Bản NHIỀU substat hơn làm đại diện; field bản kia đọc được mà đại diện thiếu
+        // (main/level/name/set/cost/setCandidates) → bổ sung từ frame đó
+        const rich = asSuperset ? d : c.draft
+        const poor = asSuperset ? c.draft : d
+        c.draft = {
+          ...rich,
+          mainStat: rich.mainStat ?? poor.mainStat,
+          level: rich.level ?? poor.level,
+          name: rich.name ?? poor.name,
+          set: rich.set ?? poor.set,
+          cost: rich.cost ?? poor.cost,
+          setCandidates: rich.setCandidates ?? poor.setCandidates,
         }
+        if (asSuperset) c.subs = subs
         merged = true
         break
       }

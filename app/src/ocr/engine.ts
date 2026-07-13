@@ -17,12 +17,18 @@ const CHAR_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123
 
 async function getWorker(): Promise<Worker> {
   if (!workerPromise) {
-    workerPromise = import('tesseract.js').then(async ({ createWorker }) => {
+    const p = import('tesseract.js').then(async ({ createWorker }) => {
       const w = await createWorker('eng', undefined, {
         logger: (m) => currentOnProgress?.({ status: m.status, progress: m.progress }),
       })
       await w.setParameters({ tessedit_char_whitelist: CHAR_WHITELIST })
       return w
+    })
+    workerPromise = p
+    // Khởi tạo fail (mạng chập chờn khi tải WASM) → xoá cache để lần OCR sau thử lại,
+    // đừng cache promise rejected vĩnh viễn (mọi lần sau đều lỗi cho tới khi reload trang)
+    p.catch(() => {
+      if (workerPromise === p) workerPromise = null
     })
   }
   return workerPromise
@@ -71,7 +77,12 @@ export async function recognizeImageWithBoxes(
 /** Giải phóng worker (gọi khi đóng panel OCR để nhả bộ nhớ, tuỳ chọn) */
 export async function terminateOcrEngine(): Promise<void> {
   if (!workerPromise) return
-  const w = await workerPromise
-  workerPromise = null
-  await w.terminate()
+  const p = workerPromise
+  workerPromise = null // reset TRƯỚC await — promise rejected vẫn phải xoá được cache
+  try {
+    const w = await p
+    await w.terminate()
+  } catch {
+    // worker chưa từng khởi tạo thành công — không có gì để terminate
+  }
 }

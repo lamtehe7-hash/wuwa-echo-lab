@@ -30,8 +30,8 @@ const DICT: Record<string, Entry> = {
   'app.costFilter': { vi: 'Cost {c}', en: 'Cost {c}' },
   'app.findBest5': { vi: '🧩 Tìm bộ 5 tối ưu', en: '🧩 Find best 5-set' },
   'app.scoreHelp': {
-    vi: 'Điểm 0–100 = chất lượng substat so với echo hoàn hảo lý thuyết cho nhân vật này. Main stat: ✓ chuẩn · ～ tạm dùng (điểm ×0.6 khi ghép bộ) · ✗ sai (×0.25). Bonus set/ER là heuristic — xem PROPOSAL.md.',
-    en: 'Score 0–100 = substat quality vs the theoretically-perfect echo for this character. Main stat: ✓ ideal · ～ usable (×0.6 in set) · ✗ wrong (×0.25). Set/ER bonus is heuristic — see PROPOSAL.md.',
+    vi: 'Điểm = chất lượng substat + GIÁ TRỊ main stat, chuẩn hoá theo echo hoàn hảo lý thuyết cho nhân vật này (substat hoàn hảo = 100, cộng main nên có thể >100). Main stat: ✓ chuẩn meta · ～ tạm dùng · ✗ sai — chỉ để tham khảo/tư vấn tune, solver chấm bằng giá trị thật. Bonus set = stat thật × uptime heuristic — xem PROPOSAL.md.',
+    en: 'Score = substat quality + main-stat VALUE, normalized vs the theoretically-perfect echo for this character (perfect substats = 100; adding main can exceed 100). Main stat: ✓ meta · ～ stopgap · ✗ wrong — display/tuning advice only, the solver scores real values. Set bonus = real stats × heuristic uptime — see PROPOSAL.md.',
   },
 
   // ── EchoForm ──
@@ -72,8 +72,8 @@ const DICT: Record<string, Entry> = {
   'loadout.setPrefix': { vi: 'Set', en: 'Set' },
   'loadout.damageLabel': { vi: 'Damage tương đối', en: 'Relative damage' },
   'loadout.damageTip': {
-    vi: 'Ước lượng damage tương đối so với khi không đeo echo — mô hình bắt CR×CD (tích) và các bracket %DMG (nhân). Chỉ để so sánh phương án, không phải damage tuyệt đối. Baseline giả định, xem engine/damage.ts.',
-    en: 'Estimated damage relative to wearing no echoes — the model captures CR×CD (product) and %DMG brackets (multiplicative). For comparing options only, not absolute damage. Assumed baseline, see engine/damage.ts.',
+    vi: 'Ước lượng damage tương đối so với khi không đeo echo — mô hình bắt crit dạng TÍCH (1 + CR×CD) và bracket %DMG (element + attack-type cộng dồn, nhân với phần còn lại — đúng công thức WuWa). Chỉ để so sánh phương án, không phải damage tuyệt đối. Baseline giả định, xem engine/damage.ts.',
+    en: 'Estimated damage relative to wearing no echoes — the model captures multiplicative crit (1 + CR×CD) and the %DMG bracket (element + attack-type ADD together, then multiply the rest — per the WuWa formula). For comparing options only, not absolute damage. Assumed baseline, see engine/damage.ts.',
   },
 
   // ── RosterPanel ──
@@ -89,6 +89,12 @@ const DICT: Record<string, Entry> = {
   'weights.help': {
     vi: 'Thang 0–1: 1 roll MAX của stat = w điểm. CR = CD = 1 cho DPS (1 roll CD ≈ 1 roll CR về EV quanh tỉ lệ crit 1:2).',
     en: 'Scale 0–1: 1 MAX roll of a stat = w points. CR = CD = 1 for DPS (1 CD roll ≈ 1 CR roll in EV around the 1:2 crit ratio).',
+  },
+  'weights.elementDmg': { vi: 'Element DMG% (đúng hệ)', en: 'Element DMG% (own)' },
+  'weights.healingBonus': { vi: 'Healing Bonus%', en: 'Healing Bonus%' },
+  'weights.mainOnlyTip': {
+    vi: 'Stat chỉ có ở main stat + set bonus (không phải substat) — dùng để chấm giá trị main cost-3/4 và bonus set',
+    en: 'Main-stat/set-bonus-only stat (not a substat) — used to score cost-3/4 main values and set bonuses',
   },
 
   // ── OcrImport ──
@@ -136,6 +142,7 @@ const DICT: Record<string, Entry> = {
 
   // ── Engine: OCR parser warnings (ocr/parse.ts) + OcrImport ──
   'ocrParse.unmatched': { vi: 'Có {n} dòng chứa số nhưng không khớp nhãn nào — kiểm tra lại thủ công (có thể thiếu substat).', en: '{n} line(s) contain numbers but match no label — please double-check (a substat may be missing).' },
+  'ocrParse.costMismatch': { vi: 'Dòng COST đọc được {ocr} nhưng "{name}" trong dữ liệu là cost {db} — kiểm tra lại.', en: 'COST line reads {ocr} but "{name}" is cost {db} in the database — please verify.' },
   'ocrParse.noMainStat': { vi: 'Không nhận diện được main stat — vui lòng chọn thủ công.', en: 'Could not detect the main stat — please pick it manually.' },
   'ocrParse.multiMainStat': { vi: 'Phát hiện {n} dòng có thể là main stat — đã chọn dòng đầu tiên, kiểm tra lại nếu sai.', en: 'Detected {n} possible main-stat lines — picked the first, verify if wrong.' },
   'ocrParse.dupSubs': { vi: 'Bỏ qua {n} dòng phụ trùng loại (chỉ giữ lần xuất hiện đầu tiên).', en: 'Skipped {n} duplicate substat line(s) (kept the first occurrence only).' },

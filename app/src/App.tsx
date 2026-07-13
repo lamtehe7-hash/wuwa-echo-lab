@@ -146,7 +146,7 @@ export default function App() {
             />
           </div>
 
-          <RosterPanel echoes={echoes} resolve={resolve} />
+          <RosterPanel echoes={echoes} overrides={overrides} resolve={resolve} />
 
           <p className="text-xs text-slate-600">
             {t('app.scoreHelp')}

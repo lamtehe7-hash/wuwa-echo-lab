@@ -236,10 +236,17 @@ function templates(): { id: string; sig: Uint8Array }[] {
   return templateCache
 }
 
-/** So một chữ ký với template mọi set (mỗi set lấy khoảng cách nhỏ nhất giữa các biến thể) */
-export function classifySignature(sig: Uint8Array): SetIconMatch | null {
+/**
+ * So một chữ ký với template mọi set (mỗi set lấy khoảng cách nhỏ nhất giữa các biến thể).
+ * `candidates` (tuỳ chọn): thu hẹp pool về các set id khả dĩ (vd từ tên echo tra data/echoes.ts
+ * — echo chỉ thuộc 1-3 set) → margin phân loại rộng hơn hẳn so với so với cả 34 set.
+ * Pool chỉ còn 1 ứng viên thì bỏ điều kiện margin (không có "hạng nhì" để so).
+ */
+export function classifySignature(sig: Uint8Array, candidates?: string[]): SetIconMatch | null {
+  const pool = candidates && candidates.length > 0 ? new Set(candidates) : null
   const bySet = new Map<string, number>()
   for (const tpl of templates()) {
+    if (pool && !pool.has(tpl.id)) continue
     const d = sigDistance(sig, tpl.sig)
     const cur = bySet.get(tpl.id)
     if (cur === undefined || d < cur) bySet.set(tpl.id, d)
@@ -256,7 +263,8 @@ export function classifySignature(sig: Uint8Array): SetIconMatch | null {
       secondD = d
     }
   }
-  if (!bestId || bestD > MATCH_MAX_DISTANCE || secondD - bestD < MATCH_MIN_MARGIN) return null
+  if (!bestId || bestD > MATCH_MAX_DISTANCE) return null
+  if (bySet.size > 1 && secondD - bestD < MATCH_MIN_MARGIN) return null
   return { setId: bestId, distance: bestD, margin: secondD - bestD }
 }
 
@@ -272,10 +280,10 @@ export function signatureForIconImage(img: ImageDataLike): Uint8Array | null {
 }
 
 /** Vùng ảnh (đã crop quanh icon) → set. Tự tìm vòng tròn icon bên trong vùng. */
-export function classifyBadgeRegion(region: ImageDataLike): SetIconMatch | null {
+export function classifyBadgeRegion(region: ImageDataLike, candidates?: string[]): SetIconMatch | null {
   const sig = signatureForIconImage(region)
   if (!sig) return null
-  return classifySignature(sig)
+  return classifySignature(sig, candidates)
 }
 
 // ---- Định vị icon theo kết quả OCR ("+NN" là mỏ neo, icon nằm ngay bên phải) ----
@@ -301,20 +309,20 @@ export function badgeSearchRect(box: OcrWordBox['bbox'], imgW: number, imgH: num
 }
 
 /** Bản thuần dùng chung cho node (benchmark/test) và wrapper canvas */
-export function detectSetFromImage(img: ImageDataLike, words: OcrWordBox[]): SetIconMatch | null {
+export function detectSetFromImage(img: ImageDataLike, words: OcrWordBox[], candidates?: string[]): SetIconMatch | null {
   const lvl = findLevelWordBox(words)
   if (!lvl) return null
   const rect = badgeSearchRect(lvl.bbox, img.width, img.height)
   if (rect.w < 12 || rect.h < 12) return null
-  return classifyBadgeRegion(cropImageData(img, rect))
+  return classifyBadgeRegion(cropImageData(img, rect), candidates)
 }
 
 // ---- Phần phụ thuộc DOM ----
 
 /** Canvas MÀU (trước binarize) + word boxes của lần OCR trên cùng crop/scale → set */
-export function detectSetFromCanvas(canvas: HTMLCanvasElement, words: OcrWordBox[]): SetIconMatch | null {
+export function detectSetFromCanvas(canvas: HTMLCanvasElement, words: OcrWordBox[], candidates?: string[]): SetIconMatch | null {
   const ctx = canvas.getContext('2d', { willReadFrequently: true })
   if (!ctx) return null
   const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
-  return detectSetFromImage({ data: img.data, width: img.width, height: img.height }, words)
+  return detectSetFromImage({ data: img.data, width: img.width, height: img.height }, words, candidates)
 }

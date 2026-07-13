@@ -6,7 +6,8 @@ import { MAINSTATS } from '../data/mainstats'
 // score (engine/score.ts). Mục tiêu: so sánh damage giữa các LOADOUT của CÙNG một
 // nhân vật, bắt đúng 2 phi tuyến mà research/scoring-methods.md §3.2 nhấn mạnh:
 //   1) Crit là TÍCH: critMult = 1 + CR×CD  (không phải CR+CD cộng dồn như CV).
-//   2) Các bracket %DMG khác nhau NHÂN độc lập nhau (elemental vs attack-type…).
+//   2) Bracket %DMG (elemental + attack-type CỘNG DỒN chung 1 bracket theo công thức
+//      WuWa — Amplify/Deepen mới là bracket nhân riêng) NHÂN với statFactor và crit.
 //
 // KHÔNG tính damage tuyệt đối: công thức đầy đủ §3.1 cần base ATK/HP nhân vật +
 // vũ khí + Motion Value skill + DEF/RES quái — repo KHÔNG có các số này (và với

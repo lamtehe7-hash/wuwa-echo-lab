@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { CharacterProfile, Echo, EchoCost, MainStatKey, Substat, SubstatKey } from './types'
+import type { CharacterProfile, Echo, EchoCost, MainStatKey, Substat, SubstatKey, WeightKey } from './types'
 import { MAINSTATS } from './data/mainstats'
 import { MAX_SUBSTATS, SUBSTATS } from './data/substats'
 
@@ -68,8 +68,13 @@ function sanitizeEcho(raw: unknown, seenIds: Set<string>): Echo | null {
     if (typeof sub.stat !== 'string' || !(sub.stat in SUBSTATS)) continue
     if (typeof sub.value !== 'number' || !Number.isFinite(sub.value)) continue
     if (seenStats.has(sub.stat)) continue
+    // Giá trị phải nằm ở mốc roll hợp lệ: snap về mốc gần nhất nếu lệch ≤5%, lệch hơn = rác
+    // (vd critRate 999 sửa tay) → bỏ dòng, đừng để 1 substat ảo thổi điểm lên vài trăm.
+    const rolls = SUBSTATS[sub.stat as SubstatKey].rolls
+    const nearest = rolls.reduce((best, r) => (Math.abs(r - (sub.value as number)) < Math.abs(best - (sub.value as number)) ? r : best), rolls[0])
+    if (Math.abs(sub.value - nearest) > nearest * 0.05) continue
     seenStats.add(sub.stat)
-    substats.push({ stat: sub.stat as SubstatKey, value: sub.value })
+    substats.push({ stat: sub.stat as SubstatKey, value: nearest })
   }
   const level = typeof e.level === 'number' && Number.isFinite(e.level)
     ? Math.min(25, Math.max(0, Math.round(e.level))) : 25
@@ -112,8 +117,10 @@ export function newId(): string {
 // ---- Override trọng số/erTarget theo nhân vật (lưu riêng, preset gốc giữ nguyên) ----
 
 export interface ProfileOverride {
-  weights?: Partial<Record<SubstatKey, number>>
-  erTarget?: number
+  weights?: Partial<Record<WeightKey, number>>
+  /** number = override; null = user ĐÃ XOÁ gate (khác undefined = chưa đụng tới, dùng preset).
+   *  Dùng null thay undefined vì JSON.stringify bỏ key undefined → mất trạng thái "đã xoá" khi reload. */
+  erTarget?: number | null
 }
 
 function loadOverrides(): Record<string, ProfileOverride> {
@@ -136,12 +143,12 @@ export function useOverrides() {
   return { overrides, setOverrides }
 }
 
-/** Preset + override → profile dùng thực tế */
+/** Preset + override → profile dùng thực tế (erTarget null = đã xoá gate, KHÔNG rơi về preset) */
 export function mergeProfile(profile: CharacterProfile, ov?: ProfileOverride): CharacterProfile {
   if (!ov) return profile
   return {
     ...profile,
     weights: { ...profile.weights, ...ov.weights },
-    erTarget: ov.erTarget ?? profile.erTarget,
+    erTarget: ov.erTarget === null ? undefined : ov.erTarget ?? profile.erTarget,
   }
 }

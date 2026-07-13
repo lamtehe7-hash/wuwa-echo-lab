@@ -1,10 +1,18 @@
-import type { CharacterProfile, Echo, MainStatKey, ScoredEcho, SubstatKey, TuneAdvice } from '../types'
-import { MAX_SUBSTATS, SUBSTAT_KEYS, expectedRoll, maxRoll } from '../data/substats'
+import type { BonusStatKey, CharacterProfile, Echo, Element, MainStatKey, ScoredEcho, SubstatKey, TuneAdvice } from '../types'
+import { MAINSTATS } from '../data/mainstats'
+import { MAX_SUBSTATS, SUBSTAT_KEYS, SUBSTATS, expectedRoll, maxRoll } from '../data/substats'
 
 // Chấm điểm weighted roll-efficiency (PROPOSAL.md §4):
 //   raw = Σ w[stat] × (value / maxRoll(stat))
 //   score 0–100 = raw / (tổng 5 trọng số lớn nhất của nhân vật) × 100
 // → echo "hoàn hảo lý thuyết" (5 roll max của 5 stat tốt nhất) = 100 điểm.
+//
+// MỞ RỘNG (07/2026): GIÁ TRỊ main stat và stat từ SET BONUS được quy về CÙNG đơn vị
+// (w × value / refScale) rồi cộng thêm bên trên thang 0–100 của substat — solver nhờ đó
+// cân được các layout 4-3-3-1-1 vs 4-4-1-1-1 và việc kích hoạt đủ set bằng số thật.
+// Kiểm chứng độ chuẩn của xấp xỉ tuyến tính: với build endgame điển hình (CR 50/CD 250,
+// pool DMG% ~70), +21% Crit DMG (1 roll max, w=1) ≈ +6% damage; +10% Element DMG
+// (2pc set, w 0.85) ≈ +5.9% damage → tỉ lệ trọng số phản ánh đúng damage thật.
 
 export function rollEfficiency(stat: SubstatKey, value: number): number {
   return value / maxRoll(stat)
@@ -21,6 +29,41 @@ export function theoreticalMax(profile: CharacterProfile): number {
 const MAIN_TO_SUB: Partial<Record<MainStatKey, SubstatKey>> = {
   hpPct: 'hpPct', atkPct: 'atkPct', defPct: 'defPct',
   critRate: 'critRate', critDmg: 'critDmg', energyRegen: 'energyRegen',
+}
+
+// ---- Quy đổi main stat / set bonus stat về đơn vị "roll chuẩn có trọng số" ----
+
+/** Ref cho stat KHÔNG có substat tương ứng (Element DMG%, Healing Bonus%): 1 "roll chuẩn %" */
+export const REF_PCT_ROLL = 11.6
+
+const DMG_KEY_TO_ELEMENT: Partial<Record<BonusStatKey, Element>> = {
+  glacioDmg: 'glacio', fusionDmg: 'fusion', electroDmg: 'electro',
+  aeroDmg: 'aero', spectroDmg: 'spectro', havocDmg: 'havoc',
+}
+
+const isSubstatKey = (stat: BonusStatKey): stat is SubstatKey => stat in SUBSTATS
+
+/**
+ * Trọng số hiệu dụng của một stat bất kỳ (substat/main/set bonus) với nhân vật:
+ * Element DMG chỉ có giá trị khi ĐÚNG nguyên tố (key 'elementDmg' = luôn đúng nguyên tố).
+ */
+export function weightFor(profile: CharacterProfile, stat: BonusStatKey): number {
+  if (stat === 'elementDmg') return profile.weights.elementDmg ?? 0
+  if (stat === 'healingBonus') return profile.weights.healingBonus ?? 0
+  const el = DMG_KEY_TO_ELEMENT[stat]
+  if (el) return el === profile.element ? (profile.weights.elementDmg ?? 0) : 0
+  return profile.weights[stat as SubstatKey] ?? 0
+}
+
+/** Mẫu quy đổi %: substat dùng maxRoll của chính nó, stat main-only dùng REF_PCT_ROLL */
+export function refScale(stat: BonusStatKey): number {
+  return isSubstatKey(stat) ? maxRoll(stat) : REF_PCT_ROLL
+}
+
+/** Điểm raw của GIÁ TRỊ main stat (giả định +25 — echo không lưu số main, HANDOVER §5) */
+export function mainStatRaw(echo: Echo, profile: CharacterProfile): number {
+  const value = MAINSTATS[echo.cost].find((d) => d.key === echo.mainStat)?.max ?? 0
+  return weightFor(profile, echo.mainStat) * (value / refScale(echo.mainStat))
 }
 
 /**
@@ -45,23 +88,27 @@ export function scoreEcho(echo: Echo, profile: CharacterProfile): ScoredEcho {
     return { stat: s.stat, value: s.value, eff, weighted: w * eff }
   })
   const raw = breakdown.reduce((sum, b) => sum + b.weighted, 0)
-  const score = (raw / theoreticalMax(profile)) * 100
+  const theoMax = theoreticalMax(profile)
+  const score = (raw / theoMax) * 100
+  const mainScore = (mainStatRaw(echo, profile) / theoMax) * 100
   const fitLevel = mainStatFitLevel(echo, profile)
   return {
     echo,
     raw,
     score,
+    mainScore,
+    totalScore: score + mainScore,
     fitLevel,
     mainStatFit: fitLevel === 1,
     breakdown,
   }
 }
 
-/** Xếp hạng danh sách echo cho 1 nhân vật (fit main stat cao lên đầu, rồi theo điểm) */
+/** Xếp hạng danh sách echo cho 1 nhân vật theo tổng giá trị (substat + main stat) */
 export function rankEchoes(echoes: Echo[], profile: CharacterProfile): ScoredEcho[] {
   return echoes
     .map((e) => scoreEcho(e, profile))
-    .sort((a, b) => b.fitLevel - a.fitLevel || b.score - a.score)
+    .sort((a, b) => b.totalScore - a.totalScore || b.fitLevel - a.fitLevel)
 }
 
 /**

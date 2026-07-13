@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CharacterProfile, Echo, RosterAssignment } from '../types'
 import { CHARACTERS } from '../data/characters'
 import { solveRoster } from '../engine/roster'
+import type { ProfileOverride } from '../store'
 import LoadoutView from './LoadoutView'
 import { useT } from '../i18n'
 
@@ -9,18 +10,20 @@ import { useT } from '../i18n'
 
 interface Props {
   echoes: Echo[]
+  /** Override trọng số/erTarget — chỉ dùng làm dep invalidate kết quả khi user chỉnh weights */
+  overrides: Record<string, ProfileOverride>
   /** Trả về profile đã merge override */
   resolve: (id: string) => CharacterProfile
 }
 
-export default function RosterPanel({ echoes, resolve }: Props) {
+export default function RosterPanel({ echoes, overrides, resolve }: Props) {
   const t = useT()
   const [ids, setIds] = useState<string[]>([])
   const [results, setResults] = useState<RosterAssignment[] | null>(null)
   const [adding, setAdding] = useState(CHARACTERS[0].id)
 
-  // Kho echo đổi → kết quả gán đội cũ không còn khớp
-  useEffect(() => setResults(null), [echoes])
+  // Kho echo đổi HOẶC user chỉnh trọng số/erTarget → kết quả gán đội cũ không còn khớp
+  useEffect(() => setResults(null), [echoes, overrides])
 
   const move = (i: number, dir: -1 | 1) => {
     const j = i + dir

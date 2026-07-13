@@ -38,7 +38,7 @@ export default function LoadoutView({ result, profile }: { result: LoadoutResult
               <span className="font-medium">{s.echo.name || SONATA_BY_ID[s.echo.set]?.name}</span>
               <span className={`ml-2 text-xs ${s.mainStatFit ? 'text-slate-400' : 'text-rose-400'}`}>{MAINSTAT_LABELS[s.echo.mainStat]}</span>
             </span>
-            <span className="font-mono text-slate-300">{s.score.toFixed(1)}</span>
+            <span className="font-mono text-slate-300" title={`substat ${s.score.toFixed(1)} + main ${s.mainScore.toFixed(1)}`}>{s.totalScore.toFixed(1)}</span>
           </li>
         ))}
       </ol>

@@ -67,7 +67,7 @@ export default function RankingTable({ echoes, profile, costFilter, onDelete }: 
                   </span>
                 ))}
               </td>
-              <td className="pr-2 text-right font-mono text-base text-slate-100">{r.score.toFixed(1)}</td>
+              <td className="pr-2 text-right font-mono text-base text-slate-100" title={`substat ${r.score.toFixed(1)} + main ${r.mainScore.toFixed(1)}`}>{r.totalScore.toFixed(1)}</td>
               <td className={`pr-2 text-xs ${VERDICT_CLS[advice.verdict]}`} title={tm(advice.reason)}>
                 {t(`ranking.verdict.${advice.verdict}`)}
                 {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}

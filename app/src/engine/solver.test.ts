@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CharacterProfile, Echo, SubstatKey } from '../types'
-import { SET_BONUS, solveBest5 } from './solver'
+import { PREF_MAIN_BONUS, SET_PREF_BONUS, setTierScore, solveBest5 } from './solver'
 import { echoER, scoreEcho, theoreticalMax } from './score'
 import { CHARACTERS, CHARACTER_BY_ID } from '../data/characters'
 import { DEMO_ECHOES } from '../data/demo'
@@ -57,8 +57,11 @@ function combinations<T>(arr: T[], k: number): T[][] {
 }
 
 function referenceTotal(chosen: Echo[], profile: CharacterProfile): number {
-  const scored = chosen.map((e) => scoreEcho(e, profile))
-  const sumValue = scored.reduce((s, sc) => s + sc.score * sc.fitLevel, 0)
+  const theoMax = theoreticalMax(profile)
+  const sumValue = chosen.reduce((s, e) => {
+    const prefs = profile.mainStatPrefs[String(e.cost) as '1' | '3' | '4'] ?? []
+    return s + scoreEcho(e, profile).totalScore + (prefs.includes(e.mainStat) ? PREF_MAIN_BONUS : 0)
+  }, 0)
 
   const uniqueNames: Record<string, Set<string>> = {}
   chosen.forEach((e) => {
@@ -70,14 +73,10 @@ function referenceTotal(chosen: Echo[], profile: CharacterProfile): number {
     const n = names.size
     const def = SONATA_BY_ID[setId]
     if (!def) continue
-    const preferred = profile.preferredSets.includes(setId)
-    if (preferred) {
-      if (def.pieces.includes(5) && n >= 5) bonus += SET_BONUS.preferred5pc
-      else if (def.pieces.includes(3) && n >= 3) bonus += SET_BONUS.preferred3pc
-      else if (def.pieces.includes(2) && n >= 2) bonus += SET_BONUS.preferred2pc
-      else if (def.pieces.includes(1) && n >= 1) bonus += SET_BONUS.preferred1pc
-    } else if (def.element === profile.element && def.pieces.includes(2) && n >= 2) {
-      bonus += SET_BONUS.elemental2pc
+    bonus += setTierScore(def, n, profile, theoMax)
+    if (profile.preferredSets.includes(setId)) {
+      if (n >= Math.max(...def.pieces)) bonus += SET_PREF_BONUS.fullPreferred
+      else if (n >= Math.min(...def.pieces)) bonus += SET_PREF_BONUS.partialPreferred
     }
   }
 
@@ -149,6 +148,39 @@ describe('solveBest5 vs brute-force enumeration thuần (kho nhỏ tự chế)',
   }
 })
 
+describe('solveBest5 vs brute-force — REGRESSION prune bound với set 1-mảnh (2+2+1 = 3 set)', () => {
+  // Bug đã fix (07/2026): maxPossibleSetBonus cũ chỉ cộng top-2 set full → khi bộ 5 chia
+  // 2+2+1 cho 3 set (set 1-mảnh shadow-of-shattered-dreams làm set thứ 3) và 5pc của các
+  // set 2pc vô giá trị với profile (moonlit-clouds 5pc = []), bound < bonus thật → DFS
+  // prune nhầm nghiệm tối ưu. Seed 2/20/27/52 từng fail (vd seed 27: 298.39 vs 310.75).
+  const TRICKY_SETS = ['moonlit-clouds', 'empyrean-anthem', 'shadow-of-shattered-dreams', 'song-of-feathered-trace']
+  const erBuffer: CharacterProfile = {
+    id: 'er-buffer', name: 'ER Buffer', element: 'havoc', archetype: 'buffer',
+    weights: { energyRegen: 1, heavyAtk: 0.12, basicAtk: 0.5, critRate: 0.38, atkPct: 0.02 },
+    mainStatPrefs: { '1': ['atkPct'], '3': ['energyRegen'], '4': ['critRate'] },
+    preferredSets: ['shadow-of-shattered-dreams'],
+  }
+  function trickyEcho(rng: () => number, idx: number): Echo {
+    const cost = pick(rng, [1, 3, 4] as const)
+    const mainStat = pick(rng, MAINSTATS[cost]).key
+    const set = pick(rng, TRICKY_SETS)
+    const nSub = Math.floor(rng() * 6)
+    const stats: SubstatKey[] = shuffle(rng, [...SUBSTAT_KEYS]).slice(0, nSub)
+    const substats = stats.map((stat) => ({ stat, value: pick(rng, SUBSTATS[stat].rolls) }))
+    return { id: `t${idx}`, name: `T${idx}`, cost, set, rarity: 5, level: 25, mainStat, substats }
+  }
+  for (const seed of [2, 20, 27, 52, 7, 99]) {
+    it(`khớp brute-force, kho 8-11 echo tricky-set, seed=${seed}`, () => {
+      const rng = mulberry32(seed)
+      const n = 8 + Math.floor(rng() * 4)
+      const echoes = Array.from({ length: n }, (_, i) => trickyEcho(rng, i))
+      const result = solveBest5(echoes, erBuffer)
+      expect(result).not.toBeNull()
+      expect(result!.total).toBeCloseTo(referenceBest(echoes, erBuffer), 5)
+    })
+  }
+})
+
 describe('solveBest5 — luật trùng tên (nameKey) khi đếm mảnh set', () => {
   const camellya = CHARACTER_BY_ID['camellya'] // preferredSets: ['havoc-eclipse'], pieces [2,5]
   function makeFive(sameName: boolean): Echo[] {
@@ -168,10 +200,113 @@ describe('solveBest5 — luật trùng tên (nameKey) khi đếm mảnh set', ()
     expect(r.setBonusScore).toBe(0)
   })
 
-  it('5 echo cùng set KHÁC TÊN → setCount = 5, có bonus preferred5pc', () => {
+  it('5 echo cùng set KHÁC TÊN → setCount = 5, bonus = stat thật (2pc+5pc) + điểm preferred đủ set', () => {
     const r = solveBest5(makeFive(false), camellya)!
     expect(r.setCounts['havoc-eclipse']).toBe(5)
-    expect(r.setBonusScore).toBe(SET_BONUS.preferred5pc)
+    const expected =
+      setTierScore(SONATA_BY_ID['havoc-eclipse'], 5, camellya, theoreticalMax(camellya)) +
+      SET_PREF_BONUS.fullPreferred
+    expect(r.setBonusScore).toBeCloseTo(expected, 9)
+    expect(r.setBonusScore).toBeGreaterThan(SET_PREF_BONUS.fullPreferred) // stat thật phải > 0
+  })
+})
+
+describe('main stat có GIÁ TRỊ thật trong điểm (scoreEcho.totalScore / mainScore)', () => {
+  const camellya = CHARACTER_BY_ID['camellya'] // havoc, critBasic
+  const bare = (id: string, cost: 1 | 3 | 4, mainStat: Echo['mainStat'], set = 'lingering-tunes'): Echo => ({
+    id, name: id, cost, set, rarity: 5, level: 25, mainStat, substats: [],
+  })
+
+  it('cost-4 substat rỗng: main Crit DMG > main Healing Bonus với DPS (trước đây cả hai = 0)', () => {
+    const crit = scoreEcho(bare('crit', 4, 'critDmg'), camellya)
+    const heal = scoreEcho(bare('heal', 4, 'healingBonus'), camellya)
+    expect(crit.mainScore).toBeGreaterThan(0)
+    expect(heal.mainScore).toBe(0) // camellya không có trọng số healingBonus
+    expect(crit.totalScore).toBeGreaterThan(heal.totalScore)
+  })
+
+  it('cost-3: main đúng nguyên tố (Havoc) có điểm, sai nguyên tố (Glacio) = 0', () => {
+    expect(scoreEcho(bare('right', 3, 'havocDmg'), camellya).mainScore).toBeGreaterThan(0)
+    expect(scoreEcho(bare('wrong', 3, 'glacioDmg'), camellya).mainScore).toBe(0)
+  })
+
+  it('solver chọn main crit thay vì healing khi cost cap chỉ cho 1 echo cost-4', () => {
+    const echoes = [
+      bare('heal', 4, 'healingBonus'), bare('crit', 4, 'critDmg'),
+      bare('e3a', 3, 'havocDmg'), bare('e3b', 3, 'havocDmg'),
+      bare('c1a', 1, 'atkPct'), bare('c1b', 1, 'atkPct'),
+    ]
+    const r = solveBest5(echoes, camellya)! // 4+4+3+3+1+1 = 16 > 12 → phải bỏ 1 cost-4
+    const ids = r.echoes.map((s) => s.echo.id)
+    expect(ids).toContain('crit')
+    expect(ids).not.toContain('heal')
+  })
+})
+
+describe('solveBest5 — layout 4-4-1-1-1 vs 4-3-3-1-1 cân bằng số thật', () => {
+  // Nhân vật giả lập không preferredSets, không erTarget để cô lập phần main stat + layout
+  const profile: CharacterProfile = {
+    ...CHARACTER_BY_ID['camellya'],
+    id: 'test-dps', preferredSets: [], erTarget: undefined,
+  }
+  const bare = (id: string, cost: 1 | 3 | 4, mainStat: Echo['mainStat'], set: string): Echo => ({
+    id, name: id, cost, set, rarity: 5, level: 25, mainStat, substats: [],
+  })
+
+  it('kho có 2 cost-4 crit + cost-3 sai nguyên tố → chọn 4-4-1-1-1 thay vì nhét cost-3 vô dụng', () => {
+    const echoes = [
+      bare('c4a', 4, 'critDmg', 'havoc-eclipse'),
+      bare('c4b', 4, 'critRate', 'midnight-veil'),
+      bare('e3a', 3, 'glacioDmg', 'freezing-frost'), // sai nguyên tố → mainScore 0
+      bare('e3b', 3, 'glacioDmg', 'freezing-frost'),
+      bare('c1a', 1, 'atkPct', 'havoc-eclipse'),
+      bare('c1b', 1, 'atkPct', 'midnight-veil'),
+      bare('c1c', 1, 'atkPct', 'lingering-tunes'),
+    ]
+    const r = solveBest5(echoes, profile)!
+    expect([...r.layout].sort((a, b) => b - a)).toEqual([4, 4, 1, 1, 1])
+  })
+
+  it('cost-3 ĐÚNG nguyên tố đủ tốt → 4-3-3-1-1 thắng 4-4-1-1-1 (main 30%+30% > crit 22%)', () => {
+    const echoes = [
+      bare('c4a', 4, 'critDmg', 'havoc-eclipse'),
+      bare('c4b', 4, 'critRate', 'midnight-veil'), // crit 22% — sẽ thua 2 main havoc 30%
+      bare('e3a', 3, 'havocDmg', 'havoc-eclipse'),
+      bare('e3b', 3, 'havocDmg', 'midnight-veil'),
+      bare('c1a', 1, 'atkPct', 'havoc-eclipse'),
+      bare('c1b', 1, 'atkPct', 'midnight-veil'),
+      bare('c1c', 1, 'atkPct', 'lingering-tunes'),
+    ]
+    const r = solveBest5(echoes, profile)!
+    expect([...r.layout].sort((a, b) => b - a)).toEqual([4, 3, 3, 1, 1])
+  })
+})
+
+describe('solveBest5 — ưu tiên kích hoạt ĐỦ set 5/5 bằng stat thật', () => {
+  const camellya = CHARACTER_BY_ID['camellya'] // preferredSets: ['havoc-eclipse']
+  const he = (id: string, cost: 1 | 3 | 4, mainStat: Echo['mainStat'], subs: Echo['substats'] = []): Echo => ({
+    id, name: id, cost, set: 'havoc-eclipse', rarity: 5, level: 25, mainStat, substats: subs,
+  })
+
+  it('mảnh thứ 5 cùng set thắng echo lẻ set khác có substat nhỉnh hơn chút (giá 5pc > 1 roll)', () => {
+    // 4 mảnh havoc-eclipse sẵn + lựa chọn slot cuối: mảnh thứ 5 (substat rỗng) vs
+    // echo Lingering Tunes có 1 roll critRate max (~26 điểm với camellya)
+    const base = [
+      he('h4', 4, 'critDmg'),
+      he('h3a', 3, 'havocDmg'),
+      he('h3b', 3, 'havocDmg'),
+      he('h1a', 1, 'atkPct'),
+    ]
+    const fifth = he('h1b', 1, 'atkPct')
+    const rival: Echo = {
+      id: 'rival', name: 'Rival', cost: 1, set: 'lingering-tunes', rarity: 5, level: 25,
+      mainStat: 'atkPct', substats: [{ stat: 'critRate', value: maxRoll('critRate') }],
+    }
+    const r = solveBest5([...base, fifth, rival], camellya)!
+    expect(r.setCounts['havoc-eclipse']).toBe(5)
+    const ids = r.echoes.map((s) => s.echo.id)
+    expect(ids).toContain('h1b')
+    expect(ids).not.toContain('rival')
   })
 })
 

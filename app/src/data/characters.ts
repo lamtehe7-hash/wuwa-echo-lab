@@ -1,20 +1,22 @@
-import type { CharacterProfile, Element, MainStatKey, SubstatKey } from '../types'
+import type { CharacterProfile, Element, MainStatKey, WeightKey } from '../types'
 import { ELEMENT_DMG } from './mainstats'
 
 // Preset trọng số theo archetype (thang 0–1: 1 roll MAX của stat = w điểm).
 // CR và CD cùng trọng số vì 1 roll CD (~2× %) ≈ 1 roll CR về EV quanh tỉ lệ 1:2 (research/scoring-methods.md §1.1).
 // erTarget: tổng ER% mục tiêu (gồm 100 gốc) — heuristic cộng đồng, user chỉnh được trong data này.
+// elementDmg/healingBonus: trọng số cho stat CHỈ tồn tại ở main stat + set bonus (không phải substat)
+// — engine dùng để chấm giá trị main cost-3/cost-4 và stat từ set 2pc/5pc (engine/score.ts weightFor).
 
-export const ARCHETYPE_WEIGHTS: Record<string, Partial<Record<SubstatKey, number>>> = {
-  critSkill:      { critRate: 1, critDmg: 1, atkPct: 0.75, skillDmg: 0.7, atk: 0.3, energyRegen: 0.35 },
-  critBasic:      { critRate: 1, critDmg: 1, atkPct: 0.75, basicAtk: 0.75, atk: 0.3, energyRegen: 0.3 },
-  critHeavy:      { critRate: 1, critDmg: 1, atkPct: 0.75, heavyAtk: 0.75, atk: 0.3, energyRegen: 0.35 },
-  critLiberation: { critRate: 1, critDmg: 1, atkPct: 0.75, liberationDmg: 0.75, atk: 0.3, energyRegen: 0.5 },
-  critHpSkill:    { critRate: 1, critDmg: 1, hpPct: 0.8, skillDmg: 0.6, hp: 0.3, energyRegen: 0.4 },
-  subDpsEr:       { critRate: 1, critDmg: 1, atkPct: 0.7, liberationDmg: 0.7, skillDmg: 0.4, atk: 0.25, energyRegen: 0.6 },
-  buffer:         { energyRegen: 1, atkPct: 0.5, critRate: 0.4, critDmg: 0.4, atk: 0.2 },
-  healerAtk:      { energyRegen: 1, atkPct: 0.6, atk: 0.25, hpPct: 0.3 },
-  healerHp:       { energyRegen: 1, hpPct: 0.7, hp: 0.3, critDmg: 0.3, liberationDmg: 0.3 },
+export const ARCHETYPE_WEIGHTS: Record<string, Partial<Record<WeightKey, number>>> = {
+  critSkill:      { critRate: 1, critDmg: 1, atkPct: 0.75, skillDmg: 0.7, atk: 0.3, energyRegen: 0.35, elementDmg: 0.85 },
+  critBasic:      { critRate: 1, critDmg: 1, atkPct: 0.75, basicAtk: 0.75, atk: 0.3, energyRegen: 0.3, elementDmg: 0.85 },
+  critHeavy:      { critRate: 1, critDmg: 1, atkPct: 0.75, heavyAtk: 0.75, atk: 0.3, energyRegen: 0.35, elementDmg: 0.85 },
+  critLiberation: { critRate: 1, critDmg: 1, atkPct: 0.75, liberationDmg: 0.75, atk: 0.3, energyRegen: 0.5, elementDmg: 0.85 },
+  critHpSkill:    { critRate: 1, critDmg: 1, hpPct: 0.8, skillDmg: 0.6, hp: 0.3, energyRegen: 0.4, elementDmg: 0.85 },
+  subDpsEr:       { critRate: 1, critDmg: 1, atkPct: 0.7, liberationDmg: 0.7, skillDmg: 0.4, atk: 0.25, energyRegen: 0.6, elementDmg: 0.8 },
+  buffer:         { energyRegen: 1, atkPct: 0.5, critRate: 0.4, critDmg: 0.4, atk: 0.2, elementDmg: 0.3 },
+  healerAtk:      { energyRegen: 1, atkPct: 0.6, atk: 0.25, hpPct: 0.3, healingBonus: 0.9 },
+  healerHp:       { energyRegen: 1, hpPct: 0.7, hp: 0.3, critDmg: 0.3, liberationDmg: 0.3, healingBonus: 0.9 },
 }
 
 const dpsMain = (el: Element): Record<'1' | '3' | '4', MainStatKey[]> => ({
@@ -28,10 +30,22 @@ const healerMain: Record<'1' | '3' | '4', MainStatKey[]> = {
   '1': ['hpPct'],
 }
 
+interface ChOpts {
+  erTarget?: number
+  main?: Record<'1' | '3' | '4', MainStatKey[]>
+  /** Override toàn bộ weights (nhớ kèm elementDmg/healingBonus nếu nhân vật ăn) */
+  weights?: Partial<Record<WeightKey, number>>
+  rarity?: 4 | 5
+  version?: string
+  /** false = preset research web chưa kiểm chứng — UI/PR sau có thể lọc theo cờ này */
+  verified?: boolean
+  notes?: string
+}
+
 function ch(
   id: string, name: string, element: Element, archetype: string,
   preferredSets: string[],
-  opts: { erTarget?: number; main?: Record<'1' | '3' | '4', MainStatKey[]>; weights?: Partial<Record<SubstatKey, number>> } = {},
+  opts: ChOpts = {},
 ): CharacterProfile {
   return {
     id, name, element, archetype,
@@ -39,6 +53,10 @@ function ch(
     erTarget: opts.erTarget,
     mainStatPrefs: opts.main ?? dpsMain(element),
     preferredSets,
+    rarity: opts.rarity,
+    version: opts.version,
+    verified: opts.verified,
+    notes: opts.notes,
   }
 }
 
@@ -80,8 +98,8 @@ export const CHARACTERS: CharacterProfile[] = [
   ch('denia', 'Denia', 'fusion', 'critLiberation', ['chromatic-foam', 'reel-of-spliced-memories'], { erTarget: 125 }), // archetype critLiberation vs subDpsEr còn tranh cãi (nguồn ưu tiên ER > Crit)
   ch('lucilla', 'Lucilla', 'glacio', 'subDpsEr', ['wishes-of-quiet-snowfall'], { erTarget: 125 }), // erTarget suy theo Zhezhi, chưa có số cụ thể
   ch('xuanling', 'Yangyang: Xuanling', 'havoc', 'critHeavy', ['song-of-feathered-trace']), // erTarget chưa rõ → dùng mặc định critHeavy
-  ch('mornye', 'Mornye', 'fusion', 'healerAtk', ['halo-of-starry-radiance', 'rejuvenating-glow'], { erTarget: 260, main: { '4': ['defPct'], '3': ['energyRegen'], '1': ['defPct'] }, weights: { energyRegen: 1, defPct: 0.7, def: 0.25, critDmg: 0.35 } }), // scale DEF% — không archetype nào khớp, override thủ công
-  ch('sigrika', 'Sigrika', 'aero', 'critSkill', ['sound-of-true-name'], { erTarget: 150, weights: { critRate: 1, critDmg: 1, atkPct: 0.75, atk: 0.3, energyRegen: 0.9 } }), // scale "Echo Skill DMG" (không có SubstatKey) — xấp xỉ bằng ER cao
+  ch('mornye', 'Mornye', 'fusion', 'healerAtk', ['halo-of-starry-radiance', 'rejuvenating-glow'], { erTarget: 260, main: { '4': ['defPct'], '3': ['energyRegen'], '1': ['defPct'] }, weights: { energyRegen: 1, defPct: 0.7, def: 0.25, critDmg: 0.35, healingBonus: 0.5 } }), // scale DEF% — không archetype nào khớp, override thủ công
+  ch('sigrika', 'Sigrika', 'aero', 'critSkill', ['sound-of-true-name'], { erTarget: 150, weights: { critRate: 1, critDmg: 1, atkPct: 0.75, atk: 0.3, energyRegen: 0.9, elementDmg: 0.85 } }), // scale "Echo Skill DMG" (không có SubstatKey) — xấp xỉ bằng ER cao
   ch('buling', 'Buling', 'electro', 'healerAtk', ['rejuvenating-glow'], { erTarget: 170, main: healerMain }), // thực ra bản 2.8 (không phải 3.x); erTarget 170 = trung bình 160–180
   // Generic — cho nhân vật chưa có preset
   ch('generic-skill', 'Generic: Crit DPS (Skill)', 'glacio', 'critSkill', []),

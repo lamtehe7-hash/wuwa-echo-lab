@@ -1,11 +1,16 @@
-import type { CharacterProfile, Echo, LoadoutResult, LocMessage, ScoredEcho } from '../types'
+import type { CharacterProfile, Echo, LoadoutResult, LocMessage, ScoredEcho, SonataSet } from '../types'
 import { COST_CAP } from '../data/mainstats'
-import { SONATA_BY_ID } from '../data/sonata'
+import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { maxRoll } from '../data/substats'
-import { echoER, scoreEcho, theoreticalMax } from './score'
+import { echoER, refScale, scoreEcho, theoreticalMax, weightFor } from './score'
 
 // Solver bộ-5 tối ưu (PROPOSAL.md §4): duyệt layout cost → DFS tổ hợp top-K mỗi cost,
 // cộng bonus set ở lá + chiết khấu ER thừa, prune bằng chặn trên lạc quan.
+//
+// Objective (07/2026): value ứng viên = totalScore (substat + GIÁ TRỊ main stat) + điểm
+// ưu tiên main đúng meta; điểm set = STAT THẬT của các tier bonus đạt mảnh (2pc cộng dồn
+// với 5pc) + điểm ưu tiên khi set nằm trong preferredSets — tất cả cùng thang 0–100.
+// Layout 4-3-3-1-1 vs 4-4-1-1-1 và "có nên phá set để lấy substat" từ đây được cân bằng số thật.
 
 const TOP_K = 10
 
@@ -22,26 +27,43 @@ const ALL_LAYOUTS: number[][] = (() => {
       }
   return out
 })()
-/** Điểm bonus set (đơn vị = điểm chuẩn hoá 0–100) — heuristic, chỉnh được */
-export const SET_BONUS = {
-  preferred5pc: 15,
-  preferred3pc: 10,
-  preferred2pc: 5,
-  preferred1pc: 8,
-  elemental2pc: 4, // 2pc đúng nguyên tố dù không nằm trong preferredSets
+/**
+ * Điểm ƯU TIÊN set (cộng thêm bên trên stat thật của bonus) — đại diện phần hiệu ứng
+ * KHÔNG lượng hoá được (nổ 480%, buff team, Coordinated…) + độ hợp kit theo meta.
+ * Kích hoạt ĐỦ set (5/5, 3/3, 1/1) trong preferredSets được thưởng đậm nhất.
+ */
+export const SET_PREF_BONUS = {
+  fullPreferred: 8, // đủ mốc mảnh cao nhất của set nằm trong preferredSets
+  partialPreferred: 3, // mới đạt mốc 2pc của set preferred [2,5]
 }
-const MAX_POSSIBLE_SET_BONUS = SET_BONUS.preferred5pc + SET_BONUS.preferred2pc
+
+/** Điểm ưu tiên main stat đúng mainStatPrefs (tie-break Crit vs ATK% — bù diminishing returns) */
+export const PREF_MAIN_BONUS = 3
 
 interface Candidate {
   scored: ScoredEcho
-  /** Điểm dùng để tối ưu (đã phạt main stat lệch) */
+  /** Điểm dùng để tối ưu = totalScore (substat + main value) + ưu tiên main đúng meta */
   value: number
   er: number
   /** Khóa đếm mảnh set: echo trùng tên không đếm 2 lần */
   nameKey: string
 }
 
-function setBonusScore(chosen: Candidate[], profile: CharacterProfile): { bonus: number; counts: Record<string, number> } {
+/** Điểm STAT THẬT của các tier bonus đã đạt mảnh (cộng dồn 2pc + 5pc), thang 0–100 */
+export function setTierScore(def: SonataSet, n: number, profile: CharacterProfile, theoMax: number): number {
+  let raw = 0
+  for (const tier of def.bonuses) {
+    if (n < tier.pieces) continue
+    for (const st of tier.stats) raw += weightFor(profile, st.stat) * ((st.value * st.uptime) / refScale(st.stat))
+  }
+  return (raw / theoMax) * 100
+}
+
+function setBonusScore(
+  chosen: Candidate[],
+  profile: CharacterProfile,
+  theoMax: number,
+): { bonus: number; counts: Record<string, number> } {
   const uniqueNames: Record<string, Set<string>> = {}
   for (const c of chosen) {
     const set = c.scored.echo.set
@@ -54,17 +76,40 @@ function setBonusScore(chosen: Candidate[], profile: CharacterProfile): { bonus:
     counts[setId] = n
     const def = SONATA_BY_ID[setId]
     if (!def) continue
-    const preferred = profile.preferredSets.includes(setId)
-    if (preferred) {
-      if (def.pieces.includes(5) && n >= 5) bonus += SET_BONUS.preferred5pc
-      else if (def.pieces.includes(3) && n >= 3) bonus += SET_BONUS.preferred3pc
-      else if (def.pieces.includes(2) && n >= 2) bonus += SET_BONUS.preferred2pc
-      else if (def.pieces.includes(1) && n >= 1) bonus += SET_BONUS.preferred1pc
-    } else if (def.element === profile.element && def.pieces.includes(2) && n >= 2) {
-      bonus += SET_BONUS.elemental2pc
+    bonus += setTierScore(def, n, profile, theoMax)
+    if (profile.preferredSets.includes(setId)) {
+      const fullAt = Math.max(...def.pieces)
+      const minAt = Math.min(...def.pieces)
+      if (n >= fullAt) bonus += SET_PREF_BONUS.fullPreferred
+      else if (n >= minAt) bonus += SET_PREF_BONUS.partialPreferred
     }
   }
   return { bonus, counts }
+}
+
+/** Mọi cách chia 5 mảnh cho các set (partition của 5) — bound phải xét CẢ tổ hợp 3+ set
+ *  (vd 2+2+1 qua set 1-mảnh), không chỉ top-2 set như bản cũ (prune nhầm nghiệm tối ưu). */
+const PIECE_PARTITIONS: number[][] = [[5], [4, 1], [3, 2], [3, 1, 1], [2, 2, 1], [2, 1, 1, 1], [1, 1, 1, 1, 1]]
+
+/** Chặn trên lạc quan cho tổng điểm set: với mỗi partition của 5 mảnh, mỗi phần lấy set
+ *  điểm cao nhất tại mốc mảnh đó (kèm điểm preferred) — cho phép trùng set giữa các phần
+ *  (bound chỉ LỎNG hơn, vẫn admissible nên prune an toàn). */
+function maxPossibleSetBonus(profile: CharacterProfile, theoMax: number): number {
+  const bestAt = [0, 0, 0, 0, 0, 0] // bestAt[k] = điểm set tốt nhất khi đủ k mảnh
+  for (const def of SONATA_SETS) {
+    const fullAt = Math.max(...def.pieces)
+    const minAt = Math.min(...def.pieces)
+    const preferred = profile.preferredSets.includes(def.id)
+    for (let k = 1; k <= 5; k++) {
+      let v = setTierScore(def, k, profile, theoMax)
+      if (preferred) {
+        if (k >= fullAt) v += SET_PREF_BONUS.fullPreferred
+        else if (k >= minAt) v += SET_PREF_BONUS.partialPreferred
+      }
+      if (v > bestAt[k]) bestAt[k] = v
+    }
+  }
+  return Math.max(...PIECE_PARTITIONS.map((p) => p.reduce((s, k) => s + bestAt[k], 0)))
 }
 
 /** Chiết khấu ER vượt mục tiêu: phần thừa xem như roll vô dụng, trừ lại điểm đã cộng */
@@ -80,19 +125,35 @@ function erPenalty(chosen: Candidate[], profile: CharacterProfile): { penalty: n
 }
 
 export function solveBest5(echoes: Echo[], profile: CharacterProfile): LoadoutResult | null {
-  // Pool theo cost, chấm điểm + phạt main stat lệch, cắt top-K
+  const theoMax = theoreticalMax(profile)
+  const maxSetBonus = maxPossibleSetBonus(profile, theoMax)
+  // Pool theo cost: điểm = substat + GIÁ TRỊ main stat + ưu tiên main đúng meta, cắt top-K
   const pools: Record<number, Candidate[]> = { 1: [], 3: [], 4: [] }
   for (const e of echoes) {
     const scored = scoreEcho(e, profile)
+    const prefs = profile.mainStatPrefs[String(e.cost) as '1' | '3' | '4'] ?? []
     pools[e.cost]?.push({
       scored,
-      // fitLevel phạt main stat lệch: chuẩn ×1, tạm dùng ×0.6, sai ×0.25
-      value: scored.score * scored.fitLevel,
+      value: scored.totalScore + (prefs.includes(e.mainStat) ? PREF_MAIN_BONUS : 0),
       er: echoER(e),
       nameKey: `${e.set}::${e.name?.trim().toLowerCase() || e.id}`,
     })
   }
-  for (const k of [1, 3, 4]) pools[k].sort((a, b) => b.value - a.value).splice(TOP_K)
+  // Cắt top-K theo value, nhưng GIỮ THÊM tối đa 5 ứng viên/preferred set mỗi pool —
+  // để không vuột 5pc chỉ vì vài mảnh set nằm ngoài top-K điểm cá nhân.
+  for (const k of [1, 3, 4]) {
+    const arr = pools[k].sort((a, b) => b.value - a.value)
+    const kept = new Set(arr.slice(0, TOP_K))
+    for (const setId of profile.preferredSets) {
+      let have = 0
+      for (const c of arr) {
+        if (c.scored.echo.set !== setId || have >= 5) continue
+        kept.add(c)
+        have++
+      }
+    }
+    pools[k] = arr.filter((c) => kept.has(c))
+  }
 
   let best: LoadoutResult | null = null
 
@@ -113,12 +174,12 @@ export function solveBest5(echoes: Echo[], profile: CharacterProfile): LoadoutRe
         const from = g === gi ? taken : 0
         for (let i = 0; i < groups[g].n - from && i < pool.length; i++) sum += pool[i].value
       }
-      return sum + MAX_POSSIBLE_SET_BONUS
+      return sum + maxSetBonus
     }
 
     const dfs = (gi: number, taken: number, startIdx: number, sumValue: number) => {
       if (gi === groups.length) {
-        const { bonus, counts } = setBonusScore(chosen, profile)
+        const { bonus, counts } = setBonusScore(chosen, profile, theoMax)
         const { penalty, erGained } = erPenalty(chosen, profile)
         const total = sumValue + bonus - penalty
         // Điểm bằng nhau → ưu tiên bộ nhiều slot (slot thừa vẫn có main stat + dòng phụ cố định)

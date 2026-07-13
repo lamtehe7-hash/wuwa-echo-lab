@@ -14,6 +14,35 @@ export type MainStatKey =
 
 export type EchoCost = 1 | 3 | 4
 
+/**
+ * Key trọng số của nhân vật = substat + 2 stat chỉ tồn tại ở main stat / set bonus:
+ * - 'elementDmg': Element DMG% ĐÚNG nguyên tố nhân vật (main cost-3, 2pc/5pc set)
+ * - 'healingBonus': Healing Bonus% (main cost-4, 2pc set healer)
+ */
+export type WeightKey = SubstatKey | 'elementDmg' | 'healingBonus'
+
+/**
+ * Stat mà set bonus có thể cộng. 'elementDmg' = Element DMG đúng nguyên tố NGƯỜI ĐEO
+ * (dùng cho bonus "mọi Attribute DMG" như Tidebreaking Courage); các key element cụ thể
+ * (glacioDmg…) chỉ có giá trị khi nguyên tố nhân vật khớp.
+ */
+export type BonusStatKey = SubstatKey | MainStatKey | 'elementDmg'
+
+/** Một dòng stat của set bonus, kèm ước lượng uptime hiệu dụng trong combat */
+export interface SetBonusStat {
+  stat: BonusStatKey
+  value: number
+  /** 0–1: 1 = vô điều kiện; <1 = có điều kiện kích hoạt (quy ước ở data/sonata.ts) */
+  uptime: number
+}
+
+/** Bonus tại một mốc mảnh (2pc/5pc/3pc/1pc). Đủ 5 mảnh thì nhận CẢ tier 2pc lẫn 5pc. */
+export interface SetBonusTier {
+  pieces: number
+  /** Phần stat LƯỢNG HOÁ ĐƯỢC cho chính người đeo; hiệu ứng team/không-stat để trong `short` */
+  stats: SetBonusStat[]
+}
+
 export interface Substat {
   stat: SubstatKey
   value: number
@@ -34,8 +63,10 @@ export interface Echo {
 export interface SonataSet {
   id: string
   name: string
-  /** Số mảnh có bonus: [2,5] | [3] | [1] */
+  /** Số mảnh có bonus: [2,5] | [3] | [1] (suy từ `bonuses`) */
   pieces: number[]
+  /** Bonus structured theo mốc mảnh — solver cộng stat thật vào điểm */
+  bonuses: SetBonusTier[]
   element?: Element
   short: string // mô tả ngắn 2pc/5pc
   version: string
@@ -46,8 +77,16 @@ export interface CharacterProfile {
   name: string
   element: Element
   archetype: string
-  /** Trọng số substat 0–1 (1 roll max của stat này đáng giá bằng w điểm chuẩn) */
-  weights: Partial<Record<SubstatKey, number>>
+  /** Trọng số stat 0–1 (1 "roll chuẩn" của stat này đáng giá w điểm) — gồm cả elementDmg/healingBonus */
+  weights: Partial<Record<WeightKey, number>>
+  /** Metadata để dễ update data (không ảnh hưởng engine) */
+  rarity?: 4 | 5
+  /** Bản ra mắt (vd '3.5') */
+  version?: string
+  /** false = preset research web chưa kiểm chứng datamine/cộng đồng */
+  verified?: boolean
+  /** Ghi chú nguồn/độ tin cậy cho người cập nhật data */
+  notes?: string
   /** Tổng ER% mục tiêu (gồm 100 gốc); solver tính ER theo "ngân sách", đạt rồi thì ER thừa = 0 */
   erTarget?: number
   /** Main stat chấp nhận được theo cost (phần tử đầu = ưu tiên nhất) */
@@ -60,9 +99,13 @@ export interface ScoredEcho {
   echo: Echo
   /** Điểm substat thô (tổng w × rollEff) */
   raw: number
-  /** Điểm chuẩn hoá 0–100 so với echo lý thuyết hoàn hảo */
+  /** Điểm substat chuẩn hoá 0–100 so với echo 5-substat hoàn hảo */
   score: number
-  /** Độ hợp main stat: 1 = chuẩn meta, 0.6 = tạm dùng, 0.25 = sai */
+  /** Điểm GIÁ TRỊ main stat (cùng thang chuẩn hoá — giả định +25) */
+  mainScore: number
+  /** score + mainScore — dùng để xếp hạng/tối ưu (có thể >100) */
+  totalScore: number
+  /** Độ hợp main stat: 1 = chuẩn meta, 0.6 = tạm dùng, 0.25 = sai (hiển thị/tư vấn tune) */
   fitLevel: number
   mainStatFit: boolean
   breakdown: { stat: SubstatKey; value: number; eff: number; weighted: number }[]

@@ -90,18 +90,26 @@ QQ HP 2280
     expect(d.substats).toHaveLength(5)
   })
 
-  it('digit cost không hợp lệ (misread "COST 2") → cost undefined, không đoán bừa', () => {
-    const d = parseEchoText(`Smolder +25
+  it('digit cost không hợp lệ (misread "COST 2") + tên không có trong DB → cost undefined, không đoán bừa', () => {
+    const d = parseEchoText(`Zzz Unknown Fake +25
 COST 2
 ATK 18.0%`)
     expect(d.cost).toBeUndefined()
   })
 
-  it('không có dòng COST → cost undefined (caller tự fallback)', () => {
+  it('không có dòng COST nhưng tên khớp echo DB → cost lấy từ DB (Smolder = 1)', () => {
     const d = parseEchoText(`Smolder +25
 ATK 18.0%
 + Crit. Rate 6.3%`)
-    expect(d.cost).toBeUndefined()
+    expect(d.cost).toBe(1)
+  })
+
+  it('dòng COST mâu thuẫn DB → giữ cost từ dòng COST + cảnh báo costMismatch', () => {
+    const d = parseEchoText(`Smolder +25
+COST 4
+ATK 18.0%`)
+    expect(d.cost).toBe(4)
+    expect(d.warnings.some((w) => w.key === 'ocrParse.costMismatch')).toBe(true)
   })
 
   it('ảnh chứa mục Sonata Effect → tự nhận set (fuzzy, chịu được lỗi OCR nhỏ)', () => {
@@ -122,10 +130,53 @@ Sunsinking Eclipse`)
     expect(d.set).toBe('havoc-eclipse')
   })
 
-  it('không có mục Sonata Effect → set undefined (user chọn tay)', () => {
+  it('không có mục Sonata Effect + echo thuộc NHIỀU set → set undefined, trả setCandidates', () => {
+    const d = parseEchoText(`Forbidden Bastion +25
+Havoc DMG Bonus 30.0%
++ Crit. Rate 6.3%`)
+    expect(d.set).toBeUndefined()
+    expect(d.setCandidates).toEqual(['song-of-feathered-trace', 'heart-of-evils-purge', 'lamp-of-nether-road'])
+  })
+
+  it('echo chỉ thuộc 1 set trong DB → tự điền set dù ảnh không có mục Sonata Effect', () => {
     const d = parseEchoText(`Smolder +25
 ATK 18.0%
 + Crit. Rate 6.3%`)
-    expect(d.set).toBeUndefined()
+    expect(d.set).toBe('song-of-feathered-trace')
+  })
+
+  it('tên OCR mất dấu ":" ("Fog Lionarch Body") → chuẩn hoá theo DB thành "Fog Lionarch: Body"', () => {
+    const d = parseEchoText(`Fog Lionarch Body +25
+ATK 18.0%`)
+    expect(d.name).toBe('Fog Lionarch: Body')
+    expect(d.cost).toBe(1)
+  })
+
+  it('OCR dính digit vào nhãn cost ("COST3") → vẫn đọc được cost, không cảnh báo dòng lạ (regression)', () => {
+    const d = parseEchoText(`Zzz Unknown Fake +25
+COST3 % 8
+ATK 18.0%`)
+    expect(d.cost).toBe(3)
+    expect(d.warnings.some((w) => w.key === 'ocrParse.unmatched')).toBe(false)
+  })
+
+  it('dấu phẩy ngăn cách nghìn ("QQ HP 2,280") → hiểu là 2280 và bỏ như dòng stat cố định (regression)', () => {
+    // Bug cũ: "2,280" đọc thành 2.28 → lọt qua bộ lọc stat cố định, snap thành substat hp 320 ảo
+    // và đè mất dòng "+ HP 430" thật (dedup giữ dòng đầu)
+    const d = parseEchoText(`Smolder +25
+COST 1 % 8
+NX ATK 18.0%
+QQ HP 2,280
++ Crit. DMG 17.4%
++ HP 430`)
+    expect(d.mainStat).toBe('atkPct')
+    expect(d.substats).toContainEqual({ stat: 'hp', value: 430 }) // dòng HP thật còn nguyên
+    expect(d.substats.some((s) => s.stat === 'hp' && s.value !== 430)).toBe(false)
+  })
+
+  it('dấu phẩy thập phân ("Crit. Rate 9,3") vẫn hiểu là 9.3 (không hồi quy)', () => {
+    const d = parseEchoText(`Havoc DMG Bonus 30.0%
++ Crit. Rate 9,3`)
+    expect(d.substats).toContainEqual({ stat: 'critRate', value: 9.3 })
   })
 })

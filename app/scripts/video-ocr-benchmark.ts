@@ -45,7 +45,7 @@ for (const f of files) {
   let d = parseEchoText(text)
   // Set từ icon tròn cạnh "+25" (frame MÀU) khi text không chứa mục Sonata Effect
   if (!d.set) {
-    const match = detectSetFromImage(colorImg, words)
+    const match = detectSetFromImage(colorImg, words, d.setCandidates)
     if (match) d = { ...d, set: match.setId }
   }
   drafts.push(d)

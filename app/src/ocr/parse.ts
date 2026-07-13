@@ -1,4 +1,5 @@
 import type { EchoCost, LocMessage, MainStatKey, SubstatKey } from '../types'
+import { ECHOES, type EchoInfo } from '../data/echoes'
 import { SONATA_SETS } from '../data/sonata'
 import { SUBSTATS } from '../data/substats'
 
@@ -20,10 +21,12 @@ export interface EchoDraft {
   level?: number
   /** Cost đọc từ dòng "COST n" của panel (đáng tin hơn suy từ main stat — ATK%/HP%/DEF% tồn tại ở mọi cost) */
   cost?: EchoCost
-  /** Tên echo đọc từ dòng "Tên +25" (nếu có) */
+  /** Tên echo đọc từ dòng "Tên +25"; nếu khớp data/echoes.ts thì đã được chuẩn hoá theo DB */
   name?: string
   /** Id sonata set — chỉ có khi ảnh/frame chứa mục Sonata Effect (fuzzy match tên set) */
   set?: string
+  /** Các set khả dĩ theo tên echo (tra data/echoes.ts) — dùng thu hẹp pool so icon */
+  setCandidates?: string[]
   substats: { stat: SubstatKey; value: number }[]
   warnings: LocMessage[]
   /** 0..1 — ước lượng thô mức tin cậy của kết quả nhận diện */
@@ -162,7 +165,11 @@ function extractTrailingValue(line: string): { label: string; value: number; isP
   const m = line.match(/(-?\d+(?:[.,]\d+)?)([^\d\n]*)$/)
   if (!m || m.index === undefined) return null
   const label = line.slice(0, m.index)
-  const value = Number(m[1].replace(',', '.'))
+  // Dấu phẩy + ĐÚNG 3 chữ số = ngăn cách nghìn ("HP 2,280" → 2280 — để bộ lọc dòng stat cố định
+  // bắt được); còn lại là dấu thập phân misread của "." ("10,9" → 10.9). Giá trị % trong game
+  // chỉ có 1 chữ số thập phân nên không nhầm hai trường hợp.
+  const raw = m[1]
+  const value = Number(/,\d{3}$/.test(raw) ? raw.replace(',', '') : raw.replace(',', '.'))
   if (Number.isNaN(value)) return null
   return { label, value, isPercent: /[%％]/.test(m[2]) }
 }
@@ -184,10 +191,11 @@ function extractLevel(text: string): number | undefined {
 /**
  * Cost từ dòng "COST n" của panel. Lấy chữ số ĐẦU TIÊN sau "cost" (không phải số cuối dòng —
  * sau digit hay có rác OCR từ icon rarity, vd "COST 3 % 8"). Chỉ nhận giá trị hợp lệ 1/3/4.
+ * Không dùng \b sau "cost": OCR có thể dính số vào nhãn ("COST3") làm \b fail.
  */
 function extractCost(lines: string[]): EchoCost | undefined {
   for (const line of lines) {
-    const m = line.match(/^cost\b\D*(\d)/i)
+    const m = line.match(/^cost\D*(\d)/i)
     if (!m) continue
     const n = Number(m[1])
     if (n === 1 || n === 3 || n === 4) return n
@@ -203,6 +211,25 @@ function extractName(lines: string[]): string | undefined {
     const cleaned = m[1].replace(/[^A-Za-z' -]/g, ' ').replace(/\s{2,}/g, ' ').trim()
     if (cleaned.length >= 3) return cleaned
   }
+  return undefined
+}
+
+/**
+ * Tra echo DB (data/echoes.ts) theo tên OCR: exact theo tên chuẩn hoá trước, fallback fuzzy
+ * (Levenshtein) chịu lỗi OCR nhỏ. Trả undefined khi không đủ gần — đừng đoán bừa.
+ */
+const ECHO_NORM: { key: string; info: EchoInfo }[] = ECHOES.map((e) => ({ key: normalizeLabel(e.name), info: e }))
+
+export function matchEchoInfo(name: string): EchoInfo | undefined {
+  const key = normalizeLabel(name)
+  if (key.length < 3) return undefined
+  let best: { info: EchoInfo; dist: number } | null = null
+  for (const { key: k, info } of ECHO_NORM) {
+    const dist = k === key ? 0 : levenshtein(key, k)
+    if (!best || dist < best.dist) best = { info, dist }
+    if (dist === 0) break
+  }
+  if (best && best.dist <= matchThreshold(key.length)) return best.info
   return undefined
 }
 
@@ -264,9 +291,18 @@ export function parseEchoText(text: string): EchoDraft {
     .filter((l) => l.length > 0)
 
   const level = extractLevel(text)
-  const cost = extractCost(lines)
-  const name = extractName(lines)
-  const sonataSet = matchSonataSet(lines)
+  const ocrCost = extractCost(lines)
+  const rawName = extractName(lines)
+  // Tra echo DB theo tên: chuẩn hoá tên (sửa lỗi OCR nhỏ, khôi phục ':' bị strip),
+  // fallback cost khi thiếu dòng COST, gợi ý set khi echo chỉ thuộc 1 set
+  const info = rawName ? matchEchoInfo(rawName) : undefined
+  const name = info?.name ?? rawName
+  const cost = ocrCost ?? info?.cost
+  if (ocrCost !== undefined && info && info.cost !== ocrCost) {
+    warnings.push({ key: 'ocrParse.costMismatch', params: { name: info.name, ocr: ocrCost, db: info.cost } })
+  }
+  const sonataSet = matchSonataSet(lines) ?? (info && info.sets.length === 1 ? info.sets[0] : undefined)
+  const setCandidates = info?.sets
   const candidates: Candidate[] = []
   let unmatchedNumericLines = 0
 
@@ -275,7 +311,7 @@ export function parseEchoText(text: string): EchoDraft {
     if (!extracted) return
     // Dòng tên ("Tên +25") và dòng "COST n" là cấu trúc panel đã biết (đã dùng cho level/tên) —
     // không đếm vào cảnh báo "dòng số không khớp nhãn"
-    if (/\+\s*\d{1,2}\s*$/.test(line) || /^cost\b/i.test(line)) return
+    if (/\+\s*\d{1,2}\s*$/.test(line) || /^cost(\b|\d)/i.test(line)) return
     const family = findFamilyNoisy(extracted.label)
     if (!family) {
       unmatchedNumericLines++
@@ -364,7 +400,7 @@ export function parseEchoText(text: string): EchoDraft {
   })
 
   if (!mainStat && snapped.length === 0) {
-    return { mainStat: undefined, level, cost, name, set: sonataSet, substats: [], warnings: [{ key: 'ocrParse.noContent' }], confidence: 0 }
+    return { mainStat: undefined, level, cost, name, set: sonataSet, setCandidates, substats: [], warnings: [{ key: 'ocrParse.noContent' }], confidence: 0 }
   }
 
   let confidence = 0
@@ -374,5 +410,5 @@ export function parseEchoText(text: string): EchoDraft {
   if (warnings.length === 0) confidence += 0.1
   confidence = Math.max(0, Math.min(1, confidence))
 
-  return { mainStat, level, cost, name, set: sonataSet, substats: snapped, warnings, confidence }
+  return { mainStat, level, cost, name, set: sonataSet, setCandidates, substats: snapped, warnings, confidence }
 }

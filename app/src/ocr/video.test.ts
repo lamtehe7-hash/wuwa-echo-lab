@@ -122,6 +122,37 @@ describe('mergeDrafts: gộp bản đọc nhiều frame về 1 echo', () => {
     expect(merged[0].draft.cost).toBe(1)
   })
 
+  it('bản KHÔNG main nhưng NHIỀU substat hơn → mở rộng cụm, không mất dữ liệu (regression)', () => {
+    // Bug cũ: bản main+3subs làm đại diện, bản no-main+5subs (superset) bị vứt → echo còn 3 dòng
+    const headerOnly = draft({ mainStat: 'critRate', substats: SUBS5.slice(0, 3), confidence: 0.9 })
+    const bodyOnly = draft({ mainStat: undefined, substats: SUBS5, confidence: 0.9 })
+    const merged = mergeDrafts([headerOnly, bodyOnly])
+    expect(merged).toHaveLength(1)
+    expect(merged[0].draft.substats).toHaveLength(5) // đại diện nâng cấp thành bản 5 dòng
+    expect(merged[0].draft.mainStat).toBe('critRate') // main giữ từ bản header
+    expect(merged[0].frames).toBe(2)
+  })
+
+  it('đại diện thiếu level được backfill khi gộp → frame level KHÁC sau đó không bị nuốt (regression)', () => {
+    // Bug cũ: đại diện level undefined → guard levelConflict bị vô hiệu, echo +25 và +20 gộp làm 1
+    const d1 = draft({ level: 25, substats: SUBS5, confidence: 0.5 })
+    const d2 = draft({ level: undefined, substats: SUBS5, confidence: 0.9 })
+    const d3 = draft({ level: 20, substats: SUBS5, confidence: 0.5 })
+    const merged = mergeDrafts([d1, d2, d3])
+    expect(merged).toHaveLength(2) // +25 (kèm d2) và +20 tách riêng
+    const levels = merged.map((m) => m.draft.level).sort()
+    expect(levels).toEqual([20, 25])
+  })
+
+  it('bản đại diện thiếu setCandidates → lấy từ frame khác trong cụm (backfill)', () => {
+    const merged = mergeDrafts([
+      draft({ substats: SUBS5 }),
+      draft({ substats: SUBS5, setCandidates: ['moonlit-clouds'], confidence: 0.7 }),
+    ])
+    expect(merged).toHaveLength(1)
+    expect(merged[0].draft.setCandidates).toEqual(['moonlit-clouds'])
+  })
+
   it('draft không main + không gộp được vào đâu → loại (frame rác)', () => {
     const merged = mergeDrafts([
       draft({ mainStat: undefined, substats: [{ stat: 'defPct', value: 8.1 }] }),

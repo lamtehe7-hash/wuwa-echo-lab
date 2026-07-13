@@ -85,9 +85,19 @@ export default function OcrImport({ onAdd }: Props) {
   const [stepSec, setStepSec] = useState(0.5)
   const [videoSummary, setVideoSummary] = useState<{ added: number; skipped: number } | null>(null)
   const cancelRef = useRef(false)
+  const mountedRef = useRef(true)
+  /** Token chống race: chọn video mới trong lúc video cũ còn đang load → bỏ kết quả load cũ */
+  const pickTokenRef = useRef(0)
 
-  // Đóng panel → nhả worker tesseract (WASM chiếm bộ nhớ đáng kể; lần mở sau khởi tạo lại lười)
-  useEffect(() => () => { void terminateOcrEngine() }, [])
+  // Đóng panel → nhả worker tesseract (WASM chiếm bộ nhớ đáng kể; lần mở sau khởi tạo lại lười).
+  // mountedRef để vòng lặp OCR đang chạy DỪNG lại thay vì tạo worker mới mồ côi sau unmount.
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      void terminateOcrEngine()
+    }
+  }, [])
   // Đổi/đóng video → nhả objectURL của video cũ
   useEffect(() => () => { if (video) releaseVideo(video.el) }, [video])
 
@@ -100,6 +110,7 @@ export default function OcrImport({ onAdd }: Props) {
     setFiles([])
     if (inputRef.current) inputRef.current.value = ''
     for (let i = 0; i < queue.length; i++) {
+      if (!mountedRef.current) return // panel đã đóng — đừng OCR tiếp / tạo lại worker
       const file = queue[i]
       setProgress({ file: file.name, index: i, total: queue.length, p: { status: t('ocr.starting'), progress: 0 } })
       try {
@@ -112,7 +123,7 @@ export default function OcrImport({ onAdd }: Props) {
           // Set chưa nhận được từ text → thử icon tròn cạnh "+25" (cần canvas MÀU, trước binarize)
           if (!draft.set) {
             const colorCanvas = await fileToPreprocessedCanvas(file, { scale: 'auto', binarize: false })
-            const match = detectSetFromCanvas(colorCanvas, words)
+            const match = detectSetFromCanvas(colorCanvas, words, draft.setCandidates)
             if (match) draft = { ...draft, set: match.setId }
           }
         } else {
@@ -133,13 +144,23 @@ export default function OcrImport({ onAdd }: Props) {
   }
 
   const pickVideo = async (file: File) => {
+    const token = ++pickTokenRef.current
     setVideoSummary(null)
     setCrop(null)
     try {
       const el = await loadVideo(file)
+      if (token !== pickTokenRef.current) {
+        releaseVideo(el) // user đã chọn video khác trong lúc video này còn đang load
+        return
+      }
       await seekFrame(el, Math.min(0.1, el.duration / 2))
+      if (token !== pickTokenRef.current) {
+        releaseVideo(el)
+        return
+      }
       setVideo({ el, name: file.name })
     } catch {
+      if (token !== pickTokenRef.current) return
       setVideo(null)
       alert(t('ocr.videoLoadError'))
     }
@@ -154,7 +175,7 @@ export default function OcrImport({ onAdd }: Props) {
     const drafts: EchoDraft[] = []
     let scanned = 0
     for (let i = 0; i < times.length; i++) {
-      if (cancelRef.current) break
+      if (cancelRef.current || !mountedRef.current) break
       const label = `${video.name} — ${i + 1}/${times.length}`
       try {
         await seekFrame(video.el, times[i])
@@ -166,7 +187,7 @@ export default function OcrImport({ onAdd }: Props) {
           const colorCanvas = preprocessOn
             ? captureFrame(video.el, { crop: crop ?? undefined, scale: 'auto', binarize: false })
             : ocrCanvas
-          const match = detectSetFromCanvas(colorCanvas, words)
+          const match = detectSetFromCanvas(colorCanvas, words, draft.setCandidates)
           if (match) draft = { ...draft, set: match.setId }
         }
         drafts.push(draft)

@@ -40,6 +40,34 @@ export async function recognizeImage(image: File | Blob | HTMLCanvasElement, onP
   }
 }
 
+export interface OcrWord {
+  text: string
+  bbox: { x0: number; y0: number; x1: number; y1: number }
+}
+
+/** OCR kèm bbox từng từ (toạ độ pixel của ảnh đưa vào) — dùng định vị icon set cạnh "+25" */
+export async function recognizeImageWithBoxes(
+  image: File | Blob | HTMLCanvasElement,
+  onProgress?: (p: OcrProgress) => void,
+): Promise<{ text: string; words: OcrWord[] }> {
+  const worker = await getWorker()
+  currentOnProgress = onProgress ?? null
+  try {
+    const { data } = await worker.recognize(image, {}, { text: true, blocks: true })
+    const words: OcrWord[] = []
+    for (const block of data.blocks ?? []) {
+      for (const paragraph of block.paragraphs) {
+        for (const line of paragraph.lines) {
+          for (const w of line.words) words.push({ text: w.text, bbox: w.bbox })
+        }
+      }
+    }
+    return { text: data.text ?? '', words }
+  } finally {
+    currentOnProgress = null
+  }
+}
+
 /** Giải phóng worker (gọi khi đóng panel OCR để nhả bộ nhớ, tuỳ chọn) */
 export async function terminateOcrEngine(): Promise<void> {
   if (!workerPromise) return

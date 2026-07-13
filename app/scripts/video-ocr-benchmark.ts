@@ -9,8 +9,9 @@ import { join } from 'node:path'
 import { PNG } from 'pngjs'
 import { binarize } from '../src/ocr/preprocess'
 import { parseEchoText, type EchoDraft } from '../src/ocr/parse'
+import { detectSetFromImage } from '../src/ocr/seticon'
 import { mergeDrafts } from '../src/ocr/video'
-import { recognizeImage, terminateOcrEngine } from '../src/ocr/engine'
+import { recognizeImageWithBoxes, terminateOcrEngine } from '../src/ocr/engine'
 
 const dir = process.argv[2]
 const rawMode = process.argv.includes('--raw')
@@ -29,21 +30,27 @@ const drafts: EchoDraft[] = []
 
 for (const f of files) {
   const png = PNG.sync.read(readFileSync(join(dir, f)))
+  const colorImg = { data: new Uint8ClampedArray(png.data), width: png.width, height: png.height }
   let buf: Buffer
   if (rawMode) {
     buf = PNG.sync.write(png)
   } else {
-    const bin = binarize({ data: new Uint8ClampedArray(png.data), width: png.width, height: png.height })
+    const bin = binarize(colorImg)
     const out = new PNG({ width: png.width, height: png.height })
     out.data = Buffer.from(bin.data)
     buf = PNG.sync.write(out)
   }
   // Node: worker.recognize nhận Buffer (type khai báo của wrapper chỉ liệt kê kiểu browser)
-  const text = await recognizeImage(buf as never)
-  const d = parseEchoText(text)
+  const { text, words } = await recognizeImageWithBoxes(buf as never)
+  let d = parseEchoText(text)
+  // Set từ icon tròn cạnh "+25" (frame MÀU) khi text không chứa mục Sonata Effect
+  if (!d.set) {
+    const match = detectSetFromImage(colorImg, words)
+    if (match) d = { ...d, set: match.setId }
+  }
   drafts.push(d)
   console.log(
-    `${f}: name="${d.name ?? '?'}" main=${d.mainStat ?? '?'} lv=${d.level ?? '?'} subs=[${d.substats.map(fmtSub).join(' ')}] conf=${d.confidence.toFixed(2)} warn=${d.warnings.length}`,
+    `${f}: name="${d.name ?? '?'}" set=${d.set ?? '?'} main=${d.mainStat ?? '?'} lv=${d.level ?? '?'} subs=[${d.substats.map(fmtSub).join(' ')}] conf=${d.confidence.toFixed(2)} warn=${d.warnings.length}`,
   )
 }
 

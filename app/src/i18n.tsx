@@ -94,8 +94,8 @@ const DICT: Record<string, Entry> = {
   // ── OcrImport ──
   'ocr.title': { vi: '📷 Import từ ảnh (beta)', en: '📷 Import from image (beta)' },
   'ocr.help': {
-    vi: 'Beta — hoạt động tốt nhất với screenshot panel echo tiếng Anh, độ phân giải 1920×1080. Ảnh chứa cả mục "Sonata Effect" thì tool tự nhận set + tên echo. Luôn kiểm tra lại kết quả trước khi lưu — OCR có thể đọc sai số/nhãn.',
-    en: 'Beta — works best with English echo-panel screenshots at 1920×1080. If the shot includes the "Sonata Effect" section the set + echo name are detected automatically. Always double-check results before saving — OCR can misread numbers/labels.',
+    vi: 'Beta — hoạt động tốt nhất với screenshot panel echo tiếng Anh, độ phân giải 1920×1080. Tool tự nhận tên echo (dòng "+25") và sonata set (icon tròn cạnh "+25", hoặc chữ trong mục "Sonata Effect" nếu có trong ảnh). Luôn kiểm tra lại kết quả trước khi lưu — OCR có thể đọc sai.',
+    en: 'Beta — works best with English echo-panel screenshots at 1920×1080. The echo name ("+25" line) and sonata set (round icon next to "+25", or the "Sonata Effect" text when visible) are detected automatically. Always double-check results before saving — OCR can misread.',
   },
   'ocr.run': { vi: 'Chạy OCR ({n} ảnh)', en: 'Run OCR ({n} images)' },
   'ocr.starting': { vi: 'đang khởi động…', en: 'starting…' },
@@ -106,7 +106,7 @@ const DICT: Record<string, Entry> = {
     vi: 'Quay màn hình (Win+G/OBS…) trong lúc mở panel chi tiết echo và bấm lần lượt qua từng echo — DỪNG ~2s mỗi con (lâu hơn "bước giữa 2 frame" thì không bị sót), rồi chọn file video. Tool KHÔNG tự điều khiển/chụp game — bạn tự quay.',
     en: 'Record your screen (Win+G/OBS…) while the echo detail panel is open and click through each echo — PAUSE ~2s on each (longer than the frame step so none are missed), then pick the video file. The tool does NOT control or capture the game — you record it yourself.',
   },
-  'ocr.videoCropHint': { vi: 'Kéo chuột trên khung hình để khoanh vùng panel echo (chọn đúng vùng chữ → nhanh + chính xác hơn nhiều). Bỏ trống = cả màn hình. Khoanh cả mục "Sonata Effect" (dưới Echo Skill) thì tool tự nhận set.', en: 'Drag on the frame to select the echo panel region (a tight region is much faster + more accurate). Empty = full frame. Include the "Sonata Effect" section (below Echo Skill) and the set is detected automatically.' },
+  'ocr.videoCropHint': { vi: 'Kéo chuột trên khung hình để khoanh vùng panel echo (chọn đúng vùng chữ → nhanh + chính xác hơn nhiều). Bỏ trống = cả màn hình. Nhớ khoanh CẢ icon tròn cạnh "+25" — tool nhận sonata set từ icon đó.', en: 'Drag on the frame to select the echo panel region (a tight region is much faster + more accurate). Empty = full frame. Make sure the round icon next to "+25" is inside — the sonata set is detected from it.' },
   'ocr.videoCropClear': { vi: 'Xoá vùng chọn', en: 'Clear selection' },
   'ocr.videoStep': { vi: 'Bước giữa 2 frame (giây)', en: 'Step between frames (s)' },
   'ocr.videoRun': { vi: 'Quét video (~{n} frame)', en: 'Scan video (~{n} frames)' },

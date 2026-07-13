@@ -3,9 +3,10 @@ import type { Echo, EchoCost, LocMessage, MainStatKey, Substat, SubstatKey } fro
 import { MAINSTATS } from '../data/mainstats'
 import { SONATA_SETS } from '../data/sonata'
 import { MAX_SUBSTATS, SUBSTATS, SUBSTAT_KEYS } from '../data/substats'
-import { recognizeImage, terminateOcrEngine, type OcrProgress } from '../ocr/engine'
+import { recognizeImage, recognizeImageWithBoxes, terminateOcrEngine, type OcrProgress } from '../ocr/engine'
 import { parseEchoText, type EchoDraft } from '../ocr/parse'
 import { fileToPreprocessedCanvas, normalizeRect, type Rect } from '../ocr/preprocess'
+import { detectSetFromCanvas } from '../ocr/seticon'
 import { captureFrame, frameTimestamps, loadVideo, mergeDrafts, releaseVideo, seekFrame } from '../ocr/video'
 import { newId } from '../store'
 import { useT, useTMessage } from '../i18n'
@@ -94,9 +95,21 @@ export default function OcrImport({ onAdd }: Props) {
       const file = queue[i]
       setProgress({ file: file.name, index: i, total: queue.length, p: { status: t('ocr.starting'), progress: 0 } })
       try {
-        const src = preprocessOn ? await fileToPreprocessedCanvas(file, { scale: 'auto' }) : file
-        const text = await recognizeImage(src, (p) => setProgress({ file: file.name, index: i, total: queue.length, p }))
-        const draft = parseEchoText(text)
+        const onP = (p: OcrProgress) => setProgress({ file: file.name, index: i, total: queue.length, p })
+        let draft: EchoDraft
+        if (preprocessOn) {
+          const ocrCanvas = await fileToPreprocessedCanvas(file, { scale: 'auto' })
+          const { text, words } = await recognizeImageWithBoxes(ocrCanvas, onP)
+          draft = parseEchoText(text)
+          // Set chưa nhận được từ text → thử icon tròn cạnh "+25" (cần canvas MÀU, trước binarize)
+          if (!draft.set) {
+            const colorCanvas = await fileToPreprocessedCanvas(file, { scale: 'auto', binarize: false })
+            const match = detectSetFromCanvas(colorCanvas, words)
+            if (match) draft = { ...draft, set: match.setId }
+          }
+        } else {
+          draft = parseEchoText(await recognizeImage(file, onP))
+        }
         setResults((prev) => [...prev, draftToItem(file.name, draft)])
       } catch (err) {
         setResults((prev) => [
@@ -137,9 +150,18 @@ export default function OcrImport({ onAdd }: Props) {
       const label = `${video.name} — ${i + 1}/${times.length}`
       try {
         await seekFrame(video.el, times[i])
-        const canvas = captureFrame(video.el, { crop: crop ?? undefined, scale: 'auto', binarize: preprocessOn })
-        const text = await recognizeImage(canvas, (p) => setProgress({ file: label, index: i, total: times.length, p }))
-        drafts.push(parseEchoText(text))
+        const ocrCanvas = captureFrame(video.el, { crop: crop ?? undefined, scale: 'auto', binarize: preprocessOn })
+        const { text, words } = await recognizeImageWithBoxes(ocrCanvas, (p) => setProgress({ file: label, index: i, total: times.length, p }))
+        let draft = parseEchoText(text)
+        // Set chưa nhận được từ text → thử icon tròn cạnh "+25" trên frame MÀU (trước binarize)
+        if (!draft.set) {
+          const colorCanvas = preprocessOn
+            ? captureFrame(video.el, { crop: crop ?? undefined, scale: 'auto', binarize: false })
+            : ocrCanvas
+          const match = detectSetFromCanvas(colorCanvas, words)
+          if (match) draft = { ...draft, set: match.setId }
+        }
+        drafts.push(draft)
       } catch {
         // frame lỗi (seek/OCR) → bỏ, vẫn tính vào scanned
       }

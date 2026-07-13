@@ -1,0 +1,49 @@
+// FILE SINH TỰ ĐỘNG — đừng sửa tay. Chạy lại: npx tsx scripts/gen-seticon-signatures.ts <dir-icon...>
+// Chữ ký hình dạng 12×12 (base64, 144 byte/chữ ký) của icon sonata set, sinh từ icon chuẩn
+// (nguồn: game8.co "List of All Sonata Effects" + prydwen.gg "Echo Sets" — chỉ lưu SỐ, không lưu ảnh).
+
+export const SET_ICON_SIG_SIZE = 12
+
+export interface SetIconSignature {
+  /** id set trong data/sonata.ts */
+  id: string
+  /** 144 byte chữ ký, base64 */
+  b64: string
+}
+
+export const SET_ICON_SIGNATURES: SetIconSignature[] = [
+  { id: 'celestial-light', b64: 'AAAAAAB4QAAAAAAAABwcAACAgAAAIysAABUrHA7GuA4ADg4AAAAj1caxv9WOAAAAAAAjxisVFXGxBwAATYC41Qe/qgfNqoBNK06j1QejgBXGeEcrAAAVxngVFZWqAAAAAAAjxrjNxqqAAAAAACsrAACqlQAAIysAADkOAACAcQAAFSsAAAAAAABqFQAAAAAA' },
+  { id: 'chromatic-foam', b64: 'AAAAJKDw4q8sAAAAAAAk1c5tYcjbMQAAAAa8qhI3NwySzgwAAFXhHgBJVQAMzmcAEsiSAACMqgYAc9USqP+SZpL4/6Bmg/+vV4pCUIP4+JJXOnVJALyMAACMmAAAbcgAAFvhGABJVQAMzm0AAAa8pAw9QwaYyBIAAAAk1ch5c7bbNwAAAAAAJK/w8L0zAAAA' },
+  { id: 'crown-of-valor', b64: 'AAAAEj2wzjESAAAAAAArtvPznufOQwYAdbDzyD2emCu2+cKK06RVDB7O7TEASarwtuHb2/O2tvnb2+fbZoYxPcK2pMIxJHlm8IwGAJL//5gAAIz4kv8xAKr//7wADNu9LOeeBqr//4AAmPNCAIb5bXn//4BP7YYAAACY7Yb//6TtsBgAAAAMVWHI521bDAAA' },
+  { id: 'dream-of-the-lost', b64: 'lQsAAABgSgAAADXK/4BAVUq/tUBqStXVqv//9OrV6tXf//RgC3XV1arV6mrKnzUAAGpV37//v2qfSmoAANWVSrWf35VA1ZUAAID/dWq/9GDK/1UAAID/6krKinXq/1UAAHXVlUBAAIBgtSsAACsrCwAVAAAACxUAAFV1ACB1AAAAQFUAABULACB1AAAACxUA' },
+  { id: 'empyrean-anthem', b64: 'AAAAETMzbwB3EQAAABFVRMwaK1XmqhEAAIiid/8rAGbdmREAM8QrxP9vAABvEV6RIhER7v/MAAAAABrMXrvV////zJlNABHE7v////////+ZAGbVK2/V////mU0RPNVmAAAA5v+ZGl6IzF4AAAAAov9eb5mIAAAAAAAAVe4aAAAAAAAAAAAAPMQAAAAAAAAA' },
+  { id: 'eternal-radiance', b64: 'AAAQeNDqy9B4EAAAAB/G//99kv//xh8AEMbQ7+8+NP/gscYQeP/BXn0ABWNYxv940P/vfdDq76xt9f/Q6n0+EOovU+8qTo3vy5I0NO9TROoqRJLb0P//Y6zv+o14///QeP/gWD4qSUlo6v94EMaxxvVORP/q6sYQAB/G//9tkv//xh8AAAAQeNDQ29B4EAAA' },
+  { id: 'flamewings-shadow', b64: 'AGqxKwAAAAAAAAAAHLgVAAAVMgAAFWMjlWoAADnjzb/j//+Ho8YOB7///////9UjQEAAVf//6sajYxUVAAAAnNx4KysrMmO4AAAAcRUVnP////94AAAAAAAAgP///7EHAAAAAAAr+P/cXAcAYzIcFWrc//EyKxwAMs3q+P//////jgcAACuO1f///814BwAA' },
+  { id: 'flaming-clawprint', b64: 'AAAAAECq+KNxDgAAAAcOMvH//9yVIw4AAGoclbhcaur/46MARLEjjngjAEfq//h3ZrEAAKrNgDKq//H/ZuMcFdX/4xyq/3jdqv9xMofVhwC//1VeIqqHHAA5Y2P4/1UAAAcOAAcyjvj/vw4AIisVh7H4////YwAAM9WOgJXx///xVQAAACuOuP///7hcAAAA' },
+  { id: 'freezing-frost', b64: 'AAAAAA67ogAAAAAAAAAAACvd3RwAAAAAKyIrCYC77mMRByIr/+bVmRzdxByizf/dVZn/7pzu1Yf//6ozAGZVmeM8XvF3cYgAAHdxmfFmiPGIgHcAd93/3Xju1YD//8xV/+bNmSPdxByzzf/dKyIVCYe77oARByIrAAAAACvd3RwAAAAAAAAAAA6zmQAAAAAA' },
+  { id: 'frosty-resolve', b64: 'AAAAAACccQAAAAAAAAAAAADGuAAAAAAAAAAAAED//zIAAAAAAAAHaqrj1bF4BwAAAAAjqv9qgP+xMgAAaqr4444HB4fj+LhqTpzj/6ocI7H/445AAAAOjv9xlf9jDgAAAAAHapzq1ZVqBwAAAAAAADL//zIAAAAAAAAAAAC/qgAAAAAAAAAAAACHcQAAAAAA' },
+  { id: 'gusts-of-welkin', b64: 'AAAQeND6+tB4EAAAAB/G////////xh8AEMbGsf////+n28YQeP8+h//L4P9jY/940MsKrNVJbcucFeXQ+tUQXqFth31oH+r6+v9TPrbq75IQeP/60P/lNEn15S855f/QeP//5T7VsVP1//94EMb//+VoaPX//8YQAB/G///Vy///xh8AAAAQeND6+tB4EAAA' },
+  { id: 'halo-of-starry-radiance', b64: 'AAAAABGVlREAAAAAKzleldW4uNWOXkAru/+zcTwHB0Rxs/+zIupEAAArKwAATeoiALhmAACAlQAAd7EAAKqIR6rV3KpOmaoAAKqZOYDGzYA5maoAAIezAACAjgAAs4cAAE7uKwAVFQAy904AAAezuBoAABq4swcAAAAauNVxcdW4GgAAAAAADm/V1W8OAAAA' },
+  { id: 'havoc-eclipse', b64: 'AAAVapWiZkcAAAAAABy4uDIRXoBVDgAAEbi4Dly7s7/qxhwAkfFADkcAAAAVuI4A1cYAABV3qpwcI81V/5wAAJX//4exDnG7/5wAANX/3SPVK1Xm/7gAAIfMPHixDnHM1eoyAA6I1ZUrDs2zZvjVoysAAAAVseM8AFyO4/GRgI7q40cAAAAAMoe7/8aVOQAA' },
+  { id: 'heart-of-evils-purge', b64: 'AAAAADrTfAAAAAAAAAAAFtP/6W0HAAAAAAAALHxtr/i2LAAAABZfipKDLFDp6W0HSeL/////+GZ8//+D2///21cstnV1///w8P//bYq2SXXp///Mdfj/g1Dp/////70sAGbp8G0kV21mOgcAAAAdkvjFdYokAAAAAAAAAEni/7YHAAAAAAAAAAB8tiQAAAAA' },
+  { id: 'lamp-of-nether-road', b64: 'AAAAB6P4+LEVAAAAAAAAeP//+P+VAAAAAAAe2/+YgP/tMQAAB4fxY2PGv3FV+I4Vhv//mABJVQCA//+e3P9xuGoAAFyxXPjq4/9quGoAAFyxY/jqhv//mABJVQCG//+YB3jxTmrGv3E58Y4VAAAYwv+Yef/VKwAAAAAAeP//+P+OAAAAAAAAB6Px8bEVAAAA' },
+  { id: 'law-of-harmony', b64: 'AAAAABJ27YkAAAAAAAAAJNH//9tJEgAAAABA5P//dlv/0QAAAABb9uRbrfb/vwAAkhsAQNHb//+ACQAAAAASbf////+/NwAAAC7b///t0f///2QJUu3//7YuEon///+2bf///4AuEmT////bEpL////bpP///9E3AAB27f//////thIAAAAALrb2/+RSCQAA' },
+  { id: 'lingering-tunes', b64: 'mXUAAAAAAAAAAICMmfRVAAAAAAAASvSmAID0v5kAAJm/9JUNACvqWTMAADNm/ysAACu1Tdl1atkm1SsAABVgM/L///JAgBUATYoAAE3q/6YAAAAAs+orAABV/+YmAAAA//91M7M1qv/MFQAAc9VA5swVC7//vwsAAGp1zA0AAA2//58AAABKGgAAAAAN1aoA' },
+  { id: 'midnight-veil', b64: 'AB/M/9lcAAAAAAAAAKP////gKQAAAAAAAMz////1UgAAAAAAAHr///+4AAAAAAAApqNzuICFuBoATcym/////////0AAgP///////////0AAgP///////////0AAgP///////////0AAgP///////////0AAgP///////////0AAgP//2f//////6yYAgP/Z' },
+  { id: 'molten-rift', b64: 'AAAAmcwzAAAAAAAAAAAA39/VtWAgAAAAAAAAQBUriurqgCAAAAAVgGoVAErf/9VKNarq/99AAACA///q5v//mSYAAA2z////////8owzZsz/////6r/q//////////+/gJ9Av///////1YorFYCqIDVVVVVKFQAAAAtqtcq/YAAAAAAAAAAAGozyTQAAAAAA' },
+  { id: 'moonlit-clouds', b64: 'AE3m5jMAAAAAAAAAENn//9kQAAAAAAAAMPL///IwAAAAAAAAAJn//4wAAAAAAAAAgJm/pnNwEAAAAAAA////////QGb/////////////QDOAgICA////////QA1AQEBA////////QID/////////////QA1AQEBA////////QBqAgICA7//////vMGb/////' },
+  { id: 'pact-of-neonlight-leap', b64: 'AAAAAAqFoxQAAAAAIitNb8zEqtWAVSsrqv+zdzwJADN3ov/VGtVEAABNTQAAGvdEAJlmAG/ExIAAVbMAAG+RGqIzM6IaZpkAAGaZADPEuzMAZpkAAF67GsxVM8QiiIAAABr3RCIAACIi1TwAAACZzBoAAAmzxAAAAAAJiNV3ZsSqGgAAAAAAAHDW4I8KAAAA' },
+  { id: 'reel-of-spliced-memories', b64: 'AAAAAByxuCMAAAAAK05xjuPV3OOOakcjuP+xeCsjsaqxv/+qMvFOAAAr///4h/EyAMZ4AACVuP/ch7EAAKqOK5zNI7HVnKoAAKqqABWjcfjVqqoAAIfGAABV8f+4v5UAAE7xOQAr//iH/0AAAA7GxhUr6ofGxg4AAAAcv/GHjuq4FQAAAAAAFYDc3IAVAAAA' },
+  { id: 'rejuvenating-glow', b64: 'AAAAAFz1/3AAAAAAAAAAAJn//8wAAAAAAAAAAJn//8wAAAAAAAAAAJn//8wAAAAAUmZmZsL//+BmZmZc/////////////////8LW////////////euvCZuv///VmZmZcZv//M5n//8wAAAAAFKOZCpn//8wAAAAAABQzAJn//8wAAAAAAAAAAFzr4GYAAAAA' },
+  { id: 'rite-of-gilded-revelation', b64: 'AAAAAAAUcJlwCgAAAAAzXB8AAAqZuCkAAAAKXLiFAAAK1tYfFAAAABStXAAAev+jCgAAAB+46x8AXP/1AB8AAACP6x8AXP//FBQAAEf1owAAev/rFAAAXOvgKQAK1v+jABRwuHAUAB/C/9YfACkzCgAAetb/1j0AAAAAAAAAevXCHwAAAAAAAD16mVIKAAAA' },
+  { id: 'shadow-of-shattered-dreams', b64: 'Gsz/////////////3///////////////////9L+qqqrV////3//KKwAAAAALdfT/lepAAAAAAAAAAID/9L8AAAArdQAAAED//+pVKysrAAAAAID//+qKgICqNQALgPT//78AAAA1n5XV/////78AAAAAKysrKyuA/78AAAAAAAAAAABV8uZzZmZmZmZmZmaz' },
+  { id: 'sierra-gale', b64: 'GpkaAAAAAAAAM8wzjP9ZAAAaDQAAgP+A5v8aAACAcwAAM//M/5kATQDM5gAmGsz//4BAswCz2QDZgL//5plAgABmQAC/gNnMZv+ZmQAAAADMs/9mAID//0AAAE3//4wAAABz//IAAJn/gAAAAAAAZuYzGsxmAAAAAAAAAHPMzIAAAAAAAAAAAACZpgAAAAAA' },
+  { id: 'song-of-feathered-trace', b64: 'XGYAAAAAAAAAACIKxJwAAAAAAAAAePHE99UVAAAAAACA8f+q//+IAAAAAFL//+Yz4Pf3wjMAVZmZiBoAu/Hc/+54AAAAAAAAROPc7v/xgKIaAAAAFN3/zMz/7v+4CQAAAGb//8yi9///iAAAAAeq///jqqr/3A4AAAAVkff//9WihyMAAAAAACmI9///5pEp' },
+  { id: 'sound-of-true-name', b64: 'AAAAAABYaAAAAAAAAAAAAC/L0C8AAAAAAAAFgvXg4PWCBQAAAACC6nJyfXjqhwAAACT1bZc+Oax4+ioATrvlY0QAACSC5cFYgtvqaE4AAB945eCCACrvbadJOYd49SoAAAB973JocnjlggAAAAAFeOrl5e99BQAAAAAAAB/L1SoAAAAAAAAAAABteAAAAAAA' },
+  { id: 'thread-of-severed-fate', b64: 'ACOiBwAAAAAVqhUAAAezagAAAACAmQAAAABE1SIAADPcMwAAAAAAlcwVI92AAAAAAAAAOfeOnO4rAAAAAAAAAKLx8YgAAAAAAAAAAESHhzMAAAAAAHHMVaLV1ZFjzGMAXuNEY//GzfdVRNVN7qpN8dUcI93jRLHuVer/6kQAAE34/+pVAEfmcQAAAACH5kcA' },
+  { id: 'tidebreaking-courage', b64: 'ADwiZt3///+ZAAAAAID/7rNEM5ndsxoAERGIRAAAEQAa97MAkeY8ACKRszMJK+Zv5rtEGt3//90aALvV/1UAs/+ZiP+zAFXd91UAiO6zou6IAFX31ZkAEbP//8QaEZnVgOYiAABvkQAARO6iEczdEQAREQArXiIRACLE7og8VZn3/14AAAAJs////+6AREQA' },
+  { id: 'trailblazing-star', b64: 'AAZHMgBxTgA5OQAAAIDx6ltxTnPq8XkAVeeHgNWAjsiHo/M548j4//mOsf//8aTV6qr4//+Osf//6qTVVduc/9UcK+3/jts5AFvNxv+VuP+q408AAABqqs6Vsc6/agAAAAAAo+3//+2VAAAAAAAAB5L//4AAAAAAAAAAABK/nAYAAAAAAAAAAAB4TgAAAAAA' },
+  { id: 'void-thunder', b64: 'KQCjR8T//93MmXdmcAnM///Wj5FmFAAAZoCZ5kc89+P/5o4RCrtw628UZlX/61UKAFzViMYAREfddwAAAADMwk0U9ZH/jwAAAACP/6JS64j/KQAAAAAzu//dqpyzAAAAAAAACrvrM7MUAAAAAAAAEZxVgGMAAAAAAAAAChoAoyIAAAAAAAAAAAApUgAAAAAA' },
+  { id: 'windward-pilgrimage', b64: 'AAAQeMZeksZ4EAAAAB/G/41tbZf/xh8AELF4obsaH9WNgrsQeNUVAG1jeEkAKuV40F6H5WgfEJLgaLbQ+tvv/9AARP//4Or6+v//9VgvOaH////60P/gocE5WOCS9f/QeP+cgm0vPn1o1f94EMb/odVEcsbG/8YQAB/G/+UKSf//xh8AAAAQeNBjl9B4EAAA' },
+  { id: 'wishes-of-quiet-snowfall', b64: 'AAAQeNDg29B4EAAAAB/G//9ybf//xh8AEMb//+B9fdv//8YQeNUqnNttaOWSL9V40P+XSU5TWFNJof/Q+v/VrGOcp16s1f/6+v/lhzltckSN5f/60Pp9XoJofY1jffrQeNtjtuBjXtW2Xtt4EMb//+V4guD//8YQAB/G//+Cjf//xh8AAAAQeND19dB4EAAA' },
+]

@@ -84,6 +84,10 @@ export function mergeDrafts(drafts: EchoDraft[]): MergedDraft[] {
       const asSubset = !equal && subs.size >= MIN_SUBSET_SUBS && isSubset(subs, c.subs)
       if ((equal && (mainOk || subs.size >= MIN_SUBS_MAIN_CONFLICT)) || (asSubset && mainOk)) {
         c.frames++
+        // Bản đại diện thiếu tên/set mà bản gộp vào có (frame khác đọc được) → bổ sung
+        if ((!c.draft.name && d.name) || (!c.draft.set && d.set)) {
+          c.draft = { ...c.draft, name: c.draft.name ?? d.name, set: c.draft.set ?? d.set }
+        }
         merged = true
         break
       }

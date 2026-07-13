@@ -20,6 +20,8 @@ X ATK 100
 + Heavy Attack DMG Bonus 8.6%`)
     expect(d.mainStat).toBe('havocDmg')
     expect(d.level).toBe(25)
+    expect(d.name).toBe('Forbidden Bastion')
+    expect(d.set).toBeUndefined() // khung quay không chứa mục Sonata Effect
     expect(d.substats).toHaveLength(5)
     expect(d.substats).toContainEqual({ stat: 'liberationDmg', value: 9.4 })
     expect(d.substats).toContainEqual({ stat: 'energyRegen', value: 10.8 })
@@ -43,6 +45,7 @@ QQ HP 2280
 + ATK 50`)
     expect(d.mainStat).toBe('atkPct')
     expect(d.level).toBe(25)
+    expect(d.name).toBe('Smolder')
     expect(d.substats).toHaveLength(5)
     expect(d.substats).toContainEqual({ stat: 'critDmg', value: 17.4 })
     expect(d.substats).toContainEqual({ stat: 'critRate', value: 6.3 })
@@ -66,5 +69,30 @@ Lv. 25/25
 Havoc DMG Bonus 30.0%`)
     expect(d.level).toBe(25)
     expect(d.mainStat).toBe('havocDmg')
+  })
+
+  it('ảnh chứa mục Sonata Effect → tự nhận set (fuzzy, chịu được lỗi OCR nhỏ)', () => {
+    const d = parseEchoText(`Thundering Mephis +25
+Havoc DMG Bonus 30.0%
++ Crit. Rate 9.3%
+Sonata Effect
+Freezing Frost
+2-Pc: Glacio DMG 10%`)
+    expect(d.set).toBe('freezing-frost')
+    expect(d.name).toBe('Thundering Mephis')
+  })
+
+  it('alias trong ngoặc cũng match ("Sun-sinking Eclipse" → havoc-eclipse)', () => {
+    const d = parseEchoText(`Crownless +25
+Havoc DMG Bonus 30.0%
+Sunsinking Eclipse`)
+    expect(d.set).toBe('havoc-eclipse')
+  })
+
+  it('không có mục Sonata Effect → set undefined (user chọn tay)', () => {
+    const d = parseEchoText(`Smolder +25
+ATK 18.0%
++ Crit. Rate 6.3%`)
+    expect(d.set).toBeUndefined()
   })
 })

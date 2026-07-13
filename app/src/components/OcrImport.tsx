@@ -48,9 +48,9 @@ function draftToItem(fileName: string, draft: ReturnType<typeof parseEchoText>):
   return {
     id: newId(),
     fileName,
-    name: '',
+    name: draft.name ?? '',
     cost,
-    set: SONATA_SETS[0].id,
+    set: draft.set ?? SONATA_SETS[0].id,
     rarity: 5,
     level: draft.level ?? 25,
     mainStat,
@@ -288,7 +288,7 @@ export default function OcrImport({ onAdd }: Props) {
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="grid items-start gap-2 md:grid-cols-2 xl:grid-cols-3">
         {results.map((item) => (
           <DraftForm
             key={item.id}
@@ -344,7 +344,7 @@ function CropSelector({ video, crop, onCrop }: { video: HTMLVideoElement; crop: 
       ref={canvasRef}
       width={video.videoWidth}
       height={video.videoHeight}
-      className="w-full cursor-crosshair rounded border border-slate-700"
+      className="w-full max-w-2xl cursor-crosshair rounded border border-slate-700"
       onMouseDown={(e) => { dragStart.current = toVideoCoords(e) }}
       onMouseMove={(e) => {
         if (!dragStart.current) return

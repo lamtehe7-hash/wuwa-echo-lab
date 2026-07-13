@@ -1,4 +1,5 @@
 import type { LocMessage, MainStatKey, SubstatKey } from '../types'
+import { SONATA_SETS } from '../data/sonata'
 import { SUBSTATS } from '../data/substats'
 
 // Pure function: text thô OCR (tiếng Anh) -> draft echo. Không phụ thuộc tesseract.js
@@ -17,6 +18,10 @@ import { SUBSTATS } from '../data/substats'
 export interface EchoDraft {
   mainStat?: MainStatKey
   level?: number
+  /** Tên echo đọc từ dòng "Tên +25" (nếu có) */
+  name?: string
+  /** Id sonata set — chỉ có khi ảnh/frame chứa mục Sonata Effect (fuzzy match tên set) */
+  set?: string
   substats: { stat: SubstatKey; value: number }[]
   warnings: LocMessage[]
   /** 0..1 — ước lượng thô mức tin cậy của kết quả nhận diện */
@@ -174,6 +179,44 @@ function extractLevel(text: string): number | undefined {
   return undefined
 }
 
+/** Tên echo từ dòng "Tên +25" của panel chi tiết; lọc ký tự rác OCR (icon, dấu lạ) */
+function extractName(lines: string[]): string | undefined {
+  for (const line of lines) {
+    const m = line.match(/^(.*?)\s*\+\s*\d{1,2}\s*$/)
+    if (!m) continue
+    const cleaned = m[1].replace(/[^A-Za-z' -]/g, ' ').replace(/\s{2,}/g, ' ').trim()
+    if (cleaned.length >= 3) return cleaned
+  }
+  return undefined
+}
+
+/** Alias tên set đã chuẩn hoá (tách phần trong ngoặc thành alias riêng, vd "Havoc Eclipse (Sun-sinking Eclipse)") */
+const SET_ALIASES: { id: string; alias: string }[] = SONATA_SETS.flatMap((s) =>
+  s.name
+    .split(/[()]/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 4)
+    .map((part) => ({ id: s.id, alias: normalizeLabel(part) })),
+)
+
+/**
+ * Nhận sonata set khi text chứa mục "Sonata Effect" (ảnh chụp/khung quay đủ rộng):
+ * fuzzy match từng dòng với tên set. Không có thì trả undefined — user chọn tay.
+ */
+function matchSonataSet(lines: string[]): string | undefined {
+  let best: { id: string; dist: number; aliasLen: number } | null = null
+  for (const line of lines) {
+    const norm = normalizeLabel(line)
+    if (norm.length < 6) continue
+    for (const { id, alias } of SET_ALIASES) {
+      const dist = levenshtein(norm, alias)
+      if (!best || dist < best.dist) best = { id, dist, aliasLen: alias.length }
+    }
+  }
+  if (best && best.dist <= matchThreshold(best.aliasLen)) return best.id
+  return undefined
+}
+
 function snapToRoll(stat: SubstatKey, raw: number): { value: number; offPct: number } {
   const rolls = SUBSTATS[stat].rolls
   let best = rolls[0]
@@ -205,12 +248,17 @@ export function parseEchoText(text: string): EchoDraft {
     .filter((l) => l.length > 0)
 
   const level = extractLevel(text)
+  const name = extractName(lines)
+  const sonataSet = matchSonataSet(lines)
   const candidates: Candidate[] = []
   let unmatchedNumericLines = 0
 
   lines.forEach((line, lineIndex) => {
     const extracted = extractTrailingValue(line)
     if (!extracted) return
+    // Dòng tên ("Tên +25") và dòng "COST n" là cấu trúc panel đã biết (đã dùng cho level/tên) —
+    // không đếm vào cảnh báo "dòng số không khớp nhãn"
+    if (/\+\s*\d{1,2}\s*$/.test(line) || /^cost\b/i.test(line)) return
     const family = findFamilyNoisy(extracted.label)
     if (!family) {
       unmatchedNumericLines++
@@ -299,7 +347,7 @@ export function parseEchoText(text: string): EchoDraft {
   })
 
   if (!mainStat && snapped.length === 0) {
-    return { mainStat: undefined, level, substats: [], warnings: [{ key: 'ocrParse.noContent' }], confidence: 0 }
+    return { mainStat: undefined, level, name, set: sonataSet, substats: [], warnings: [{ key: 'ocrParse.noContent' }], confidence: 0 }
   }
 
   let confidence = 0
@@ -309,5 +357,5 @@ export function parseEchoText(text: string): EchoDraft {
   if (warnings.length === 0) confidence += 0.1
   confidence = Math.max(0, Math.min(1, confidence))
 
-  return { mainStat, level, substats: snapped, warnings, confidence }
+  return { mainStat, level, name, set: sonataSet, substats: snapped, warnings, confidence }
 }

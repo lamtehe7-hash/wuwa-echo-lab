@@ -71,13 +71,18 @@ export default function App() {
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
+        {/* Panel OCR chiếm cả hàng (kết quả dạng lưới nhiều cột cần bề ngang) */}
+        {showOcr && (
+          <div className="lg:col-span-2">
+            <OcrImport onAdd={(echo) => setEchoes([...echoes, echo])} />
+          </div>
+        )}
         <aside className="space-y-3">
           <EchoForm onAdd={(echo) => setEchoes([...echoes, echo])} />
           <button
             className={`w-full rounded px-2 py-1.5 text-xs ${showOcr ? 'bg-sky-700 text-white' : 'border border-dashed border-slate-700 text-slate-400 hover:bg-slate-900'}`}
             onClick={() => setShowOcr(!showOcr)}
           >{t('app.importFromImage')}</button>
-          {showOcr && <OcrImport onAdd={(echo) => setEchoes([...echoes, echo])} />}
           <p className="text-xs text-slate-500">
             {t('app.inventoryCount', { n: echoes.length, c4: stats[4], c3: stats[3], c1: stats[1] })}
           </p>

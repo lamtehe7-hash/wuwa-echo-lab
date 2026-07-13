@@ -104,6 +104,15 @@ describe('mergeDrafts: gộp bản đọc nhiều frame về 1 echo', () => {
     expect(merged).toHaveLength(2)
   })
 
+  it('bản đại diện thiếu tên → lấy tên từ frame khác trong cụm (backfill)', () => {
+    const merged = mergeDrafts([
+      draft({ substats: SUBS5 }), // bản đầy đủ nhưng OCR không đọc được dòng tên
+      draft({ substats: SUBS5, name: 'Forbidden Bastion', confidence: 0.7 }),
+    ])
+    expect(merged).toHaveLength(1)
+    expect(merged[0].draft.name).toBe('Forbidden Bastion')
+  })
+
   it('draft không main + không gộp được vào đâu → loại (frame rác)', () => {
     const merged = mergeDrafts([
       draft({ mainStat: undefined, substats: [{ stat: 'defPct', value: 8.1 }] }),

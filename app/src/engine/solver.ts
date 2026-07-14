@@ -3,6 +3,7 @@ import { COST_CAP } from '../data/mainstats'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { maxRoll } from '../data/substats'
 import { echoER, refScale, scoreEcho, theoreticalMax, weightFor } from './score'
+import { loadoutDamage } from './damage'
 
 // Solver bộ-5 tối ưu (PROPOSAL.md §4): duyệt layout cost → DFS tổ hợp top-K mỗi cost,
 // cộng bonus set ở lá + chiết khấu ER thừa, prune bằng chặn trên lạc quan.
@@ -199,11 +200,23 @@ export function scoreLoadout(echoes: Echo[], profile: CharacterProfile): Loadout
   }
 }
 
+/** Mục tiêu tối ưu: 'score' = objective weighted-linear (mặc định, prune chặt); 'damage' =
+ *  giữ top-N bộ theo score rồi RE-RANK bằng mô hình damage phi tuyến (crit tích × bracket). */
+export type SolveObjective = 'score' | 'damage'
+
 /**
  * @param forcedSet nếu truyền, CHỈ ghép echo thuộc set này (ép bộ theo set đã chọn) —
  *   solver tự tối ưu 5 mảnh trong set đó; kho không đủ 5 → bộ thiếu slot (note.partialSlots).
+ * @param objective 'score' (mặc định) giữ nguyên hành vi cũ (top-1). 'damage' thu top-16 rồi
+ *   chọn bộ có chỉ số damage TƯƠNG ĐỐI cao nhất — hợp DPS (score chỉ xấp xỉ tuyến tính damage).
+ *   Damage model phi tuyến nên KHÔNG dùng trực tiếp làm objective DFS (phá prune); re-rank an toàn.
  */
-export function solveBest5(echoes: Echo[], profile: CharacterProfile, forcedSet?: string): LoadoutResult | null {
+export function solveBest5(
+  echoes: Echo[],
+  profile: CharacterProfile,
+  forcedSet?: string,
+  objective: SolveObjective = 'score',
+): LoadoutResult | null {
   const src = forcedSet ? echoes.filter((e) => e.set === forcedSet) : echoes
   const theoMax = theoreticalMax(profile)
   const maxSetBonus = maxPossibleSetBonus(profile, theoMax)
@@ -235,7 +248,20 @@ export function solveBest5(echoes: Echo[], profile: CharacterProfile, forcedSet?
     pools[k] = arr.filter((c) => kept.has(c))
   }
 
-  let best: LoadoutResult | null = null
+  // Giữ top-N bộ theo score. N=1 khi objective 'score' → prune chặt + hành vi Y HỆT bản cũ
+  // (top-1). N=16 khi 'damage' → có pool để re-rank; prune nới ra (chặn theo bộ hạng-N thấp nhất).
+  const N = objective === 'damage' ? 16 : 1
+  const topN: LoadoutResult[] = []
+  // Cận prune = tổng của bộ hạng-N (thấp nhất trong topN) khi ĐÃ đủ N; chưa đủ thì -∞ (không prune).
+  const cutoff = () => (topN.length < N ? -Infinity : topN[topN.length - 1].total)
+  const consider = (r: LoadoutResult) => {
+    if (topN.length >= N && r.total < topN[topN.length - 1].total) return
+    // chèn giảm dần theo total; total bằng nhau → ưu tiên bộ nhiều slot (giữ tie-break cũ cho top-1)
+    let i = topN.length
+    while (i > 0 && (topN[i - 1].total < r.total || (topN[i - 1].total === r.total && topN[i - 1].layout.length < r.layout.length))) i--
+    topN.splice(i, 0, r)
+    if (topN.length > N) topN.pop()
+  }
 
   for (const layout of ALL_LAYOUTS) {
     const need: Record<number, number> = {}
@@ -262,8 +288,8 @@ export function solveBest5(echoes: Echo[], profile: CharacterProfile, forcedSet?
         const { bonus, counts } = setBonusScore(chosen, profile, theoMax)
         const { penalty, erGained } = erPenalty(chosen, profile)
         const total = sumValue + bonus - penalty
-        // Điểm bằng nhau → ưu tiên bộ nhiều slot (slot thừa vẫn có main stat + dòng phụ cố định)
-        if (!best || total > best.total || (total === best.total && layout.length > best.layout.length)) {
+        // >= để total BẰNG nhau vẫn vào consider (tie-break nhiều-slot xử lý ở đó)
+        if (topN.length < N || total >= topN[topN.length - 1].total) {
           const note: LocMessage[] = []
           if (layout.length < 5) note.push({ key: 'note.partialSlots', params: { n: layout.length } })
           if (profile.erTarget) {
@@ -271,7 +297,7 @@ export function solveBest5(echoes: Echo[], profile: CharacterProfile, forcedSet?
             if (erGained < need) note.push({ key: 'note.erShort', params: { er: erGained.toFixed(1), need } })
           }
           if (chosen.some((c) => !c.scored.mainStatFit)) note.push({ key: 'note.mainStatOff' })
-          best = {
+          consider({
             echoes: chosen.map((c) => c.scored),
             layout: [...layout],
             totalCost: layout.reduce((s, c) => s + c, 0),
@@ -281,13 +307,13 @@ export function solveBest5(echoes: Echo[], profile: CharacterProfile, forcedSet?
             setCounts: counts,
             erGained,
             note,
-          }
+          })
         }
         return
       }
       const { cost, n } = groups[gi]
       if (taken === n) { dfs(gi + 1, 0, 0, sumValue); return }
-      if (best && sumValue + bestRemaining(gi, taken) <= best.total) return // prune
+      if (sumValue + bestRemaining(gi, taken) <= cutoff()) return // prune
       const pool = pools[cost]
       for (let i = startIdx; i < pool.length; i++) {
         chosen.push(pool[i])
@@ -298,5 +324,17 @@ export function solveBest5(echoes: Echo[], profile: CharacterProfile, forcedSet?
     dfs(0, 0, 0, 0)
   }
 
-  return best
+  if (topN.length === 0) return null
+  if (objective === 'damage') {
+    // Re-rank: chọn bộ có damage TƯƠNG ĐỐI cao nhất trong top-N (score-best luôn có mặt = topN[0]
+    // nên bộ chọn ra có damage ≥ bộ score-best). Tie-break giữ nguyên thứ tự score (ổn định).
+    let bestI = 0
+    let bestD = -Infinity
+    for (let i = 0; i < topN.length; i++) {
+      const d = loadoutDamage(topN[i].echoes.map((se) => se.echo), profile).multiplier
+      if (d > bestD) { bestD = d; bestI = i }
+    }
+    return topN[bestI]
+  }
+  return topN[0]
 }

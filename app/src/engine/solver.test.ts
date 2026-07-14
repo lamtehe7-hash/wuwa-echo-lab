@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { CharacterProfile, Echo, MainStatKey, SubstatKey } from '../types'
 import { PREF_MAIN_BONUS, SET_PREF_BONUS, setTierScore, solveBest5 } from './solver'
 import { echoER, scoreEcho, theoreticalMax } from './score'
+import { loadoutDamageMultiplier } from './damage'
 import { CHARACTERS, CHARACTER_BY_ID } from '../data/characters'
 import { DEMO_ECHOES } from '../data/demo'
 import { COST_CAP, MAINSTATS } from '../data/mainstats'
@@ -337,6 +338,22 @@ describe('solveBest5 — chiết khấu ER vượt erTarget', () => {
     const expectedPenalty = ((wEr * (excess / maxRoll('energyRegen'))) / theoreticalMax(yinlin)) * 100
     expect(expectedPenalty).toBeGreaterThan(0)
     expect(r.total).toBeCloseTo(r.subScore + r.setBonusScore - expectedPenalty, 9)
+  })
+})
+
+describe("solveBest5 — objective 'damage': re-rank top-N theo damage model", () => {
+  const camellya = CHARACTER_BY_ID['camellya']
+  it("'score' (mặc định) không đổi; 'damage' cho bộ có damage TƯƠNG ĐỐI ≥ bộ 'score'", () => {
+    const byDefault = solveBest5(DEMO_ECHOES, camellya)!
+    const byScore = solveBest5(DEMO_ECHOES, camellya, undefined, 'score')!
+    const byDamage = solveBest5(DEMO_ECHOES, camellya, undefined, 'damage')!
+    // objective mặc định == 'score' tường minh (hành vi cũ nguyên vẹn)
+    expect(byScore.total).toBeCloseTo(byDefault.total, 10)
+    expect(byScore.layout).toEqual(byDefault.layout)
+    // damage-best (chọn trong top-16, luôn chứa score-best) có damage ≥ score-best
+    const dScore = loadoutDamageMultiplier(byScore.echoes.map((se) => se.echo), camellya)
+    const dDamage = loadoutDamageMultiplier(byDamage.echoes.map((se) => se.echo), camellya)
+    expect(dDamage).toBeGreaterThanOrEqual(dScore - 1e-9)
   })
 })
 

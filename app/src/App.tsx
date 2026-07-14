@@ -15,7 +15,7 @@ import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
 import { SONATA_BY_ID } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
-import { scoreLoadout, solveBest5 } from './engine/solver'
+import { scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import { useLang, useT } from './i18n'
 import { exportJson, importJson, mergeProfile, useEchoInventory, useEquipped, useOverrides } from './store'
 import type { Echo, LoadoutResult } from './types'
@@ -63,6 +63,7 @@ export default function App() {
   const [solved, setSolved] = useState(false)
   const [stale, setStale] = useState(false)
   const [forcedSet, setForcedSet] = useState('') // '' = tự động; set id = ép solver theo set đó
+  const [objective, setObjective] = useState<SolveObjective>('score') // 'damage' = re-rank top-N theo damage model
   const [showWeights, setShowWeights] = useState(false)
   const [editingEcho, setEditingEcho] = useState<Echo | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -103,7 +104,7 @@ export default function App() {
   }, [echoes, overrides])
 
   const solve = () => {
-    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined))
+    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective))
     setSolved(true)
     setStale(false)
   }
@@ -249,6 +250,15 @@ export default function App() {
               preferred={profile.preferredSets}
               onChange={(v) => { setForcedSet(v); if (solved) setStale(true) }}
             />
+            <span className="ml-1 inline-flex overflow-hidden rounded border border-slate-700 text-xs" title={t('app.objectiveTip')}>
+              {(['score', 'damage'] as const).map((o) => (
+                <button
+                  key={o}
+                  className={`px-2 py-1 ${objective === o ? 'bg-sky-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+                  onClick={() => { setObjective(o); if (solved) setStale(true) }}
+                >{t(o === 'score' ? 'app.objScore' : 'app.objDamage')}</button>
+              ))}
+            </span>
             <button
               className={`rounded px-2 py-1 text-xs ${showWeights ? 'bg-amber-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
               onClick={() => setShowWeights(!showWeights)}

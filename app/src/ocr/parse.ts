@@ -1,5 +1,6 @@
 import type { EchoCost, LocMessage, MainStatKey, SubstatKey } from '../types'
 import { ECHOES, type EchoInfo } from '../data/echoes'
+import { MAINSTATS } from '../data/mainstats'
 import { SONATA_SETS } from '../data/sonata'
 import { SUBSTATS } from '../data/substats'
 
@@ -260,6 +261,30 @@ function matchSonataSet(lines: string[]): string | undefined {
   return undefined
 }
 
+/**
+ * Ngưỡng phân biệt MAIN vs SUB cho stat vừa-là-main-vừa-là-sub (hpPct/atkPct/defPct/critRate/
+ * critDmg/energyRegen). Substat KHÔNG scale theo level (mốc roll cố định); main stat scale
+ * tuyến tính (+0 = 1/5 max, +25 = max → factor = 0.2 + 0.032·L; kiểm: Crit Rate main +0 = 4.4 = 22/5).
+ *
+ * Ở +25, level KHÔNG rõ, hoặc key không phải main hợp lệ của cost này → GIỮ NGUYÊN `maxRoll*1.2`
+ * (hành vi cũ đã benchmark 19/19 — thay đổi này là no-op cho ảnh/frame maxed +25). Chỉ khi biết
+ * level < 25 + cost mới hạ ngưỡng xuống trung điểm giữa maxRoll và main-kỳ-vọng-theo-level, để main
+ * stat của echo chưa +25 không bị đọc nhầm thành substat.
+ *
+ * SÀN `maxRoll*1.05` là bắt buộc: ở level rất thấp `expectedMain` có thể NHỎ HƠN cả maxRoll (main
+ * lúc đó còn nhỏ hơn 1 substat maxed), khiến trung điểm tụt dưới maxRoll → một substat maxed bị đọc
+ * nhầm thành main rồi MẤT. Clamp lên >maxRoll để substat maxed (kèm ~5% nhiễu OCR) luôn ở lại nhóm sub.
+ */
+function mainVsSubCutoff(key: SubstatKey, maxRoll: number, level: number | undefined, cost: EchoCost | undefined): number {
+  const fallback = maxRoll * 1.2
+  if (level === undefined || level >= 25 || cost === undefined) return fallback
+  const mainDef = MAINSTATS[cost].find((m) => (m.key as string) === key)
+  if (!mainDef) return fallback // key này không phải main stat của cost đó → chỉ có thể là sub
+  const factor = 0.2 + 0.032 * level
+  const expectedMain = mainDef.max * factor
+  return Math.max((maxRoll + expectedMain) / 2, maxRoll * 1.05)
+}
+
 function snapToRoll(stat: SubstatKey, raw: number): { value: number; offPct: number } {
   const rolls = SUBSTATS[stat].rolls
   let best = rolls[0]
@@ -331,7 +356,7 @@ export function parseEchoText(text: string): EchoDraft {
       const pair = FLAT_OR_PCT_KEY[family]!
       const key = extracted.isPercent ? pair.pct : pair.flat
       const maxRoll = SUBSTATS[key].rolls[SUBSTATS[key].rolls.length - 1]
-      if (extracted.value > maxRoll * 1.2) {
+      if (extracted.value > mainVsSubCutoff(key, maxRoll, level, cost)) {
         // % vượt hẳn mốc roll substat → main stat. FLAT vượt mốc thì KHÔNG phải main
         // (main luôn là %): đó là dòng stat cố định của panel echo (ATK 100/150, HP 2280) → bỏ qua.
         if (extracted.isPercent) {
@@ -345,7 +370,7 @@ export function parseEchoText(text: string): EchoDraft {
     // critrate / critdmg / energyregen
     const key = PCT_ONLY_AMBIGUOUS_KEY[family]!
     const maxRoll = SUBSTATS[key].rolls[SUBSTATS[key].rolls.length - 1]
-    if (extracted.value > maxRoll * 1.2) {
+    if (extracted.value > mainVsSubCutoff(key, maxRoll, level, cost)) {
       candidates.push({ kind: 'main', mainKey: key as MainStatKey, value: extracted.value, lineIndex })
     } else {
       candidates.push({ kind: 'sub', subKey: key, value: extracted.value, lineIndex })

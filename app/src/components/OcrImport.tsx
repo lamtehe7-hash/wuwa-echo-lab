@@ -143,11 +143,13 @@ export default function OcrImport({ onAdd }: Props) {
   const runOcr = async () => {
     if (files.length === 0 || running) return
     setRunning(true)
+    cancelRef.current = false
     const queue = files
     setFiles([])
     if (inputRef.current) inputRef.current.value = ''
     for (let i = 0; i < queue.length; i++) {
       if (!mountedRef.current) return // panel đã đóng — đừng OCR tiếp / tạo lại worker
+      if (cancelRef.current) break // user bấm Dừng — ngừng phần ảnh còn lại, giữ kết quả đã đọc
       const file = queue[i]
       setProgress({ file: file.name, index: i, total: queue.length, p: { status: t('ocr.starting'), progress: 0 } })
       try {
@@ -331,14 +333,24 @@ export default function OcrImport({ onAdd }: Props) {
                 e.target.value = '' // cộng dồn vào hàng chờ — số lượng hiện ở dòng dưới, không dựa vào label của input
               }}
             />
-            <button
-              type="button"
-              className="rounded bg-sky-600 px-3 py-1 text-xs font-semibold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={files.length === 0 || running}
-              onClick={() => void runOcr()}
-            >
-              {t('ocr.run', { n: files.length })}
-            </button>
+            {running ? (
+              <button
+                type="button"
+                className="rounded bg-rose-700 px-3 py-1 text-xs font-semibold hover:bg-rose-600"
+                onClick={() => { cancelRef.current = true }}
+              >
+                {t('ocr.cancel')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="rounded bg-sky-600 px-3 py-1 text-xs font-semibold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={files.length === 0}
+                onClick={() => void runOcr()}
+              >
+                {t('ocr.run', { n: files.length })}
+              </button>
+            )}
           </div>
           {files.length > 0 && (
             <p className="text-xs text-slate-400">

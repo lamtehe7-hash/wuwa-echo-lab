@@ -179,4 +179,47 @@ QQ HP 2,280
 + Crit. Rate 9,3`)
     expect(d.substats).toContainEqual({ stat: 'critRate', value: 9.3 })
   })
+
+  // ---- Ngưỡng main-vs-sub scale theo level (echo chưa +25) ----
+  // Main stat scale tuyến tính (+0 = 1/5 max, +25 = max); substat cố định. Ngưỡng cũ maxRoll*1.2
+  // giả định +25 nên main stat NHỎ của echo chưa max bị đọc nhầm thành substat. Cùng một giá trị
+  // "Crit. Rate 11.4%": ở +10 cost-4 là MAIN (main crit rate ≈ 11.4 tại level đó), ở +25 là SUB.
+  it('echo +10 cost-4: "Crit. Rate 11.4%" đọc đúng thành MAIN (ngưỡng hạ theo level)', () => {
+    const d = parseEchoText(`Zzz Fake Echo +10
+COST 4
+Crit. Rate 11.4%
++ ATK 7.9%
++ HP 430`)
+    expect(d.level).toBe(10)
+    expect(d.cost).toBe(4)
+    expect(d.mainStat).toBe('critRate')
+    expect(d.substats.some((s) => s.stat === 'critRate')).toBe(false)
+    expect(d.substats).toContainEqual({ stat: 'atkPct', value: 7.9 })
+    expect(d.substats).toContainEqual({ stat: 'hp', value: 430 })
+  })
+
+  it('cùng "Crit. Rate 11.4%" nhưng ở +25 vẫn là SUB (ngưỡng +25 bất biến, không hồi quy)', () => {
+    const d = parseEchoText(`Zzz Fake Echo +25
+COST 4
+Crit. DMG 44.0%
++ Crit. Rate 11.4%
++ ATK 7.9%`)
+    expect(d.level).toBe(25)
+    expect(d.mainStat).toBe('critDmg') // 11.4 KHÔNG cướp vai main; main là Crit DMG 44
+    expect(d.substats.some((s) => s.stat === 'critRate')).toBe(true)
+  })
+
+  it('echo +5 cost-4: substat MAXED (Crit Rate 10.5%) KHÔNG bị đọc nhầm thành main rồi mất (sàn maxRoll*1.05)', () => {
+    // Regression bắt trong review: ở +5, main crit rate kỳ vọng ≈ 7.9 < maxRoll 10.5 → trung điểm 9.21
+    // tụt dưới maxRoll. Không clamp thì substat maxed 10.5 bị coi là main rồi biến mất khỏi danh sách sub.
+    const d = parseEchoText(`Zzz Fake Echo +5
+COST 4
+Crit. Rate 10.5%
++ ATK 7.9%
++ HP 430`)
+    expect(d.level).toBe(5)
+    expect(d.cost).toBe(4)
+    expect(d.substats).toContainEqual({ stat: 'critRate', value: 10.5 }) // substat maxed còn nguyên
+    expect(d.mainStat).not.toBe('critRate') // không bị cướp vai main (ở +5 cutoff clamp lên 11.025 > 10.5)
+  })
 })

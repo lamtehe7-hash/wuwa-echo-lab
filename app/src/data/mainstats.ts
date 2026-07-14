@@ -1,4 +1,4 @@
-import type { EchoCost, MainStatKey } from '../types'
+import type { EchoCost, Element, MainStatKey } from '../types'
 
 // Nguồn: research/echo-system.md §2 — giá trị max tại +25 (echo 5★).
 // ĐÃ VERIFY bằng datamine (research/data-verification.md §4): value = StandardProperty × 5.0 (+25):
@@ -10,7 +10,7 @@ export interface MainStatDef {
   max: number
 }
 
-export const ELEMENT_DMG: Record<string, MainStatKey> = {
+export const ELEMENT_DMG: Record<Element, MainStatKey> = {
   glacio: 'glacioDmg', fusion: 'fusionDmg', electro: 'electroDmg',
   aero: 'aeroDmg', spectro: 'spectroDmg', havoc: 'havocDmg',
 }

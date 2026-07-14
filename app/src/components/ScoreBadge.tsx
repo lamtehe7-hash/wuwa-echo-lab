@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CharacterProfile, ScoredEcho } from '../types'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SUBSTATS } from '../data/substats'
-import { maxSubstatWeight, rateSubstat } from '../engine/substatRating'
+import { rateSubstat } from '../engine/substatRating'
 import { useT } from '../i18n'
 
 // Điểm số bấm được → popover breakdown (research/ui-ux.md B4): thanh đóng góp từng substat
@@ -16,7 +16,6 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
   profile?: CharacterProfile
 }) {
   const t = useT()
-  const maxW = profile ? maxSubstatWeight(profile) : 0
   // Panel dùng position:fixed (toạ độ tính lúc mở) vì bảng nằm trong overflow-x-auto —
   // absolute sẽ bị scroll-container cắt mất. Cuộn trang khi đang mở → đóng (toạ độ hết đúng).
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
@@ -81,7 +80,7 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
           <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">{t('breakdown.title')}</span>
           {r.breakdown.length === 0 && <span className="block text-xs text-slate-600">{t('card.noSubs')}</span>}
           {r.breakdown.map((b) => {
-            const color = profile ? rateSubstat(profile, b.stat, b.value, maxW).color : '#38bdf8'
+            const color = profile ? rateSubstat(profile, b.stat, b.value).color : '#38bdf8'
             return (
               <span key={b.stat} className={`mb-1 block ${b.weighted > 0 ? '' : 'opacity-40'}`}>
                 <span className="flex items-baseline justify-between gap-2 text-xs">

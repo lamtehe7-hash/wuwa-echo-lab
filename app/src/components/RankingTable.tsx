@@ -6,7 +6,7 @@ import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS, maxRoll } from '../data/substats'
 import { rankEchoes, tuneAdvice } from '../engine/score'
-import { maxSubstatWeight, rateSubstat } from '../engine/substatRating'
+import { rateSubstat } from '../engine/substatRating'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
 import ScoreBadge from './ScoreBadge'
@@ -118,7 +118,6 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
     return <p className="p-4 text-sm text-slate-500">{t('ranking.emptyAll')}</p>
   }
 
-  const maxW = maxSubstatWeight(profile) // mẫu số "độ liên quan" — tính 1 lần cho cả bảng
   const selCls = 'rounded border border-slate-700 bg-slate-800 px-2 py-1'
   const chip = (active: boolean) =>
     `rounded px-2 py-1 ${active ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`
@@ -309,7 +308,7 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
                     </td>
                     <td className="pr-2 text-xs">
                       {r.breakdown.map((b) => {
-                        const rt = rateSubstat(profile, b.stat, b.value, maxW)
+                        const rt = rateSubstat(profile, b.stat, b.value)
                         return (
                           <span
                             key={b.stat}

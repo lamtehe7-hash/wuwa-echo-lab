@@ -1,14 +1,16 @@
 import type { CharacterProfile, MainStatKey, SubstatKey } from '../types'
-import { SUBSTAT_KEYS, SUBSTATS, maxRoll } from '../data/substats'
+import { SUBSTATS } from '../data/substats'
 
-// Đánh giá TỪNG substat cho một nhân vật cụ thể → 8 mức màu (như tool cộng đồng, xem ảnh
-// tham chiếu user gửi: Irrelevant · Low · Minor · Moderate · Useful · High · Major · Essential).
+// Đánh giá TỪNG substat cho một nhân vật → 8 mức màu (như tool cộng đồng / ảnh tham chiếu user):
+// Irrelevant · Low · Minor · Moderate · Useful · High · Major · Essential.
 //
-// Mức = f(rating) với  rating = relevance × rollEff  ∈ [0,1]:
-//   • relevance = weight[stat] / max(weight substat của nhân vật)  → "đúng dòng CẦN" (0–1)
-//   • rollEff   = value / maxRoll(stat)                            → "chỉ số CAO" (~0.55–1)
-// Nhờ chuẩn hoá theo stat tốt nhất của CHÍNH nhân vật, thang màu luôn dùng hết dải:
-// stat ưu tiên #1 roll max = Essential; stat vô dụng (weight 0) = Irrelevant bất kể roll.
+// Quy tắc (chốt 15/07/2026 — user chọn "giữ Irrelevant, tô theo mốc roll"):
+//   • Stat nhân vật KHÔNG dùng (trọng số 0) → Irrelevant (xám), bất kể mốc roll.
+//   • Stat CÓ liên quan (trọng số > 0) → màu theo MỐC ROLL của chính stat đó:
+//     mốc thấp nhất = Low, mỗi mốc cao hơn +1 bậc, chạm trần Essential.
+//     Thang có 7 bậc màu (Low..Essential) mà stat % có 8 mốc → 2 mốc cao nhất gộp
+//     chung Essential (vd Crit Rate 9.9% và 10.5% đều Essential). Stat 4 mốc
+//     (flat ATK/DEF) chỉ lên tới Useful.
 
 export const SUBSTAT_TIER_COUNT = 8
 export type SubstatTier = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
@@ -33,30 +35,6 @@ export const SUBSTAT_TIERS: readonly TierMeta[] = [
   { tier: 7, key: 'tier.essential',  color: '#ffab33' },
 ] as const
 
-// 6 ngưỡng trên `rating` tách Low..Essential (weight 0 = Irrelevant xử lý riêng).
-const TIER_CUTS = [0.12, 0.24, 0.37, 0.5, 0.65, 0.82]
-
-/** Trọng số substat lớn nhất của nhân vật — mẫu số cho "độ liên quan" 0–1. */
-export function maxSubstatWeight(profile: CharacterProfile): number {
-  let m = 0
-  for (const k of SUBSTAT_KEYS) {
-    const w = profile.weights[k] ?? 0
-    if (w > m) m = w
-  }
-  return m
-}
-
-/** Ánh xạ rating (đã gồm relevance) → mức; weight 0 luôn là Irrelevant. */
-export function ratingToTier(weight: number, rating: number): SubstatTier {
-  if (weight <= 0) return 0
-  let tier = 1
-  for (const cut of TIER_CUTS) {
-    if (rating >= cut) tier++
-    else break
-  }
-  return Math.min(7, tier) as SubstatTier
-}
-
 /** Mốc roll gần nhất của một giá trị (snap về mốc nếu lệch) → {index 0-based, count}. */
 export function rollTierOf(stat: SubstatKey, value: number): { index: number; count: number } {
   const rolls = SUBSTATS[stat].rolls
@@ -67,49 +45,38 @@ export function rollTierOf(stat: SubstatKey, value: number): { index: number; co
   return { index: best, count: rolls.length }
 }
 
+/**
+ * Bậc màu theo VỊ TRÍ mốc roll (0-based): mốc 0 = Low (1), mỗi mốc cao hơn +1 bậc,
+ * trần Essential (7). Stat 8 mốc → 2 mốc cuối cùng gộp Essential; stat 4 mốc → tối đa Useful (4).
+ */
+export function rollMilestoneTier(index: number): SubstatTier {
+  return Math.max(1, Math.min(7, index + 1)) as SubstatTier
+}
+
 export interface SubstatRating {
   tier: SubstatTier
   color: string
   labelKey: string
-  /** Trọng số của stat với nhân vật (0–1) */
+  /** Trọng số của stat với nhân vật (0–1) — quyết định Irrelevant hay không */
   weight: number
-  /** Độ liên quan chuẩn hoá theo stat tốt nhất của nhân vật (0–1) */
-  relevance: number
-  /** Chất lượng roll: value / maxRoll (~0.55–1) */
-  rollEff: number
-  /** relevance × rollEff (0–1) — điểm phân mức */
-  rating: number
-  /** Mốc roll 1-based + tổng số mốc (cho thanh chất lượng) */
+  /** Mốc roll 1-based + tổng số mốc (cho thanh chất lượng + tooltip) */
   rollTier: number
   rollTierCount: number
 }
 
 /**
- * Chấm một substat cho nhân vật. `maxW` (trọng số lớn nhất) có thể truyền sẵn để khỏi
- * tính lại khi map nhiều substat của cùng một echo.
+ * Chấm một substat cho nhân vật: trọng số 0 → Irrelevant; ngược lại → bậc theo mốc roll.
  */
-export function rateSubstat(
-  profile: CharacterProfile,
-  stat: SubstatKey,
-  value: number,
-  maxW?: number,
-): SubstatRating {
+export function rateSubstat(profile: CharacterProfile, stat: SubstatKey, value: number): SubstatRating {
   const weight = profile.weights[stat] ?? 0
-  const denom = maxW ?? maxSubstatWeight(profile)
-  const relevance = denom > 0 ? Math.min(1, weight / denom) : 0
-  const rollEff = Math.min(1, value / maxRoll(stat))
-  const rating = relevance * rollEff
-  const tier = ratingToTier(weight, rating)
-  const meta = SUBSTAT_TIERS[tier]
   const rt = rollTierOf(stat, value)
+  const tier: SubstatTier = weight <= 0 ? 0 : rollMilestoneTier(rt.index)
+  const meta = SUBSTAT_TIERS[tier]
   return {
     tier,
     color: meta.color,
     labelKey: meta.key,
     weight,
-    relevance,
-    rollEff,
-    rating,
     rollTier: rt.index + 1,
     rollTierCount: rt.count,
   }

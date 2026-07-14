@@ -187,8 +187,8 @@ const DICT: Record<string, Entry> = {
   'tier.essential': { vi: 'Cốt lõi', en: 'Essential' },
   'tier.legendTitle': { vi: 'Đánh giá substat', en: 'Substat rating' },
   'tier.legendHint': {
-    vi: 'Màu = mức đóng góp của substat CHO NHÂN VẬT đang chọn = độ liên quan (đúng dòng cần) × chất lượng roll (giá trị cao). Đổi nhân vật → màu đổi theo.',
-    en: 'Color = how much a substat contributes FOR the selected character = relevance (right stat) × roll quality (high value). Switch character → colors update.',
+    vi: 'Stat nhân vật KHÔNG cần = xám (Irrelevant). Stat CÓ liên quan tô theo MỐC ROLL: mốc thấp nhất = Low, tăng dần tới Essential (2 mốc cao nhất của stat 8-mốc gộp Essential). Đổi nhân vật → stat nào xám sẽ đổi theo.',
+    en: 'Stats the character does NOT want = grey (Irrelevant). Relevant stats are colored by ROLL TIER: lowest milestone = Low, rising to Essential (the top two milestones of an 8-tier stat both map to Essential). Switch character → which stats are grey updates.',
   },
   'tier.subTip': { vi: 'Đánh giá: {tier} · mốc roll {i}/{n}', en: 'Rating: {tier} · roll tier {i}/{n}' },
 

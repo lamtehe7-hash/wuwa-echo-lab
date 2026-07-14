@@ -6,7 +6,7 @@ import { ELEMENT_COLOR } from '../data/elementColors'
 import { FIXED_SECONDARY, MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS, maxRoll } from '../data/substats'
-import { mainFitLevel, maxSubstatWeight, rateSubstat } from '../engine/substatRating'
+import { mainFitLevel, rateSubstat } from '../engine/substatRating'
 import { useT } from '../i18n'
 
 // Card hiển thị echo theo phong cách panel in-game (tham khảo WuWa + Genshin Optimizer):
@@ -63,7 +63,6 @@ export default function EchoCard({
 }) {
   const t = useT()
   const [imgError, setImgError] = useState(false)
-  const maxW = profile ? maxSubstatWeight(profile) : 0
   const mainFit = profile ? mainFitLevel(profile, echo.cost, echo.mainStat) : null
   const R = RARITY_STYLE[echo.rarity] ?? RARITY_STYLE[5]
   const sonata = SONATA_BY_ID[echo.set]
@@ -153,7 +152,7 @@ export default function EchoCard({
             const idx = rollIndex(rolls, s.value)
             const barPct = ((idx + 1) / rolls.length) * 100
             if (profile) {
-              const r = rateSubstat(profile, s.stat, s.value, maxW)
+              const r = rateSubstat(profile, s.stat, s.value)
               const dim = r.tier === 0
               return (
                 <div key={s.stat} className={`flex items-center justify-between gap-2 ${subText}`}>

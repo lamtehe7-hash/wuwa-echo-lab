@@ -90,6 +90,9 @@ function sanitizeEcho(raw: unknown, seenIds: Set<string>): Echo | null {
     level,
     mainStat: e.mainStat as MainStatKey,
     substats: substats.slice(0, MAX_SUBSTATS[rarity] ?? 5),
+    // Cờ lock/trash: chỉ nhận đúng true (file cũ không có → undefined, JSON.stringify tự bỏ)
+    lock: e.lock === true ? true : undefined,
+    trash: e.trash === true ? true : undefined,
   }
 }
 

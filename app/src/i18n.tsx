@@ -54,6 +54,14 @@ const DICT: Record<string, Entry> = {
   'inv.count': { vi: '{shown}/{total} echo', en: '{shown}/{total} echoes' },
   'inv.viewTable': { vi: 'Xem dạng bảng', en: 'Table view' },
   'inv.viewGrid': { vi: 'Xem dạng lưới card', en: 'Card grid view' },
+  'inv.flagLock': { vi: 'Khoá — không xoá được (kể cả hàng loạt), solver vẫn dùng', en: 'Lock — cannot be deleted (incl. bulk), solver still uses it' },
+  'inv.flagTrash': { vi: 'Loại — solver bỏ qua echo này', en: 'Exclude — the solver skips this echo' },
+  'inv.excludedOnly': { vi: '🗑 Đã loại ({n})', en: '🗑 Excluded ({n})' },
+  'inv.lockedNoDelete': { vi: 'Echo đang khoá — mở khoá trước khi xoá', en: 'Echo is locked — unlock before deleting' },
+  'inv.selectAll': { vi: 'Chọn tất cả đang hiện (trừ echo khoá)', en: 'Select all visible (except locked)' },
+  'inv.selectRow': { vi: 'Chọn echo này', en: 'Select this echo' },
+  'inv.deleteSelected': { vi: '🗑 Xoá {n} đã chọn', en: '🗑 Delete {n} selected' },
+  'toast.deletedMany': { vi: 'Đã xoá {n} echo', en: 'Deleted {n} echoes' },
   'inv.emptyFiltered': { vi: 'Không có echo nào khớp bộ lọc.', en: 'No echoes match the filters.' },
 
   // ── EmptyState (kho trống — màn hình lần đầu) ──

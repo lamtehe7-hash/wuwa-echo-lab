@@ -17,6 +17,10 @@ interface Props {
   echoes: Echo[]
   profile: CharacterProfile
   onDelete: (id: string) => void
+  /** Xoá hàng loạt (App bỏ qua echo khoá + toast hoàn tác cả cụm) */
+  onDeleteMany: (ids: string[]) => void
+  /** Bật/tắt cờ khoá (bảo vệ xoá) / loại (solver bỏ qua) */
+  onToggleFlag: (id: string, key: 'lock' | 'trash') => void
   /** Mở modal xem chi tiết/sửa echo (bấm tên hoặc nút sửa) */
   onEdit: (echo: Echo) => void
 }
@@ -41,10 +45,12 @@ function rvOf(e: Echo): number {
   return e.substats.reduce((s, x) => s + x.value / maxRoll(x.stat), 0) / e.substats.length
 }
 
-export default function RankingTable({ echoes, profile, onDelete, onEdit }: Props) {
+export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
   const t = useT()
   const tm = useTMessage()
   const [q, setQ] = useState('')
+  const [excludedOnly, setExcludedOnly] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [costF, setCostF] = useState<number | null>(null)
   const [setF, setSetF] = useState('')
   const [mainF, setMainF] = useState<'' | MainStatKey>('')
@@ -83,6 +89,7 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
     })
     let list = rankEchoes(filtered, profile).map((r) => ({ r, advice: tuneAdvice(r.echo, profile) }))
     if (verdictF) list = list.filter((x) => x.advice.verdict === verdictF)
+    if (excludedOnly) list = list.filter((x) => x.r.echo.trash)
     if (sortKey === 'rv') list = [...list].sort((a, b) => rvOf(b.r.echo) - rvOf(a.r.echo))
     else if (sortKey === 'level') list = [...list].sort((a, b) => b.r.echo.level - a.r.echo.level)
     else if (sortKey === 'new') {
@@ -90,7 +97,19 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
       list = [...list].sort((a, b) => (order.get(b.r.echo.id) ?? 0) - (order.get(a.r.echo.id) ?? 0))
     }
     return list
-  }, [echoes, profile, q, costF, setF, mainF, verdictF, sortKey])
+  }, [echoes, profile, q, costF, setF, mainF, verdictF, excludedOnly, sortKey])
+
+  // Chọn hàng loạt (chỉ chế độ bảng): echo khoá không chọn được
+  const selectableIds = rows.filter((x) => !x.r.echo.lock).map((x) => x.r.echo.id)
+  const selCount = selectableIds.filter((id) => selected.has(id)).length
+  const allSelected = selCount > 0 && selCount === selectableIds.length
+  const trashCount = echoes.filter((e) => e.trash).length
+  const toggleRow = (id: string) => setSelected((prev) => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
 
   if (echoes.length === 0) {
     return <p className="p-4 text-sm text-slate-500">{t('ranking.emptyAll')}</p>
@@ -153,8 +172,28 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
               onClick={() => setVerdictF(v)}
             >{t(`ranking.verdict.${v}`)}</button>
           ))}
+          {trashCount > 0 && (
+            <button
+              type="button"
+              className={`rounded px-2 py-1 ${excludedOnly ? 'bg-rose-800 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+              onClick={() => setExcludedOnly(!excludedOnly)}
+            >{t('inv.excludedOnly', { n: trashCount })}</button>
+          )}
           <span className="ml-auto text-slate-500">{t('inv.count', { shown: rows.length, total: echoes.length })}</span>
         </div>
+        {view === 'table' && selCount > 0 && (
+          <div className="flex items-center gap-2 rounded border border-rose-900/60 bg-rose-950/20 px-2 py-1.5">
+            <span className="text-rose-300">{t('inv.count', { shown: selCount, total: rows.length })}</span>
+            <button
+              type="button"
+              className="rounded bg-rose-800 px-2 py-1 font-semibold text-white hover:bg-rose-700"
+              onClick={() => {
+                onDeleteMany(selectableIds.filter((id) => selected.has(id)))
+                setSelected(new Set())
+              }}
+            >{t('inv.deleteSelected', { n: selCount })}</button>
+          </div>
+        )}
       </div>
 
       {rows.length === 0 ? (
@@ -162,7 +201,7 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
       ) : view === 'grid' ? (
         <div className="grid items-start gap-2 p-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {rows.map(({ r, advice }) => (
-            <div key={r.echo.id}>
+            <div key={r.echo.id} className={r.echo.trash ? 'opacity-50' : ''}>
               {/* div (không phải button) để chân card chứa được ScoreBadge (button popover);
                   bấm card = sửa (ScoreBadge tự stopPropagation), đường bàn phím là nút "sửa" bên dưới */}
               <div className="cursor-pointer" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>
@@ -179,8 +218,23 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
                   {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}
                 </span>
                 <span className="shrink-0">
+                  <button
+                    className={`mr-1 ${r.echo.lock ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'}`}
+                    title={t('inv.flagLock')} aria-label={t('inv.flagLock')} aria-pressed={!!r.echo.lock}
+                    onClick={() => onToggleFlag(r.echo.id, 'lock')}
+                  >🔒</button>
+                  <button
+                    className={`mr-2 ${r.echo.trash ? 'text-rose-400' : 'text-slate-600 hover:text-rose-400'}`}
+                    title={t('inv.flagTrash')} aria-label={t('inv.flagTrash')} aria-pressed={!!r.echo.trash}
+                    onClick={() => onToggleFlag(r.echo.id, 'trash')}
+                  >🗑</button>
                   <button className="mr-2 text-slate-500 hover:text-sky-300" onClick={() => onEdit(r.echo)}>{t('ranking.edit')}</button>
-                  <button className="text-slate-600 hover:text-rose-400" onClick={() => onDelete(r.echo.id)}>{t('ranking.delete')}</button>
+                  <button
+                    className="text-slate-600 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-30"
+                    disabled={!!r.echo.lock}
+                    title={r.echo.lock ? t('inv.lockedNoDelete') : undefined}
+                    onClick={() => onDelete(r.echo.id)}
+                  >{t('ranking.delete')}</button>
                 </span>
               </div>
             </div>
@@ -191,7 +245,16 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
           <table className="w-full text-left text-sm">
             <thead className="text-xs text-slate-500">
               <tr className="border-b border-slate-800">
-                <th className="py-1.5 pr-2">#</th>
+                <th className="py-1.5 pr-1">
+                  <input
+                    type="checkbox"
+                    aria-label={t('inv.selectAll')}
+                    title={t('inv.selectAll')}
+                    checked={allSelected}
+                    onChange={() => setSelected(allSelected ? new Set() : new Set(selectableIds))}
+                  />
+                </th>
+                <th className="pr-2">#</th>
                 <th className="pr-2">{t('ranking.colEcho')}</th>
                 <th className="pr-2">{t('ranking.colMain')}</th>
                 <th className="pr-2">{t('ranking.colSubstat')}</th>
@@ -203,8 +266,18 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
             <tbody>
               {rows.map(({ r, advice }, i) => {
                 return (
-                  <tr key={r.echo.id} className="border-b border-slate-800/60 align-top hover:bg-slate-900/60">
-                    <td className="py-1.5 pr-2 text-slate-500">{i + 1}</td>
+                  <tr key={r.echo.id} className={`border-b border-slate-800/60 align-top hover:bg-slate-900/60 ${r.echo.trash ? 'opacity-50' : ''}`}>
+                    <td className="py-1.5 pr-1">
+                      <input
+                        type="checkbox"
+                        aria-label={t('inv.selectRow')}
+                        disabled={!!r.echo.lock}
+                        title={r.echo.lock ? t('inv.lockedNoDelete') : t('inv.selectRow')}
+                        checked={selected.has(r.echo.id) && !r.echo.lock}
+                        onChange={() => toggleRow(r.echo.id)}
+                      />
+                    </td>
+                    <td className="pr-2 pt-1.5 text-slate-500">{i + 1}</td>
                     <td className="pr-2">
                       <div className="flex items-center gap-1.5">
                         {(() => {
@@ -242,9 +315,24 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
                       {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}
                     </td>
                     <td className="whitespace-nowrap text-right">
+                      <button
+                        className={`mr-1 text-xs ${r.echo.lock ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'}`}
+                        title={t('inv.flagLock')} aria-label={t('inv.flagLock')} aria-pressed={!!r.echo.lock}
+                        onClick={() => onToggleFlag(r.echo.id, 'lock')}
+                      >🔒</button>
+                      <button
+                        className={`mr-2 text-xs ${r.echo.trash ? 'text-rose-400' : 'text-slate-600 hover:text-rose-400'}`}
+                        title={t('inv.flagTrash')} aria-label={t('inv.flagTrash')} aria-pressed={!!r.echo.trash}
+                        onClick={() => onToggleFlag(r.echo.id, 'trash')}
+                      >🗑</button>
                       <button className="mr-2 text-xs text-slate-500 hover:text-sky-300" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>{t('ranking.edit')}</button>
-                      {/* Xoá ngay — App hiện toast kèm "Hoàn tác" (không confirm chặn luồng) */}
-                      <button className="text-xs text-slate-600 hover:text-rose-400" onClick={() => onDelete(r.echo.id)}>{t('ranking.delete')}</button>
+                      {/* Xoá ngay — App hiện toast kèm "Hoàn tác"; echo khoá thì chặn */}
+                      <button
+                        className="text-xs text-slate-600 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-30"
+                        disabled={!!r.echo.lock}
+                        title={r.echo.lock ? t('inv.lockedNoDelete') : undefined}
+                        onClick={() => onDelete(r.echo.id)}
+                      >{t('ranking.delete')}</button>
                     </td>
                   </tr>
                 )

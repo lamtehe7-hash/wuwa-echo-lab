@@ -58,6 +58,10 @@ export interface Echo {
   level: number // 0–25
   mainStat: MainStatKey
   substats: Substat[] // 0–5, không trùng loại
+  /** Khoá: không xoá được (kể cả xoá hàng loạt); solver vẫn dùng bình thường */
+  lock?: boolean
+  /** Loại: solver bỏ qua echo này (vẫn hiện mờ trong kho để xoá hàng loạt) */
+  trash?: boolean
 }
 
 export interface SonataSet {

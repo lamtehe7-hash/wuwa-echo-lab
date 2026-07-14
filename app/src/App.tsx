@@ -77,15 +77,35 @@ export default function App() {
   }, [echoes, overrides])
 
   const solve = () => {
-    setLoadout(solveBest5(echoes, profile))
+    setLoadout(solveBest5(usableEchoes, profile))
     setSolved(true)
     setStale(false)
+  }
+
+  // Echo bị đánh dấu "loại" (trash) không vào solver — vẫn hiện mờ trong kho.
+  // useMemo giữ identity để effect stale của RosterPanel không bắn mỗi render.
+  const usableEchoes = useMemo(() => echoes.filter((e) => !e.trash), [echoes])
+
+  const toggleFlag = (id: string, key: 'lock' | 'trash') => {
+    setEchoes((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: e[key] ? undefined : true } : e)))
+  }
+
+  // Xoá hàng loạt (bỏ qua echo khoá) + toast hoàn tác cả cụm
+  const deleteMany = (ids: string[]) => {
+    const idSet = new Set(ids)
+    const removed = echoes.filter((e) => idSet.has(e.id) && !e.lock)
+    if (removed.length === 0) return
+    const removedIds = new Set(removed.map((e) => e.id))
+    setEchoes((prev) => prev.filter((e) => !removedIds.has(e.id)))
+    push(t('toast.deletedMany', { n: removed.length }), {
+      action: { label: t('common.undo'), fn: () => setEchoes((prev) => [...prev, ...removed]) },
+    })
   }
 
   // Xoá ngay + toast có "Hoàn tác" (thay cho confirm chặn luồng)
   const deleteEcho = (id: string) => {
     const echo = echoes.find((e) => e.id === id)
-    if (!echo) return
+    if (!echo || echo.lock) return // nút xoá đã disable khi khoá — guard thêm cho chắc
     setEchoes((prev) => prev.filter((e) => e.id !== id))
     push(t('toast.deleted', { name: echo.name || SONATA_BY_ID[echo.set]?.name || echo.set }), {
       action: { label: t('common.undo'), fn: () => setEchoes((prev) => [...prev, echo]) },
@@ -161,6 +181,8 @@ export default function App() {
               echoes={echoes}
               profile={profile}
               onDelete={deleteEcho}
+              onDeleteMany={deleteMany}
+              onToggleFlag={toggleFlag}
               onEdit={setEditingEcho}
             />
           </div>
@@ -222,7 +244,7 @@ export default function App() {
       {/* Giữ mounted (chỉ ẩn CSS): RosterPanel giữ danh sách đội + kết quả trong state cục bộ —
           unmount khi chuyển tab sẽ mất sạch. (OcrImport thì NGƯỢC LẠI: cố ý unmount để nhả worker WASM.) */}
       <div className={tab === 'roster' && !empty ? '' : 'hidden'}>
-        <RosterPanel echoes={echoes} overrides={overrides} resolve={resolve} />
+        <RosterPanel echoes={usableEchoes} overrides={overrides} resolve={resolve} />
       </div>
 
       {tab === 'import' && (

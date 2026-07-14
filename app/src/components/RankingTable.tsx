@@ -7,6 +7,7 @@ import { SUBSTATS, maxRoll } from '../data/substats'
 import { rankEchoes, tuneAdvice } from '../engine/score'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
+import ScoreBadge from './ScoreBadge'
 
 // Bảng xếp hạng kho echo cho 1 nhân vật — trả lời "trong N echo này, dùng con nào?"
 // Kèm thanh công cụ tìm/lọc/sắp xếp (tham khảo trang artifact của Genshin Optimizer —
@@ -162,19 +163,16 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
         <div className="grid items-start gap-2 p-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {rows.map(({ r, advice }) => (
             <div key={r.echo.id}>
-              {/* Cả card là nút mở modal sửa (EchoCard không chứa button nên hợp lệ) */}
-              <button type="button" className="block w-full text-left" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>
+              {/* div (không phải button) để chân card chứa được ScoreBadge (button popover);
+                  bấm card = sửa (ScoreBadge tự stopPropagation), đường bàn phím là nút "sửa" bên dưới */}
+              <div className="cursor-pointer" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>
                 <EchoCard
                   echo={r.echo}
                   compact
                   className="transition-colors hover:border-sky-600"
-                  footer={
-                    <span className="rounded bg-slate-800/90 px-1 py-0.5 font-mono text-[10px] font-semibold text-slate-100" title={`substat ${r.score.toFixed(1)} + main ${r.mainScore.toFixed(1)}`}>
-                      {r.totalScore.toFixed(1)}
-                    </span>
-                  }
+                  footer={<ScoreBadge r={r} variant="badge" />}
                 />
-              </button>
+              </div>
               <div className="mt-0.5 flex items-center justify-between px-0.5 text-xs">
                 <span className={VERDICT_CLS[advice.verdict]} title={tm(advice.reason)}>
                   {t(`ranking.verdict.${advice.verdict}`)}
@@ -236,7 +234,9 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
                         </span>
                       ))}
                     </td>
-                    <td className="pr-2 text-right font-mono text-base text-slate-100" title={`substat ${r.score.toFixed(1)} + main ${r.mainScore.toFixed(1)}`}>{r.totalScore.toFixed(1)}</td>
+                    <td className="pr-2 text-right">
+                      <ScoreBadge r={r} />
+                    </td>
                     <td className={`pr-2 text-xs ${VERDICT_CLS[advice.verdict]}`} title={tm(advice.reason)}>
                       {t(`ranking.verdict.${advice.verdict}`)}
                       {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}

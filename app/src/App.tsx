@@ -17,7 +17,8 @@ import { SONATA_BY_ID } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
 import { scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import { useLang, useT } from './i18n'
-import { exportJson, importJson, mergeProfile, useEchoInventory, useEquipped, useOverrides } from './store'
+import { exportJson, importJson, mergeProfile, newId, useEchoInventory, useEquipped, useOverrides } from './store'
+import ScannerImport from './components/ScannerImport'
 import type { Echo, LoadoutResult } from './types'
 
 // Điều hướng tab theo tác vụ (pattern GO/Fribbels/wuwa.build — research/ui-ux.md §3):
@@ -345,6 +346,22 @@ export default function App() {
             )}
             <span className="ml-auto text-xs text-slate-500">{invCount}</span>
           </div>
+          <ScannerImport
+            hasInventory={echoes.length > 0}
+            onImport={(imported, mode) => {
+              if (mode === 'replace') {
+                if (echoes.length > 0 && !window.confirm(t('app.importConfirmReplace', { n: echoes.length }))) return
+                setEchoes(imported)
+              } else {
+                // Thêm: regenerate id nếu trùng echo đang có (tránh đè)
+                setEchoes((prev) => {
+                  const ids = new Set(prev.map((e) => e.id))
+                  return [...prev, ...imported.map((e) => (ids.has(e.id) ? { ...e, id: newId() } : e))]
+                })
+              }
+              push(t('toast.imported', { n: imported.length }))
+            }}
+          />
         </div>
       )}
 

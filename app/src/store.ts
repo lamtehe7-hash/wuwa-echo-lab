@@ -50,8 +50,9 @@ export function exportJson(echoes: Echo[]) {
 
 const VALID_COSTS: readonly number[] = [1, 3, 4]
 
-/** Validate + làm sạch 1 echo từ file import (file có thể hỏng/sửa tay). null = loại bỏ. */
-function sanitizeEcho(raw: unknown, seenIds: Set<string>): Echo | null {
+/** Validate + làm sạch 1 echo từ file import (file có thể hỏng/sửa tay). null = loại bỏ.
+ *  Export để importScanner.ts dùng lại (map format scanner → shape Echo rồi sanitize chung). */
+export function sanitizeEcho(raw: unknown, seenIds: Set<string>): Echo | null {
   if (typeof raw !== 'object' || raw === null) return null
   const e = raw as Partial<Echo>
   if (!VALID_COSTS.includes(e.cost as number)) return null

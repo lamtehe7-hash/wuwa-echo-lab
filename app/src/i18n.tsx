@@ -29,6 +29,14 @@ const DICT: Record<string, Entry> = {
   'tabs.roster': { vi: 'Đội hình', en: 'Team' },
   'tabs.import': { vi: 'Import', en: 'Import' },
   'importTab.jsonTitle': { vi: '📄 Sao lưu / khôi phục JSON', en: '📄 JSON backup / restore' },
+  'scanner.title': { vi: '📥 Nhập từ scanner cộng đồng (wuwa-ocr / Kamera)', en: '📥 Import from community scanner (wuwa-ocr / Kamera)' },
+  'scanner.hint': { vi: 'Dán JSON (hoặc chọn file) do scanner echo xuất ra: wuwa-ocr / wuwa.build (ParsedEcho[]), WuWa Inventory Kamera (echoes.json), hoặc file JSON của chính tool này. Tự nhận dạng format, chuẩn hoá stat/set và snap mốc roll.', en: 'Paste JSON (or pick a file) exported by an echo scanner: wuwa-ocr / wuwa.build (ParsedEcho[]), WuWa Inventory Kamera (echoes.json), or this tool\'s own JSON. Format is auto-detected; stats/sets are normalized and rolls snapped.' },
+  'scanner.or': { vi: 'hoặc dán ↓', en: 'or paste ↓' },
+  'scanner.fmtApp': { vi: 'JSON của tool này', en: 'this tool\'s JSON' },
+  'scanner.placeholder': { vi: 'Dán nội dung JSON scanner vào đây…', en: 'Paste scanner JSON here…' },
+  'scanner.result': { vi: 'Format: {fmt} · đọc được {n} echo · bỏ {m}', en: 'Format: {fmt} · {n} echoes parsed · {m} skipped' },
+  'scanner.add': { vi: '➕ Thêm {n} vào kho', en: '➕ Add {n} to inventory' },
+  'scanner.replace': { vi: '↻ Thay thế kho ({n})', en: '↻ Replace inventory ({n})' },
 
   // ── Equipped (bộ hiện tại + delta trước–sau) ──
   'equip.current': { vi: 'Bộ hiện tại', en: 'Current set' },

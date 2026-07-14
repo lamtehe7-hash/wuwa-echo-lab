@@ -145,9 +145,9 @@ RankingTable → RosterPanel ([App.tsx](../app/src/App.tsx)).
 | Đợt | Nội dung | Kết quả nhìn thấy |
 |---|---|---|
 | UI-1 | A1–A7 (quick wins) | ✅ **Đã làm 14/07/2026** (PROJECT_TASK task 33) — hết alert thô, kho lọc/tìm được, không mất kết quả solve, onboarding lần đầu |
-| UI-2 | B1 + B2 + B3 | App có tab, kho xem dạng card, chọn nhân vật trực quan — "ra dáng" GO |
-| UI-3 | B4 + B5 + B6 | Điểm số giải thích được, quản kho hàng loạt, roster như in-game |
-| UI-4 | C1 (+C2/C3 nếu muốn share) | So sánh trước–sau — giá trị giữ chân lớn nhất |
+| UI-2 | B1 + B2 + B3 | ✅ **Đã làm 14/07/2026** (task 34) — app có tab + URL hash, kho xem dạng card, character picker trực quan |
+| UI-3 | B4 + B5 + B6 | ✅ **Đã làm 14/07/2026** (task 35) — popover breakdown điểm, lock/trash + bulk delete, roster màu nguyên tố |
+| UI-4 | C1 | ✅ **Đã làm 14/07/2026** (task 36) — bộ hiện tại + delta ▲/▼; còn lại C2/C3 (export ảnh + vendor icon), C4 PWA, C5 multi-profile |
 
 ---
 

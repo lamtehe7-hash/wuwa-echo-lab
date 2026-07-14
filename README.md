@@ -21,7 +21,12 @@ Chạy hoàn toàn phía client (không backend, không thu thập dữ liệu),
   substat (giá trị chọn từ đúng 8 mốc roll khả dĩ), tránh nhập sai số liệu.
 - **Xếp hạng Echo theo nhân vật** — chấm điểm weighted roll-efficiency dựa trên bộ trọng số substat
   của từng nhân vật/archetype, có xét độ phù hợp main stat (3 mức: đúng / tạm dùng / sai). Kho có
-  tìm kiếm theo tên, lọc theo cost / set / main stat / tư vấn, sắp xếp theo điểm / RV / level / mới thêm.
+  tìm kiếm theo tên, lọc theo cost / set / main stat / tư vấn, sắp xếp theo điểm / RV / level / mới thêm,
+  xem dạng **bảng hoặc lưới card** kiểu in-game; bấm điểm số để xem **breakdown đóng góp từng substat**.
+- **Quản kho hàng loạt** — khoá 🔒 echo quan trọng (chặn xoá), đánh dấu loại 🗑 (solver bỏ qua),
+  chọn nhiều + xoá hàng loạt; mọi thao tác xoá đều **hoàn tác** được qua toast.
+- **Ghi nhớ "bộ hiện tại" + so sánh trước–sau** — đặt kết quả tối ưu làm bộ đang đeo của từng nhân
+  vật; lần tối ưu sau hiển thị chênh lệch điểm ▲/▼ so với bộ đã ghi nhớ.
 - **Tư vấn tune tiếp** — với Echo main stat đúng nhưng substat còn dở dang, ước lượng kỳ vọng
   (expected value) để quyết định có nên đổ tuner tiếp hay bỏ.
 - **Tìm bộ 5 Echo tối ưu cho 1 nhân vật** — solver tự sinh layout cost hợp lệ (tổng ≤ 12), tính cả

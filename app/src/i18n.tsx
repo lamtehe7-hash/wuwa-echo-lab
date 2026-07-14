@@ -192,6 +192,17 @@ const DICT: Record<string, Entry> = {
   },
   'tier.subTip': { vi: 'Đánh giá: {tier} · mốc roll {i}/{n}', en: 'Rating: {tier} · roll tier {i}/{n}' },
 
+  // ── Main echo đề cử (echo cost-4 slot đầu — Echo Skill/buff passive; research/main-echo.md) ──
+  'mainEcho.title': { vi: 'Main echo đề cử', en: 'Recommended main echo' },
+  'mainEcho.hint': {
+    vi: 'Echo COST-4 đặt ở slot ĐẦU để lấy Echo Skill (bản Nightmare/Calamity cho buff THỤ ĐỘNG chỉ cần slot). Nó chiếm 1 mảnh của set đang chạy nên phải cùng set. Chọn con có buff hợp lối đánh nhân vật.',
+    en: 'The COST-4 echo in the FIRST slot (its Echo Skill; Nightmare/Calamity variants give a PASSIVE buff just by being slotted). It occupies one piece of the running set, so it must share that set. Pick the one whose buff fits the character.',
+  },
+  'mainEcho.best': { vi: 'BiS', en: 'BiS' },
+  'mainEcho.owned': { vi: 'Có trong kho', en: 'In your inventory' },
+  'mainEcho.inLoadout': { vi: '✓ Bộ trên đã dùng main echo đề cử', en: '✓ This set uses the recommended main echo' },
+  'mainEcho.consider': { vi: '💡 Cân nhắc đặt {echo} làm main echo (slot đầu) để lấy buff', en: '💡 Consider {echo} as the main echo (first slot) for its buff' },
+
   // ── EchoEditModal (sửa echo trong kho) ──
   'echoEdit.title': { vi: 'Sửa echo trong kho', en: 'Edit inventory echo' },
   'echoEdit.save': { vi: '💾 Lưu thay đổi', en: '💾 Save changes' },

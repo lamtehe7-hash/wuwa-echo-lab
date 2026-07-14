@@ -4,6 +4,7 @@ import EchoEditModal from './components/EchoEditModal'
 import EchoForm from './components/EchoForm'
 import EmptyState from './components/EmptyState'
 import LoadoutView from './components/LoadoutView'
+import MainEchoHint from './components/MainEchoHint'
 import OcrImport from './components/OcrImport'
 import RankingTable from './components/RankingTable'
 import RosterPanel from './components/RosterPanel'
@@ -115,6 +116,12 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // Echo bị đánh dấu "loại" (trash) không vào solver — vẫn hiện mờ trong kho.
   // useMemo giữ identity để effect stale của RosterPanel không bắn mỗi render.
   const usableEchoes = useMemo(() => echoes.filter((e) => !e.trash), [echoes])
+
+  // Tên echo (lowercase) đang có trong kho — để MainEchoHint đánh dấu ✓ main echo đề cử user đã có
+  const ownedEchoNames = useMemo(
+    () => new Set(echoes.map((e) => e.name?.trim().toLowerCase()).filter((n): n is string => !!n)),
+    [echoes],
+  )
 
   const toggleFlag = (id: string, key: 'lock' | 'trash') => {
     setEchoes((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: e[key] ? undefined : true } : e)))
@@ -272,6 +279,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               onClick={solve}
             >{t('app.findBest5')}</button>
           </div>
+
+          <MainEchoHint charId={charId} ownedNames={ownedEchoNames} />
 
           <SubstatLegend />
 

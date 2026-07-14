@@ -1,4 +1,5 @@
 import type { CharacterProfile, LoadoutResult } from '../types'
+import { mainEchoesFor } from '../data/mainEchoes'
 import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
 import { setBonusBreakdown } from '../engine/solver'
@@ -25,6 +26,10 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
   const setList = Object.entries(result.setCounts).map(([id, n]) => `${SONATA_BY_ID[id]?.name ?? id} ×${n}`).join(', ')
   const setBreakdown = setBonusBreakdown(result.setCounts, profile).filter((e) => e.statScore > 0.05 || e.prefBonus > 0)
   const dmg = loadoutDamage(result.echoes.map((s) => s.echo), profile)
+  // Main echo đề cử (research/main-echo.md): bộ solver có chứa echo đề cử nào không?
+  const recs = mainEchoesFor(profile.id)
+  const loadoutNames = new Set(result.echoes.map((s) => s.echo.name?.trim().toLowerCase()).filter(Boolean))
+  const usedRec = recs.find((r) => loadoutNames.has(r.echo.trim().toLowerCase()))
   return (
     <div className="space-y-2 rounded-lg border border-emerald-900/50 bg-emerald-950/20 p-3">
       <div className="flex items-baseline justify-between">
@@ -62,6 +67,13 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
       <div className="text-xs text-slate-400" title={t('loadout.damageTip')}>
         ⚔ {t('loadout.damageLabel')}: <span className="cursor-help font-mono text-amber-300">×{dmg.multiplier.toFixed(2)}</span>
       </div>
+      {recs.length > 0 && (
+        usedRec ? (
+          <div className="text-xs text-emerald-400" title={usedRec.reason}>{t('mainEcho.inLoadout')}</div>
+        ) : (
+          <div className="text-xs text-amber-400" title={recs[0].reason}>{t('mainEcho.consider', { echo: recs[0].echo })}</div>
+        )
+      )}
       {/* Bộ 5 hiển thị dạng card in-game (grid 5 cột trên màn rộng, như hàng echo đang đeo) */}
       <div className="grid items-start gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {result.echoes.map((s) => (

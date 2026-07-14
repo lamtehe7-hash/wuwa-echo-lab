@@ -243,16 +243,16 @@ export default function App() {
                 setForcedSet('')
               }}
             />
-            <button
-              className={`rounded px-2 py-1 text-xs ${showWeights ? 'bg-amber-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-              onClick={() => setShowWeights(!showWeights)}
-            >{t('app.weights')}</button>
             <label className="ml-1 text-sm text-slate-400">{t('setpick.label')}</label>
             <SetPicker
               value={forcedSet}
               preferred={profile.preferredSets}
               onChange={(v) => { setForcedSet(v); if (solved) setStale(true) }}
             />
+            <button
+              className={`rounded px-2 py-1 text-xs ${showWeights ? 'bg-amber-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+              onClick={() => setShowWeights(!showWeights)}
+            >{t('app.weights')}</button>
             <button
               className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600"
               onClick={solve}

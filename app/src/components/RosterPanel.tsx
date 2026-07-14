@@ -27,6 +27,7 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
   const [results, setResults] = useState<RosterAssignment[] | null>(null)
   const [stale, setStale] = useState(false)
   const [adding, setAdding] = useState(CHARACTERS[0].id)
+  const [addingSet, setAddingSet] = useState('') // set ép mặc định gán kèm khi thêm member
 
   // Kho echo đổi HOẶC user chỉnh trọng số/erTarget → kết quả gán đội cũ: giữ hiển thị + banner giải lại
   useEffect(() => setStale(true), [echoes, overrides])
@@ -51,12 +52,20 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
     <div className="space-y-2 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <div className="text-sm font-semibold text-slate-300">{t('roster.help')}</div>
       <div className="flex flex-wrap items-center gap-2">
-        <select className={sel} value={adding} onChange={(e) => setAdding(e.target.value)}>
+        <select className={sel} value={adding} onChange={(e) => { setAdding(e.target.value); setAddingSet('') }}>
           {CHARACTERS.filter((c) => !ids.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
+        <SetPicker value={addingSet} preferred={resolve(adding).preferredSets} onChange={setAddingSet} />
         <button
           className="rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800"
-          onClick={() => { if (!ids.includes(adding)) { setIds([...ids, adding]); setResults(null) } }}
+          onClick={() => {
+            if (!ids.includes(adding)) {
+              setIds([...ids, adding])
+              if (addingSet) setForced((f) => ({ ...f, [adding]: addingSet }))
+              setAddingSet('')
+              setResults(null)
+            }
+          }}
         >{t('roster.addMember')}</button>
         <button
           className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600 disabled:opacity-40"
@@ -81,7 +90,7 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
                 value={forced[id] ?? ''}
                 preferred={p.preferredSets}
                 onChange={(v) => { setForced((f) => ({ ...f, [id]: v })); if (results) setStale(true) }}
-                className="max-w-[9rem] rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-xs"
+                className="w-56 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
               />
               <button
                 className="px-1 text-xs text-slate-500 hover:text-slate-300 disabled:opacity-30"

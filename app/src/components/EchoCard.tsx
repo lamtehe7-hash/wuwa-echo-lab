@@ -63,6 +63,9 @@ export default function EchoCard({
   const sonata = SONATA_BY_ID[echo.set]
   const info = findEchoInfo(echo.name)
   const mainDef = MAINSTATS[echo.cost].find((m) => m.key === echo.mainStat)
+  // Giá trị main stat ở LEVEL THỰC (main scale tuyến tính: +0 = 1/5 max, +25 = max → 0.2 + 0.032·L).
+  // Ở +25 ra đúng max. (Engine vẫn chấm theo +25 — đây chỉ là hiển thị cho đúng level đang có.)
+  const mainValue = mainDef ? mainDef.max * (0.2 + 0.032 * Math.max(0, Math.min(25, echo.level))) : null
   const fixed = FIXED_SECONDARY[echo.cost]
   const elemColor = sonata?.element ? ELEMENT_COLOR[sonata.element] : '#94a3b8'
   const displayName = echo.name?.trim() || sonata?.name || echo.set
@@ -114,9 +117,9 @@ export default function EchoCard({
           <span className={`font-medium text-amber-300 ${subText}`}>{MAINSTAT_LABELS[echo.mainStat]}</span>
           <span
             className={`font-mono font-semibold text-amber-200 ${compact ? 'text-sm' : 'text-base'} ${echo.level < 25 ? 'opacity-60' : ''}`}
-            title={t('card.mainAt25')}
+            title={echo.level < 25 && mainDef ? t('card.mainAtLevel', { level: echo.level, max: mainDef.max }) : t('card.mainAt25')}
           >
-            {mainDef ? `${mainDef.max}%` : '—'}
+            {mainValue !== null ? `${mainValue.toFixed(1)}%` : '—'}
           </span>
         </div>
         {!compact && (
@@ -137,7 +140,7 @@ export default function EchoCard({
             const barColor = q >= 0.72 ? 'bg-amber-400' : q >= 0.4 ? 'bg-sky-500' : 'bg-slate-500'
             return (
               <div key={s.stat} className={`flex items-center justify-between gap-2 ${subText}`}>
-                <span className="truncate text-slate-300">{SUBSTATS[s.stat].label}</span>
+                <span className="truncate text-slate-300" title={SUBSTATS[s.stat].label}>{SUBSTATS[s.stat].label}</span>
                 <span className="flex shrink-0 items-center gap-1.5">
                   <span className="font-mono text-slate-200">{fmtValue(s)}</span>
                   <span

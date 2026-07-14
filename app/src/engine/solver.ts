@@ -87,6 +87,39 @@ function setBonusScore(
   return { bonus, counts }
 }
 
+export interface SetBonusEntry {
+  setId: string
+  n: number
+  /** Điểm STAT THẬT của bonus set này (đã × uptime), thang 0–100 */
+  statScore: number
+  /** Điểm ưu tiên khi set nằm trong preferredSets (0 nếu không) */
+  prefBonus: number
+}
+
+/**
+ * Bóc tách setBonusScore theo TỪNG set để hiển thị (LoadoutView). Mirror Y HỆT vòng lặp trong
+ * setBonusScore nên TỔNG (statScore + prefBonus) của mọi entry đúng bằng result.setBonusScore
+ * (khoá bằng test trong scoreLoadout.test.ts). Gọi 1 lần ở UI nên tự tính lại theoMax là đủ.
+ */
+export function setBonusBreakdown(counts: Record<string, number>, profile: CharacterProfile): SetBonusEntry[] {
+  const theoMax = theoreticalMax(profile)
+  const out: SetBonusEntry[] = []
+  for (const [setId, n] of Object.entries(counts)) {
+    const def = SONATA_BY_ID[setId]
+    if (!def) continue
+    const statScore = setTierScore(def, n, profile, theoMax)
+    let prefBonus = 0
+    if (profile.preferredSets.includes(setId)) {
+      const fullAt = Math.max(...def.pieces)
+      const minAt = Math.min(...def.pieces)
+      if (n >= fullAt) prefBonus = SET_PREF_BONUS.fullPreferred
+      else if (n >= minAt) prefBonus = SET_PREF_BONUS.partialPreferred
+    }
+    out.push({ setId, n, statScore, prefBonus })
+  }
+  return out
+}
+
 /** Mọi cách chia 5 mảnh cho các set (partition của 5) — bound phải xét CẢ tổ hợp 3+ set
  *  (vd 2+2+1 qua set 1-mảnh), không chỉ top-2 set như bản cũ (prune nhầm nghiệm tối ưu). */
 const PIECE_PARTITIONS: number[][] = [[5], [4, 1], [3, 2], [3, 1, 1], [2, 2, 1], [2, 1, 1, 1], [1, 1, 1, 1, 1]]

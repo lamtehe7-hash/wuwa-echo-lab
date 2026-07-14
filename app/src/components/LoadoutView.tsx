@@ -1,6 +1,7 @@
 import type { CharacterProfile, LoadoutResult } from '../types'
 import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
+import { setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
@@ -22,6 +23,7 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
   }
   const delta = compareTotal !== null ? result.total - compareTotal : null
   const setList = Object.entries(result.setCounts).map(([id, n]) => `${SONATA_BY_ID[id]?.name ?? id} ×${n}`).join(', ')
+  const setBreakdown = setBonusBreakdown(result.setCounts, profile).filter((e) => e.statScore > 0.05 || e.prefBonus > 0)
   const dmg = loadoutDamage(result.echoes.map((s) => s.echo), profile)
   return (
     <div className="space-y-2 rounded-lg border border-emerald-900/50 bg-emerald-950/20 p-3">
@@ -46,6 +48,17 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
         <span>{' · '}{t('loadout.erFromEcho', { er: result.erGained.toFixed(1) })}</span>
         <span>{' · '}{t('loadout.setPrefix')}: {setList}</span>
       </div>
+      {setBreakdown.length > 0 && (
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500" title={t('loadout.setBonusTip')}>
+          {setBreakdown.map((e) => (
+            <span key={e.setId}>
+              {SONATA_BY_ID[e.setId]?.name ?? e.setId} ×{e.n}:{' '}
+              <span className="font-mono text-slate-400">+{e.statScore.toFixed(1)}</span>
+              {e.prefBonus > 0 && <span className="text-amber-400"> ⭐+{e.prefBonus}</span>}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="text-xs text-slate-400" title={t('loadout.damageTip')}>
         ⚔ {t('loadout.damageLabel')}: <span className="cursor-help font-mono text-amber-300">×{dmg.multiplier.toFixed(2)}</span>
       </div>

@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
 import type { EchoCost, MainStatKey, Substat, SubstatKey } from '../types'
+import { ECHOES } from '../data/echoes'
 import { MAINSTATS } from '../data/mainstats'
 import { SONATA_SETS } from '../data/sonata'
 import { MAX_SUBSTATS, SUBSTATS, SUBSTAT_KEYS } from '../data/substats'
@@ -34,6 +35,16 @@ export default function EchoFields({
   const t = useT()
   const maxSubs = MAX_SUBSTATS[value.rarity] ?? 5
   const usedStats = useMemo(() => new Set(value.substats.map((s) => s.stat)), [value.substats])
+  // Gợi ý tên echo theo cost đang chọn (datalist) — chọn tên khớp DB + echo 1-set thì tự điền set.
+  // useId để mỗi instance có datalist riêng (OcrImport mở nhiều form cùng lúc, tránh trùng id).
+  const nameListId = useId()
+  const nameOptions = useMemo(() => ECHOES.filter((e) => e.cost === value.cost), [value.cost])
+  const onName = (name: string) => {
+    const patch: Partial<EchoFieldsValue> = { name }
+    const info = ECHOES.find((e) => e.name.toLowerCase() === name.trim().toLowerCase())
+    if (info && info.sets.length === 1) patch.set = info.sets[0] // echo chỉ thuộc 1 set → tự chọn giúp
+    onChange(patch)
+  }
 
   const changeCost = (c: EchoCost) => {
     // Đổi cost → main stat cũ có thể không tồn tại ở cost mới
@@ -67,7 +78,13 @@ export default function EchoFields({
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t(nameLabelKey)}</span>
-          <input className={sel} value={value.name} onChange={(e) => onChange({ name: e.target.value })} placeholder={t('echoForm.echoNamePlaceholder')} />
+          <input
+            className={sel} value={value.name} list={nameListId}
+            onChange={(e) => onName(e.target.value)} placeholder={t('echoForm.echoNamePlaceholder')}
+          />
+          <datalist id={nameListId}>
+            {nameOptions.map((e) => <option key={e.name} value={e.name} />)}
+          </datalist>
         </label>
         <label className="flex flex-col gap-1 text-xs text-slate-400"><span className="flex-1">{t('echoForm.cost')}</span>
           <select className={sel} value={value.cost} onChange={(e) => changeCost(Number(e.target.value) as EchoCost)}>

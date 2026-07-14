@@ -148,6 +148,7 @@ const DICT: Record<string, Entry> = {
 
   // ── EchoCard (hiển thị echo kiểu in-game) ──
   'card.mainAt25': { vi: 'Giá trị main stat tại +25 (engine chấm theo +25)', en: 'Main-stat value at +25 (the engine scores at +25)' },
+  'card.mainAtLevel': { vi: 'Giá trị main stat ở +{level} (tối đa {max}% ở +25). Engine vẫn chấm theo +25.', en: 'Main-stat value at +{level} (max {max}% at +25). The engine still scores at +25.' },
   'card.rollTier': { vi: 'Mốc roll {i}/{n} — mốc càng cao giá trị càng lớn', en: 'Roll tier {i}/{n} — higher tier = higher value' },
   'card.rv': { vi: 'RV {pct}%', en: 'RV {pct}%' },
   'card.rvTip': {
@@ -168,6 +169,10 @@ const DICT: Record<string, Entry> = {
   'loadout.summary': { vi: 'Substat {sub} + set bonus {bonus}', en: 'Substat {sub} + set bonus {bonus}' },
   'loadout.erFromEcho': { vi: 'ER từ echo: {er}%', en: 'ER from echoes: {er}%' },
   'loadout.setPrefix': { vi: 'Set', en: 'Set' },
+  'loadout.setBonusTip': {
+    vi: 'Điểm bonus từng set: STAT THẬT của tier bonus đã đủ mảnh (đã × uptime) + ⭐ điểm ưu tiên khi set nằm trong danh sách đề cử. Tổng đúng bằng "set bonus" ở dòng trên.',
+    en: 'Per-set bonus score: the REAL stats of bonus tiers you have pieces for (× uptime) + ⭐ preference points when the set is in the recommended list. Sums to the "set bonus" total above.',
+  },
   'loadout.exportPng': { vi: '🖼 Xuất ảnh PNG', en: '🖼 Export PNG' },
   'loadout.exportTip': { vi: 'Lưu bộ này thành 1 ảnh PNG để chia sẻ (icon nhúng sẵn, không cần mạng).', en: 'Save this loadout as a PNG image to share (icons embedded, works offline).' },
   'loadout.damageLabel': { vi: 'Damage tương đối', en: 'Relative damage' },

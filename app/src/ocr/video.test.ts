@@ -88,6 +88,25 @@ describe('mergeDrafts: gộp bản đọc nhiều frame về 1 echo', () => {
     expect(merged).toHaveLength(2)
   })
 
+  it('subset 1 dòng + TÊN echo khớp → gộp (cùng echo 1 lần dừng, dưới ngưỡng 3 nhưng tên là bằng chứng)', () => {
+    const one = SUBS5.slice(0, 1) // 1 sub ⊂ SUBS5
+    const merged = mergeDrafts([
+      draft({ name: 'Impermanence Heron', substats: SUBS5 }),
+      draft({ name: 'impermanence heron', substats: one }), // tên khớp (không phân biệt hoa/thường)
+    ])
+    expect(merged).toHaveLength(1)
+    expect(merged[0].draft.substats).toHaveLength(5)
+  })
+
+  it('subset 1 dòng nhưng TÊN khác → KHÔNG gộp (giữ ngưỡng an toàn khi thiếu bằng chứng)', () => {
+    const one = SUBS5.slice(0, 1)
+    const merged = mergeDrafts([
+      draft({ name: 'Echo A', substats: SUBS5 }),
+      draft({ name: 'Echo B', substats: one }),
+    ])
+    expect(merged.some((m) => m.draft.substats.length === 1)).toBe(true) // bản 1-sub không bị nuốt
+  })
+
   it('subset nhưng main khác → không gộp (giữ riêng cả hai)', () => {
     const merged = mergeDrafts([
       draft({ mainStat: 'critRate', substats: SUBS5 }),

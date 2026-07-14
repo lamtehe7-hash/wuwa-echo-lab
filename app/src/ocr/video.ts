@@ -85,8 +85,13 @@ export function mergeDrafts(drafts: EchoDraft[]): MergedDraft[] {
       if (levelConflict) continue
       const mainOk = !d.mainStat || !c.draft.mainStat || d.mainStat === c.draft.mainStat
       const equal = subs.size === c.subs.size && isSubset(subs, c.subs)
-      const asSubset = !equal && subs.size >= MIN_SUBSET_SUBS && isSubset(subs, c.subs)
-      const asSuperset = !equal && c.subs.size >= MIN_SUBSET_SUBS && isSubset(c.subs, subs)
+      // Tên echo khớp = tín hiệu CÙNG-INSTANCE mạnh (1 lần dừng trên 1 echo) → cho phép gộp
+      // subset dưới ngưỡng MIN_SUBSET_SUBS (vd bản đọc 5-sub vs bản 1-sub của cùng echo), vẫn
+      // an toàn vì guard level đã chặn khác-level và tên khớp hiếm trùng giữa 2 echo thật cùng level.
+      const nameMatch = !!(d.name && c.draft.name && d.name.trim().toLowerCase() === c.draft.name.trim().toLowerCase())
+      const minSub = nameMatch ? 1 : MIN_SUBSET_SUBS
+      const asSubset = !equal && subs.size >= minSub && isSubset(subs, c.subs)
+      const asSuperset = !equal && c.subs.size >= minSub && isSubset(c.subs, subs)
       if ((equal && (mainOk || subs.size >= MIN_SUBS_MAIN_CONFLICT)) || ((asSubset || asSuperset) && mainOk)) {
         c.frames++
         // Bản NHIỀU substat hơn làm đại diện; field bản kia đọc được mà đại diện thiếu

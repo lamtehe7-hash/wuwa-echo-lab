@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { EchoCost, MainStatKey, Substat } from '../types'
 import { findEchoInfo } from '../data/echoIndex'
+import { ELEMENT_COLOR } from '../data/elementColors'
 import { FIXED_SECONDARY, MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS, maxRoll } from '../data/substats'
@@ -27,11 +28,7 @@ const RARITY_STYLE: Record<3 | 4 | 5, { border: string; header: string; star: st
   3: { border: 'border-sky-500/40', header: 'from-sky-400/15', star: 'text-sky-400' },
 }
 
-/** Màu nguyên tố (theo tông màu WuWa in-game); set không nguyên tố = xám trung tính */
-const ELEMENT_COLOR: Record<string, string> = {
-  glacio: '#4ab6ff', fusion: '#ff7a4e', electro: '#c65eff',
-  aero: '#3de6a8', spectro: '#ffd94e', havoc: '#ff4ecb',
-}
+// Màu nguyên tố dùng chung ở data/elementColors.ts; set không nguyên tố = xám trung tính
 
 /** Vị trí mốc roll của giá trị (snap về mốc gần nhất nếu lệch) → 0-based index */
 function rollIndex(rolls: number[], value: number): number {

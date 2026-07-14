@@ -30,6 +30,10 @@ const DICT: Record<string, Entry> = {
   'tabs.import': { vi: 'Import', en: 'Import' },
   'importTab.jsonTitle': { vi: '📄 Sao lưu / khôi phục JSON', en: '📄 JSON backup / restore' },
 
+  // ── CharacterPicker ──
+  'picker.overridden': { vi: 'Đã chỉnh trọng số riêng', en: 'Custom weights applied' },
+  'picker.hint': { vi: '＊ = đã chỉnh trọng số riêng · badge: DPS / Sub / Buff / Heal', en: '＊ = custom weights · badges: DPS / Sub / Buff / Heal' },
+
   // ── Stale (kết quả solve cũ khi kho/trọng số đổi) ──
   'stale.notice': { vi: 'Kho / trọng số đã thay đổi — kết quả này là bản cũ.', en: 'Inventory / weights changed — this result is outdated.' },
   'stale.resolve': { vi: '🧩 Giải lại', en: '🧩 Re-solve' },

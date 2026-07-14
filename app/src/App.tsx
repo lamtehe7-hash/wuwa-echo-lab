@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import CharacterPicker from './components/CharacterPicker'
 import EchoEditModal from './components/EchoEditModal'
 import EchoForm from './components/EchoForm'
 import EmptyState from './components/EmptyState'
@@ -98,7 +99,6 @@ export default function App() {
   }, [echoes])
   const invCount = t('app.inventoryCount', { n: echoes.length, c4: stats[4], c3: stats[3], c1: stats[1] })
 
-  const sel = 'bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm'
   const empty = echoes.length === 0
   const emptyState = (
     <EmptyState
@@ -171,18 +171,17 @@ export default function App() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <label className="text-sm text-slate-400">{t('app.character')}</label>
-            <select
-              className={sel} value={charId}
-              onChange={(e) => {
+            <CharacterPicker
+              value={charId}
+              overrides={overrides}
+              onChange={(id) => {
                 // Đổi nhân vật → kết quả cũ thuộc nhân vật khác, bỏ hẳn (khác với stale)
-                setCharId(e.target.value)
+                setCharId(id)
                 setSolved(false)
                 setLoadout(null)
                 setStale(false)
               }}
-            >
-              {CHARACTERS.map((c) => <option key={c.id} value={c.id}>{c.name}{overrides[c.id] ? ' *' : ''}</option>)}
-            </select>
+            />
             <button
               className={`rounded px-2 py-1 text-xs ${showWeights ? 'bg-amber-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
               onClick={() => setShowWeights(!showWeights)}

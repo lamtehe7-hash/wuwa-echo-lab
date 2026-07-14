@@ -6,12 +6,20 @@ import EchoCard from './EchoCard'
 
 // Hiển thị bộ 5 tối ưu do solver trả về
 
-export default function LoadoutView({ result, profile }: { result: LoadoutResult | null; profile: CharacterProfile }) {
+export default function LoadoutView({ result, profile, compareTotal = null, onPin }: {
+  result: LoadoutResult | null
+  profile: CharacterProfile
+  /** Điểm của "bộ hiện tại" đã ghi nhớ — hiện delta ▲/▼ cạnh tổng điểm (C1, pattern GO) */
+  compareTotal?: number | null
+  /** Có mặt → hiện nút "Đặt làm bộ hiện tại" ở chân kết quả */
+  onPin?: () => void
+}) {
   const t = useT()
   const tm = useTMessage()
   if (!result) {
     return <p className="p-3 text-sm text-slate-500">{t('loadout.empty')}</p>
   }
+  const delta = compareTotal !== null ? result.total - compareTotal : null
   const setList = Object.entries(result.setCounts).map(([id, n]) => `${SONATA_BY_ID[id]?.name ?? id} ×${n}`).join(', ')
   const dmg = loadoutDamage(result.echoes.map((s) => s.echo), profile)
   return (
@@ -20,7 +28,17 @@ export default function LoadoutView({ result, profile }: { result: LoadoutResult
         <div className="text-sm font-semibold text-emerald-300">
           {t('loadout.title', { layout: result.layout.join('-'), cost: result.totalCost })}
         </div>
-        <div className="font-mono text-lg text-emerald-200">{t('loadout.points', { n: result.total.toFixed(1) })}</div>
+        <div className="flex items-baseline gap-2">
+          {delta !== null && (
+            <span
+              className={`font-mono text-sm ${delta > 0.05 ? 'text-emerald-400' : delta < -0.05 ? 'text-rose-400' : 'text-slate-500'}`}
+              title={t('equip.deltaTip')}
+            >
+              {delta > 0.05 ? '▲' : delta < -0.05 ? '▼' : '＝'} {delta >= 0 ? '+' : ''}{delta.toFixed(1)}
+            </span>
+          )}
+          <span className="font-mono text-lg text-emerald-200">{t('loadout.points', { n: result.total.toFixed(1) })}</span>
+        </div>
       </div>
       <div className="flex flex-wrap items-baseline gap-x-1 text-xs text-slate-400">
         <span>{t('loadout.summary', { sub: result.subScore.toFixed(1), bonus: result.setBonusScore.toFixed(0) })}</span>
@@ -47,6 +65,13 @@ export default function LoadoutView({ result, profile }: { result: LoadoutResult
         ))}
       </div>
       {result.note.map((n, i) => <p key={i} className="text-xs text-amber-400">⚠ {tm(n)}</p>)}
+      {onPin && (
+        <button
+          type="button"
+          className="rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
+          onClick={onPin}
+        >{t('equip.pin')}</button>
+      )}
     </div>
   )
 }

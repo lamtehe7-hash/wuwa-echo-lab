@@ -146,6 +146,29 @@ export function useOverrides() {
   return { overrides, setOverrides }
 }
 
+// ---- Bộ echo "đang đeo" theo nhân vật (lưu id — echo sửa/tune vẫn bám theo) ----
+
+const EQUIPPED_KEY = 'wuwa-echo-optimizer:equipped:v1'
+
+/** Hook map charId → danh sách echo id của bộ hiện tại (persist localStorage) */
+export function useEquipped() {
+  const [equipped, setEquipped] = useState<Record<string, string[]>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(EQUIPPED_KEY) ?? '{}')
+    } catch {
+      return {}
+    }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem(EQUIPPED_KEY, JSON.stringify(equipped))
+    } catch (err) {
+      console.error('saveEquipped failed:', err)
+    }
+  }, [equipped])
+  return { equipped, setEquipped }
+}
+
 /** Preset + override → profile dùng thực tế (erTarget null = đã xoá gate, KHÔNG rơi về preset) */
 export function mergeProfile(profile: CharacterProfile, ov?: ProfileOverride): CharacterProfile {
   if (!ov) return profile

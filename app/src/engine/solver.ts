@@ -124,6 +124,48 @@ function erPenalty(chosen: Candidate[], profile: CharacterProfile): { penalty: n
   return { penalty: (penaltyRaw / theoreticalMax(profile)) * 100, erGained }
 }
 
+/**
+ * Chấm một bộ CỐ ĐỊNH bằng ĐÚNG objective của solver (value + set bonus − ER penalty) —
+ * dùng để so sánh "bộ đang đeo" vs gợi ý mới trên cùng một thang điểm.
+ * Không kiểm tra cost cap/layout (bộ đến từ kết quả solver hoặc game nên vốn hợp lệ).
+ */
+export function scoreLoadout(echoes: Echo[], profile: CharacterProfile): LoadoutResult | null {
+  if (echoes.length === 0) return null
+  const list = echoes.slice(0, 5)
+  const theoMax = theoreticalMax(profile)
+  const chosen: Candidate[] = list.map((e) => {
+    const scored = scoreEcho(e, profile)
+    const prefs = profile.mainStatPrefs[String(e.cost) as '1' | '3' | '4'] ?? []
+    return {
+      scored,
+      value: scored.totalScore + (prefs.includes(e.mainStat) ? PREF_MAIN_BONUS : 0),
+      er: echoER(e),
+      nameKey: `${e.set}::${e.name?.trim().toLowerCase() || e.id}`,
+    }
+  })
+  const sumValue = chosen.reduce((s, c) => s + c.value, 0)
+  const { bonus, counts } = setBonusScore(chosen, profile, theoMax)
+  const { penalty, erGained } = erPenalty(chosen, profile)
+  const note: LocMessage[] = []
+  if (list.length < 5) note.push({ key: 'note.partialSlots', params: { n: list.length } })
+  if (profile.erTarget) {
+    const need = Math.max(0, profile.erTarget - 100)
+    if (erGained < need) note.push({ key: 'note.erShort', params: { er: erGained.toFixed(1), need } })
+  }
+  if (chosen.some((c) => !c.scored.mainStatFit)) note.push({ key: 'note.mainStatOff' })
+  return {
+    echoes: chosen.map((c) => c.scored),
+    layout: list.map((e) => e.cost).sort((a, b) => b - a),
+    totalCost: list.reduce((s, e) => s + e.cost, 0),
+    subScore: sumValue,
+    setBonusScore: bonus,
+    total: sumValue + bonus - penalty,
+    setCounts: counts,
+    erGained,
+    note,
+  }
+}
+
 export function solveBest5(echoes: Echo[], profile: CharacterProfile): LoadoutResult | null {
   const theoMax = theoreticalMax(profile)
   const maxSetBonus = maxPossibleSetBonus(profile, theoMax)

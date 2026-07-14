@@ -30,6 +30,14 @@ const DICT: Record<string, Entry> = {
   'tabs.import': { vi: 'Import', en: 'Import' },
   'importTab.jsonTitle': { vi: '📄 Sao lưu / khôi phục JSON', en: '📄 JSON backup / restore' },
 
+  // ── Equipped (bộ hiện tại + delta trước–sau) ──
+  'equip.current': { vi: 'Bộ hiện tại', en: 'Current set' },
+  'equip.missing': { vi: '(thiếu {n} echo — đã xoá khỏi kho)', en: '({n} echoes missing — deleted from inventory)' },
+  'equip.unpin': { vi: 'bỏ ghi nhớ', en: 'forget' },
+  'equip.pin': { vi: '📌 Đặt làm bộ hiện tại', en: '📌 Set as current loadout' },
+  'equip.deltaTip': { vi: 'Chênh lệch so với "bộ hiện tại" đã ghi nhớ', en: 'Difference vs the remembered "current set"' },
+  'toast.pinned': { vi: 'Đã ghi nhớ bộ hiện tại cho {name}', en: 'Current set remembered for {name}' },
+
   // ── ScoreBadge (popover breakdown điểm) ──
   'breakdown.title': { vi: 'Điểm chi tiết', en: 'Score breakdown' },
   'breakdown.tip': { vi: 'Bấm xem đóng góp từng substat', en: 'Click for per-substat contribution' },

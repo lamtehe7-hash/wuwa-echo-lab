@@ -13,9 +13,10 @@ import WeightEditor from './components/WeightEditor'
 import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
 import { SONATA_BY_ID } from './data/sonata'
-import { solveBest5 } from './engine/solver'
+import { loadoutDamage } from './engine/damage'
+import { scoreLoadout, solveBest5 } from './engine/solver'
 import { useLang, useT } from './i18n'
-import { exportJson, importJson, mergeProfile, useEchoInventory, useOverrides } from './store'
+import { exportJson, importJson, mergeProfile, useEchoInventory, useEquipped, useOverrides } from './store'
 import type { Echo, LoadoutResult } from './types'
 
 // Điều hướng tab theo tác vụ (pattern GO/Fribbels/wuwa.build — research/ui-ux.md §3):
@@ -38,6 +39,7 @@ export default function App() {
   const push = useToast()
   const { echoes, setEchoes } = useEchoInventory()
   const { overrides, setOverrides } = useOverrides()
+  const { equipped, setEquipped } = useEquipped()
   const initial = useRef(parseHash()).current
   const [tab, setTab] = useState<Tab>(initial.tab)
   const [charId, setCharId] = useState(
@@ -70,6 +72,15 @@ export default function App() {
   const resolve = (id: string) => mergeProfile(CHARACTER_BY_ID[id], overrides[id])
   // useMemo giữ identity profile giữa các render — memo chấm điểm trong RankingTable mới có tác dụng
   const profile = useMemo(() => mergeProfile(CHARACTER_BY_ID[charId], overrides[charId]), [charId, overrides])
+
+  // "Bộ hiện tại" đã ghi nhớ của nhân vật đang chọn — chấm lại theo kho/trọng số MỚI NHẤT
+  // (cùng objective với solver) để delta trước–sau luôn cùng thang
+  const equippedInfo = useMemo(() => {
+    const ids = equipped[charId]
+    if (!ids || ids.length === 0) return null
+    const found = ids.map((id) => echoes.find((e) => e.id === id)).filter((e): e is Echo => e !== undefined)
+    return { result: scoreLoadout(found, profile), missing: ids.length - found.length }
+  }, [equipped, charId, echoes, profile])
 
   // Kho/trọng số đổi → kết quả solve không còn khớp: GIỮ hiển thị nhưng đánh dấu cũ (mờ + nút giải lại)
   useEffect(() => {
@@ -230,9 +241,40 @@ export default function App() {
             </div>
           )}
 
+          {equippedInfo && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-sky-900/60 bg-sky-950/20 px-3 py-2 text-sm">
+              <span className="text-sky-300">📌 {t('equip.current')}</span>
+              <span className="font-mono text-sky-200">
+                {equippedInfo.result ? t('loadout.points', { n: equippedInfo.result.total.toFixed(1) }) : '—'}
+              </span>
+              {equippedInfo.result && (
+                <span className="text-xs text-slate-500">
+                  ⚔ ×{loadoutDamage(equippedInfo.result.echoes.map((s) => s.echo), profile).multiplier.toFixed(2)}
+                </span>
+              )}
+              {equippedInfo.missing > 0 && <span className="text-xs text-amber-400">{t('equip.missing', { n: equippedInfo.missing })}</span>}
+              <button
+                className="ml-auto text-xs text-slate-500 hover:text-rose-400"
+                onClick={() => setEquipped((prev) => {
+                  const next = { ...prev }
+                  delete next[charId]
+                  return next
+                })}
+              >{t('equip.unpin')}</button>
+            </div>
+          )}
+
           {solved && (
             <Stale stale={stale} onResolve={solve}>
-              <LoadoutView result={loadout} profile={profile} />
+              <LoadoutView
+                result={loadout}
+                profile={profile}
+                compareTotal={equippedInfo?.result?.total ?? null}
+                onPin={loadout ? () => {
+                  setEquipped((prev) => ({ ...prev, [charId]: loadout.echoes.map((s) => s.echo.id) }))
+                  push(t('toast.pinned', { name: profile.name }))
+                } : undefined}
+              />
             </Stale>
           )}
 

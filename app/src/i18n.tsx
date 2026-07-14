@@ -236,6 +236,7 @@ const DICT: Record<string, Entry> = {
   },
   'ocr.videoCropHint': { vi: 'Kéo chuột trên khung hình để khoanh vùng panel echo (chọn đúng vùng chữ → nhanh + chính xác hơn nhiều). Bỏ trống = cả màn hình. Nhớ khoanh CẢ icon tròn cạnh "+25" — tool nhận sonata set từ icon đó.', en: 'Drag on the frame to select the echo panel region (a tight region is much faster + more accurate). Empty = full frame. Make sure the round icon next to "+25" is inside — the sonata set is detected from it.' },
   'ocr.videoCropClear': { vi: 'Xoá vùng chọn', en: 'Clear selection' },
+  'ocr.imageCropHint': { vi: 'Ảnh full màn hình: KÉO chọn vùng panel echo bên phải (gồm cả icon tròn cạnh "+25") — không crop thì OCR đọc cả lưới bên trái sẽ sai. Vùng chọn áp cho mọi ảnh trong hàng chờ.', en: 'Full-screen shot: DRAG to select the right-side echo panel (include the round icon next to "+25"). Without a crop, OCR reads the left grid too and gets it wrong. The selection applies to all queued images.' },
   'ocr.videoStep': { vi: 'Bước giữa 2 frame (giây)', en: 'Step between frames (s)' },
   'ocr.videoRun': { vi: 'Quét video (~{n} frame)', en: 'Scan video (~{n} frames)' },
   'ocr.videoSummary': { vi: 'Xong: {added} echo (đã gộp frame trùng + bản đọc thiếu) · {skipped} frame được gộp/bỏ.', en: 'Done: {added} echoes (duplicate frames + partial reads merged) · {skipped} frames merged/skipped.' },

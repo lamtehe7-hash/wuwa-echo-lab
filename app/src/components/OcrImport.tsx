@@ -3,7 +3,7 @@ import type { Echo, EchoCost, LocMessage, MainStatKey, Substat } from '../types'
 import { MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { MAX_SUBSTATS } from '../data/substats'
-import { recognizeImage, recognizeImageWithBoxes, terminateOcrEngine, type OcrProgress } from '../ocr/engine'
+import { recognizeImageWithBoxes, terminateOcrEngine, type OcrProgress } from '../ocr/engine'
 import { parseEchoText, type EchoDraft } from '../ocr/parse'
 import { fileToPreprocessedCanvas, normalizeRect, type Rect } from '../ocr/preprocess'
 import { detectSetFromCanvas } from '../ocr/seticon'
@@ -100,6 +100,9 @@ export default function OcrImport({ onAdd }: Props) {
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState<{ file: string; index: number; total: number; p: OcrProgress } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  // ---- image mode: khoanh vùng panel (như video) để OCR chính xác trên ảnh full màn hình ----
+  const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null)
+  const [imgCrop, setImgCrop] = useState<Rect | null>(null)
   // ---- video mode ----
   const [video, setVideo] = useState<{ el: HTMLVideoElement; name: string } | null>(null)
   const [crop, setCrop] = useState<Rect | null>(null)
@@ -121,6 +124,19 @@ export default function OcrImport({ onAdd }: Props) {
   }, [])
   // Đổi/đóng video → nhả objectURL của video cũ
   useEffect(() => () => { if (video) releaseVideo(video.el) }, [video])
+  // Ảnh đầu hàng chờ → nạp vào <img> để chọn vùng crop (mode ảnh). Crop áp cho CẢ hàng chờ
+  // (thường cùng độ phân giải/bố cục game); reset khi hết ảnh.
+  useEffect(() => {
+    if (mode !== 'image' || files.length === 0) {
+      setImgEl(null)
+      return
+    }
+    const url = URL.createObjectURL(files[0])
+    const img = new Image()
+    img.onload = () => setImgEl(img)
+    img.src = url
+    return () => URL.revokeObjectURL(url)
+  }, [files, mode])
 
   /** Gom ảnh từ input/paste/drop vào hàng chờ (cộng dồn, không thay thế — cho phép trộn 3 nguồn) */
   const addImages = (list: FileList | File[]) => {
@@ -154,19 +170,18 @@ export default function OcrImport({ onAdd }: Props) {
       setProgress({ file: file.name, index: i, total: queue.length, p: { status: t('ocr.starting'), progress: 0 } })
       try {
         const onP = (p: OcrProgress) => setProgress({ file: file.name, index: i, total: queue.length, p })
-        let draft: EchoDraft
-        if (preprocessOn) {
-          const ocrCanvas = await fileToPreprocessedCanvas(file, { scale: 'auto' })
-          const { text, words } = await recognizeImageWithBoxes(ocrCanvas, onP)
-          draft = parseEchoText(text)
-          // Set chưa nhận được từ text → thử icon tròn cạnh "+25" (cần canvas MÀU, trước binarize)
-          if (!draft.set) {
-            const colorCanvas = await fileToPreprocessedCanvas(file, { scale: 'auto', binarize: false })
-            const match = detectSetFromCanvas(colorCanvas, words, draft.setCandidates)
-            if (match) draft = { ...draft, set: match.setId }
-          }
-        } else {
-          draft = parseEchoText(await recognizeImage(file, onP))
+        // Luôn qua canvas (crop + word-box): crop áp vùng panel user chọn; word-box cho phép
+        // nhận set-từ-icon KỂ CẢ khi tắt binarize (trước đây nhánh else mất word-box → mất set).
+        const cropOpt = imgCrop ?? undefined
+        const ocrCanvas = await fileToPreprocessedCanvas(file, { crop: cropOpt, scale: 'auto', binarize: preprocessOn })
+        const { text, words } = await recognizeImageWithBoxes(ocrCanvas, onP)
+        let draft: EchoDraft = parseEchoText(text)
+        if (!draft.set) {
+          const colorCanvas = preprocessOn
+            ? await fileToPreprocessedCanvas(file, { crop: cropOpt, scale: 'auto', binarize: false })
+            : ocrCanvas
+          const match = detectSetFromCanvas(colorCanvas, words, draft.setCandidates)
+          if (match) draft = { ...draft, set: match.setId }
         }
         setResults((prev) => [...prev, draftToItem(file.name, draft)])
       } catch (err) {
@@ -360,6 +375,17 @@ export default function OcrImport({ onAdd }: Props) {
               </button>
             </p>
           )}
+          {imgEl && !running && (
+            <div className="space-y-1">
+              <p className="text-xs text-amber-500/90">{t('ocr.imageCropHint')}</p>
+              <CropSelector source={imgEl} srcW={imgEl.naturalWidth} srcH={imgEl.naturalHeight} crop={imgCrop} onCrop={setImgCrop} />
+              {imgCrop && (
+                <button type="button" className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800" onClick={() => setImgCrop(null)}>
+                  {t('ocr.videoCropClear')}
+                </button>
+              )}
+            </div>
+          )}
           <p className="text-xs text-slate-500">{t('ocr.pasteHint')}</p>
         </div>
       )}
@@ -381,7 +407,7 @@ export default function OcrImport({ onAdd }: Props) {
           {video && (
             <>
               <p className="text-xs text-slate-500">{t('ocr.videoCropHint')}</p>
-              <CropSelector video={video.el} crop={crop} onCrop={setCrop} />
+              <CropSelector source={video.el} srcW={video.el.videoWidth} srcH={video.el.videoHeight} crop={crop} onCrop={setCrop} />
               <div className="flex flex-wrap items-center gap-2">
                 {crop && (
                   <button type="button" className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800" onClick={() => setCrop(null)}>
@@ -501,8 +527,8 @@ export default function OcrImport({ onAdd }: Props) {
   )
 }
 
-/** Khoanh vùng panel echo bằng tay trên frame video (kéo chuột). Toạ độ lưu theo pixel video gốc. */
-function CropSelector({ video, crop, onCrop }: { video: HTMLVideoElement; crop: Rect | null; onCrop: (r: Rect | null) => void }) {
+/** Khoanh vùng panel echo bằng tay trên frame video HOẶC ảnh (kéo chuột). Toạ độ lưu theo pixel gốc. */
+function CropSelector({ source, srcW, srcH, crop, onCrop }: { source: CanvasImageSource; srcW: number; srcH: number; crop: Rect | null; onCrop: (r: Rect | null) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const dragStart = useRef<{ x: number; y: number } | null>(null)
   const [preview, setPreview] = useState<Rect | null>(null)
@@ -513,7 +539,7 @@ function CropSelector({ video, crop, onCrop }: { video: HTMLVideoElement; crop: 
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height)
     if (rect) {
       // Làm mờ ngoài vùng chọn (4 dải) + viền sáng
       ctx.fillStyle = 'rgba(2,6,23,0.55)'
@@ -539,19 +565,19 @@ function CropSelector({ video, crop, onCrop }: { video: HTMLVideoElement; crop: 
   return (
     <canvas
       ref={canvasRef}
-      width={video.videoWidth}
-      height={video.videoHeight}
+      width={srcW}
+      height={srcH}
       className="w-full max-w-2xl cursor-crosshair rounded border border-slate-700"
       onMouseDown={(e) => { dragStart.current = toVideoCoords(e) }}
       onMouseMove={(e) => {
         if (!dragStart.current) return
         const p = toVideoCoords(e)
-        setPreview(normalizeRect(dragStart.current.x, dragStart.current.y, p.x, p.y, video.videoWidth, video.videoHeight))
+        setPreview(normalizeRect(dragStart.current.x, dragStart.current.y, p.x, p.y, srcW, srcH))
       }}
       onMouseUp={(e) => {
         if (!dragStart.current) return
         const p = toVideoCoords(e)
-        const r = normalizeRect(dragStart.current.x, dragStart.current.y, p.x, p.y, video.videoWidth, video.videoHeight)
+        const r = normalizeRect(dragStart.current.x, dragStart.current.y, p.x, p.y, srcW, srcH)
         dragStart.current = null
         setPreview(null)
         // Vùng quá nhỏ = click nhầm → coi như bỏ chọn

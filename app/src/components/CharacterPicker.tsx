@@ -8,8 +8,8 @@ import { useT } from '../i18n'
 // nhóm theo nguyên tố — chấm màu element + role badge + dấu ＊ khi có override trọng số.
 // Không dùng portrait (tránh vấn đề bản quyền ảnh) — màu + typography là đủ nhận diện.
 
-/** Role badge ngắn theo archetype (thuật ngữ gamer phổ quát — không dịch) */
-const ROLE_BADGE: Record<string, string> = {
+/** Role badge ngắn theo archetype (thuật ngữ gamer phổ quát — không dịch) — dùng chung với RosterPanel */
+export const ROLE_BADGE: Record<string, string> = {
   critSkill: 'DPS', critBasic: 'DPS', critHeavy: 'DPS', critLiberation: 'DPS', critHpSkill: 'DPS',
   subDpsEr: 'Sub', buffer: 'Buff', healerAtk: 'Heal', healerHp: 'Heal',
 }

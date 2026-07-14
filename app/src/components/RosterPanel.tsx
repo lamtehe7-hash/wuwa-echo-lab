@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { CharacterProfile, Echo, RosterAssignment } from '../types'
 import { CHARACTERS } from '../data/characters'
+import { ELEMENT_COLOR } from '../data/elementColors'
 import { solveRoster } from '../engine/roster'
 import type { ProfileOverride } from '../store'
+import { ROLE_BADGE } from './CharacterPicker'
 import LoadoutView from './LoadoutView'
 import Stale from './Stale'
 import { useT } from '../i18n'
@@ -63,10 +65,16 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
 
       {ids.length > 0 && (
         <ol className="space-y-1">
-          {ids.map((id, i) => (
+          {ids.map((id, i) => {
+            const p = resolve(id)
+            return (
             <li key={id} className="flex items-center gap-2 rounded bg-slate-900 px-2 py-1 text-sm">
               <span className="w-5 text-center text-xs text-slate-500">{i + 1}</span>
-              <span className="flex-1">{resolve(id).name}</span>
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: ELEMENT_COLOR[p.element] }} />
+              <span className="flex-1">
+                {p.name}
+                <span className="ml-1.5 text-[10px] text-slate-500">{ROLE_BADGE[p.archetype] ?? ''}</span>
+              </span>
               <button
                 className="px-1 text-xs text-slate-500 hover:text-slate-300 disabled:opacity-30"
                 aria-label={t('roster.moveUp')} disabled={i === 0}
@@ -83,15 +91,20 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
                 onClick={() => { setIds(ids.filter((x) => x !== id)); setResults(null) }}
               >✕</button>
             </li>
-          ))}
+            )
+          })}
         </ol>
       )}
 
       {results && (
         <Stale stale={stale} onResolve={assign}>
           {results.map((r) => (
-            <div key={r.profile.id}>
-              <div className="mb-1 mt-2 text-sm font-medium text-slate-200">{r.profile.name}</div>
+            <div key={r.profile.id} className="border-l-2 pl-2.5" style={{ borderColor: ELEMENT_COLOR[r.profile.element] }}>
+              <div className="mb-1 mt-2 flex items-center gap-1.5 text-sm font-medium text-slate-200">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: ELEMENT_COLOR[r.profile.element] }} />
+                {r.profile.name}
+                <span className="text-[10px] text-slate-500">{ROLE_BADGE[r.profile.archetype] ?? ''}</span>
+              </div>
               <LoadoutView result={r.result} profile={r.profile} />
             </div>
           ))}

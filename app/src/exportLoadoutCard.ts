@@ -6,6 +6,7 @@ import { MAINSTATS, MAINSTAT_LABELS } from './data/mainstats'
 import { SONATA_BY_ID } from './data/sonata'
 import { SUBSTATS } from './data/substats'
 import { loadoutDamage } from './engine/damage'
+import { setBonusBreakdown } from './engine/solver'
 
 // Xuất bộ 5 tối ưu ra 1 ảnh PNG "build card" để chia sẻ (killer feature kiểu Genshin Optimizer).
 // Vẽ THẲNG lên canvas (không thư viện) — icon đã vendor same-origin (data/iconAssets.ts) nên canvas
@@ -51,16 +52,20 @@ export async function exportLoadoutCard(result: LoadoutResult, profile: Characte
     }),
   )
 
+  // Bóc tách điểm set (statScore + ưu tiên) — hiện thành band riêng (giống LoadoutView)
+  const breakdown = setBonusBreakdown(result.setCounts, profile).filter((e) => e.statScore > 0.05 || e.prefBonus > 0)
+
   const PAD = 28
   const COLW = 190
   const COLGAP = 12
   const HEADER = 100
   const PANELH = 306
+  const BREAKDOWN = breakdown.length > 0 ? 30 : 0
   const FOOTER = 34
   const n = echoes.length
   const bodyW = n * COLW + (n - 1) * COLGAP
   const W = Math.max(bodyW + PAD * 2, 720)
-  const H = HEADER + PANELH + FOOTER + PAD
+  const H = HEADER + PANELH + BREAKDOWN + FOOTER + PAD
 
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(W * DPR)
@@ -212,6 +217,27 @@ export async function exportLoadoutCard(result: LoadoutResult, profile: Characte
     ctx.fillText(s.totalScore.toFixed(1), px + COLW - 12, footY)
     ctx.textAlign = 'left'
   })
+
+  // Band bóc tách điểm set (nếu có set kích hoạt): "⬡ Set bonus:  <Set> +stat ⭐+pref   ·   …"
+  if (BREAKDOWN > 0) {
+    const bandY = HEADER + PANELH + 4
+    ctx.fillStyle = 'rgba(30,41,59,0.6)'
+    roundRect(ctx, PAD, bandY, W - PAD * 2, 22, 6)
+    ctx.fill()
+    const parts = breakdown.map((e) => {
+      const name = SONATA_BY_ID[e.setId]?.name ?? e.setId
+      const pref = e.prefBonus > 0 ? ` ⭐+${e.prefBonus}` : ''
+      return `${name} +${e.statScore.toFixed(1)}${pref}`
+    })
+    ctx.fillStyle = '#93c5fd'
+    ctx.font = '600 11px system-ui, "Segoe UI", sans-serif'
+    const label = 'Set bonus:  '
+    ctx.fillText(label, PAD + 10, bandY + 15)
+    const labelW = ctx.measureText(label).width
+    ctx.fillStyle = '#cbd5e1'
+    ctx.font = '400 11px system-ui, "Segoe UI", sans-serif'
+    ctx.fillText(fitText(ctx, parts.join('    ·    '), W - PAD * 2 - 20 - labelW), PAD + 10 + labelW, bandY + 15)
+  }
 
   // Footer: nguồn
   ctx.fillStyle = '#475569'

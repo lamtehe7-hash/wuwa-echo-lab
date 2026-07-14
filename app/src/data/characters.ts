@@ -60,47 +60,49 @@ function ch(
   }
 }
 
-// Preset nhân vật phổ biến (1.0–2.x đã kiểm chứng qua prydwen; chỉnh sửa tự do).
+// preferredSets = SET ĐỀ CỬ (hiện ⭐ trong SetPicker) — web-research 14/07/2026
+// (Prydwen/Game8/wuwa.gg, workflow 2 tầng research+verify). Trọng số/erTarget vẫn theo prydwen
+// (1.0–2.x kiểm chứng; 3.x là điểm khởi đầu, chỉnh tự do).
 // Nhân vật 3.x mới chưa có preset → dùng "Generic ..." rồi tự chỉnh trọng số.
 export const CHARACTERS: CharacterProfile[] = [
   ch('camellya', 'Camellya', 'havoc', 'critBasic', ['havoc-eclipse']),
   ch('carlotta', 'Carlotta', 'glacio', 'critSkill', ['frosty-resolve', 'freezing-frost'], { erTarget: 125 }),
-  ch('jinhsi', 'Jinhsi', 'spectro', 'critSkill', ['celestial-light', 'eternal-radiance']),
-  ch('changli', 'Changli', 'fusion', 'critSkill', ['molten-rift', 'flaming-clawprint']),
-  ch('xiangli-yao', 'Xiangli Yao', 'electro', 'critLiberation', ['void-thunder'], { erTarget: 120 }),
-  ch('calcharo', 'Calcharo', 'electro', 'critLiberation', ['void-thunder'], { erTarget: 130 }),
-  ch('jiyan', 'Jiyan', 'aero', 'critHeavy', ['sierra-gale', 'gusts-of-welkin'], { erTarget: 120 }),
-  ch('encore', 'Encore', 'fusion', 'critBasic', ['molten-rift']),
-  ch('zani', 'Zani', 'spectro', 'critHeavy', ['eternal-radiance']),
-  ch('cartethyia', 'Cartethyia', 'aero', 'critHpSkill', ['windward-pilgrimage'], { main: { '4': ['critRate', 'critDmg'], '3': ['aeroDmg'], '1': ['hpPct'] } }),
+  ch('jinhsi', 'Jinhsi', 'spectro', 'critSkill', ['celestial-light', 'lingering-tunes']),
+  ch('changli', 'Changli', 'fusion', 'critSkill', ['molten-rift', 'moonlit-clouds', 'lingering-tunes']),
+  ch('xiangli-yao', 'Xiangli Yao', 'electro', 'critLiberation', ['void-thunder', 'lingering-tunes'], { erTarget: 120 }),
+  ch('calcharo', 'Calcharo', 'electro', 'critLiberation', ['void-thunder', 'lingering-tunes'], { erTarget: 130 }),
+  ch('jiyan', 'Jiyan', 'aero', 'critHeavy', ['sierra-gale', 'lingering-tunes'], { erTarget: 120 }),
+  ch('encore', 'Encore', 'fusion', 'critBasic', ['molten-rift', 'lingering-tunes']),
+  ch('zani', 'Zani', 'spectro', 'critHeavy', ['eternal-radiance', 'celestial-light']),
+  ch('cartethyia', 'Cartethyia', 'aero', 'critHpSkill', ['windward-pilgrimage', 'gusts-of-welkin'], { main: { '4': ['critRate', 'critDmg'], '3': ['aeroDmg'], '1': ['hpPct'] } }),
   ch('lupa', 'Lupa', 'fusion', 'critSkill', ['flaming-clawprint', 'molten-rift']),
-  ch('yinlin', 'Yinlin', 'electro', 'subDpsEr', ['void-thunder', 'empyrean-anthem'], { erTarget: 125 }),
-  ch('zhezhi', 'Zhezhi', 'glacio', 'subDpsEr', ['freezing-frost', 'empyrean-anthem'], { erTarget: 125 }),
-  ch('roccia', 'Roccia', 'havoc', 'subDpsEr', ['midnight-veil'], { erTarget: 130 }),
-  ch('cantarella', 'Cantarella', 'havoc', 'subDpsEr', ['midnight-veil', 'empyrean-anthem'], { erTarget: 140 }),
-  ch('brant', 'Brant', 'fusion', 'subDpsEr', ['tidebreaking-courage'], { erTarget: 250, main: { '4': ['critRate', 'critDmg'], '3': ['energyRegen', 'fusionDmg'], '1': ['atkPct'] } }),
-  ch('sanhua', 'Sanhua', 'glacio', 'buffer', ['moonlit-clouds'], { erTarget: 150 }),
-  ch('mortefi', 'Mortefi', 'fusion', 'buffer', ['moonlit-clouds'], { erTarget: 150 }),
-  ch('iuno', 'Iuno', 'aero', 'subDpsEr', ['windward-pilgrimage', 'moonlit-clouds'], { erTarget: 150 }),
-  ch('shorekeeper', 'The Shorekeeper', 'spectro', 'healerHp', ['rejuvenating-glow', 'halo-of-starry-radiance'], { erTarget: 250, main: healerMain }),
+  ch('yinlin', 'Yinlin', 'electro', 'subDpsEr', ['empyrean-anthem', 'moonlit-clouds', 'void-thunder'], { erTarget: 125 }),
+  ch('zhezhi', 'Zhezhi', 'glacio', 'subDpsEr', ['empyrean-anthem', 'moonlit-clouds'], { erTarget: 125 }),
+  ch('roccia', 'Roccia', 'havoc', 'subDpsEr', ['midnight-veil', 'moonlit-clouds'], { erTarget: 130 }),
+  ch('cantarella', 'Cantarella', 'havoc', 'subDpsEr', ['empyrean-anthem', 'midnight-veil'], { erTarget: 140 }),
+  ch('brant', 'Brant', 'fusion', 'subDpsEr', ['tidebreaking-courage', 'molten-rift', 'moonlit-clouds'], { erTarget: 250, main: { '4': ['critRate', 'critDmg'], '3': ['energyRegen', 'fusionDmg'], '1': ['atkPct'] } }),
+  ch('sanhua', 'Sanhua', 'glacio', 'buffer', ['moonlit-clouds', 'freezing-frost'], { erTarget: 150 }),
+  ch('mortefi', 'Mortefi', 'fusion', 'buffer', ['moonlit-clouds', 'empyrean-anthem'], { erTarget: 150 }),
+  ch('iuno', 'Iuno', 'aero', 'subDpsEr', ['crown-of-valor', 'windward-pilgrimage', 'sierra-gale'], { erTarget: 150 }),
+  ch('shorekeeper', 'The Shorekeeper', 'spectro', 'healerHp', ['rejuvenating-glow', 'moonlit-clouds', 'halo-of-starry-radiance'], { erTarget: 250, main: healerMain }),
   ch('verina', 'Verina', 'spectro', 'healerAtk', ['rejuvenating-glow', 'moonlit-clouds'], { erTarget: 200, main: healerMain }),
   ch('baizhi', 'Baizhi', 'glacio', 'healerHp', ['rejuvenating-glow', 'moonlit-clouds'], { erTarget: 200, main: healerMain }),
   // ── Nhân vật 3.x — research web 13/07/2026, CHƯA kiểm chứng datamine (điểm khởi đầu, chỉnh trong app). Set id đã verify tồn tại trong sonata.ts. ──
   // Nhóm tin cậy tương đối cao (archetype + set khớp nhiều nguồn Game8/Prydwen):
-  ch('lynae', 'Lynae', 'spectro', 'critBasic', ['pact-of-neonlight-leap', 'moonlit-clouds'], { erTarget: 120 }),
-  ch('aemeath', 'Aemeath', 'fusion', 'critLiberation', ['trailblazing-star'], { erTarget: 120 }),
-  ch('luuk-herssen', 'Luuk Herssen', 'spectro', 'critBasic', ['rite-of-gilded-revelation'], { erTarget: 125 }),
-  ch('hiyuki', 'Hiyuki', 'glacio', 'critLiberation', ['wishes-of-quiet-snowfall'], { erTarget: 120 }),
-  ch('lucy', 'Lucy', 'spectro', 'critHeavy', ['shadow-of-shattered-dreams', 'celestial-light'], { erTarget: 120 }),
-  ch('rebecca', 'Rebecca', 'electro', 'critHeavy', ['shadow-of-shattered-dreams', 'void-thunder'], { erTarget: 125 }),
-  ch('suisui', 'Suisui', 'glacio', 'healerHp', ['song-of-feathered-trace', 'rejuvenating-glow'], { erTarget: 260, main: healerMain }),
+  ch('lynae', 'Lynae', 'spectro', 'critBasic', ['rite-of-gilded-revelation', 'pact-of-neonlight-leap', 'moonlit-clouds'], { erTarget: 120 }),
+  ch('aemeath', 'Aemeath', 'fusion', 'critLiberation', ['trailblazing-star', 'molten-rift'], { erTarget: 120 }),
+  ch('luuk-herssen', 'Luuk Herssen', 'spectro', 'critBasic', ['rite-of-gilded-revelation', 'celestial-light'], { erTarget: 125 }),
+  ch('hiyuki', 'Hiyuki', 'glacio', 'critLiberation', ['wishes-of-quiet-snowfall', 'freezing-frost'], { erTarget: 120 }),
+  ch('lucy', 'Lucy', 'spectro', 'critHeavy', ['shadow-of-shattered-dreams', 'celestial-light', 'lingering-tunes'], { erTarget: 120 }),
+  ch('rebecca', 'Rebecca', 'electro', 'critHeavy', ['shadow-of-shattered-dreams', 'void-thunder', 'reel-of-spliced-memories'], { erTarget: 125 }),
+  ch('suisui', 'Suisui', 'glacio', 'healerHp', ['song-of-feathered-trace', 'rejuvenating-glow', 'moonlit-clouds'], { erTarget: 260, main: healerMain }),
   // [UNVERIFIED — CẦN NGƯỜI DÙNG XÁC NHẬN]:
-  ch('denia', 'Denia', 'fusion', 'critLiberation', ['chromatic-foam', 'reel-of-spliced-memories'], { erTarget: 125 }), // archetype critLiberation vs subDpsEr còn tranh cãi (nguồn ưu tiên ER > Crit)
-  ch('lucilla', 'Lucilla', 'glacio', 'subDpsEr', ['wishes-of-quiet-snowfall'], { erTarget: 125 }), // erTarget suy theo Zhezhi, chưa có số cụ thể
-  ch('xuanling', 'Yangyang: Xuanling', 'havoc', 'critHeavy', ['song-of-feathered-trace']), // erTarget chưa rõ → dùng mặc định critHeavy
+  ch('denia', 'Denia', 'fusion', 'critLiberation', ['chromatic-foam', 'reel-of-spliced-memories', 'flaming-clawprint'], { erTarget: 125 }), // archetype critLiberation vs subDpsEr còn tranh cãi (nguồn ưu tiên ER > Crit)
+  ch('lucilla', 'Lucilla', 'glacio', 'subDpsEr', ['wishes-of-quiet-snowfall', 'moonlit-clouds'], { erTarget: 125 }), // erTarget suy theo Zhezhi, chưa có số cụ thể
+  ch('xuanling', 'Yangyang: Xuanling', 'havoc', 'critHeavy', ['song-of-feathered-trace', 'thread-of-severed-fate', 'havoc-eclipse']), // erTarget chưa rõ → dùng mặc định critHeavy
   ch('mornye', 'Mornye', 'fusion', 'healerAtk', ['halo-of-starry-radiance', 'rejuvenating-glow'], { erTarget: 260, main: { '4': ['defPct'], '3': ['energyRegen'], '1': ['defPct'] }, weights: { energyRegen: 1, defPct: 0.7, def: 0.25, critDmg: 0.35, healingBonus: 0.5 } }), // scale DEF% — không archetype nào khớp, override thủ công
-  ch('sigrika', 'Sigrika', 'aero', 'critSkill', ['sound-of-true-name'], { erTarget: 150, weights: { critRate: 1, critDmg: 1, atkPct: 0.75, atk: 0.3, energyRegen: 0.9, elementDmg: 0.85 } }), // scale "Echo Skill DMG" (không có SubstatKey) — xấp xỉ bằng ER cao
-  ch('buling', 'Buling', 'electro', 'healerAtk', ['rejuvenating-glow'], { erTarget: 170, main: healerMain }), // thực ra bản 2.8 (không phải 3.x); erTarget 170 = trung bình 160–180
+  ch('sigrika', 'Sigrika', 'aero', 'critSkill', ['sound-of-true-name', 'sierra-gale'], { erTarget: 150, weights: { critRate: 1, critDmg: 1, atkPct: 0.75, atk: 0.3, energyRegen: 0.9, elementDmg: 0.85 } }), // scale "Echo Skill DMG" (không có SubstatKey) — xấp xỉ bằng ER cao
+  ch('buling', 'Buling', 'electro', 'healerAtk', ['rejuvenating-glow', 'moonlit-clouds'], { erTarget: 170, main: healerMain }), // thực ra bản 2.8 (không phải 3.x); erTarget 170 = trung bình 160–180
   // Generic — cho nhân vật chưa có preset
   ch('generic-skill', 'Generic: Crit DPS (Skill)', 'glacio', 'critSkill', []),
   ch('generic-basic', 'Generic: Crit DPS (Basic)', 'havoc', 'critBasic', []),

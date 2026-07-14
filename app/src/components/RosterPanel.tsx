@@ -6,6 +6,7 @@ import { solveRoster } from '../engine/roster'
 import type { ProfileOverride } from '../store'
 import { ROLE_BADGE } from './CharacterPicker'
 import LoadoutView from './LoadoutView'
+import SetPicker from './SetPicker'
 import Stale from './Stale'
 import { useT } from '../i18n'
 
@@ -22,6 +23,7 @@ interface Props {
 export default function RosterPanel({ echoes, overrides, resolve }: Props) {
   const t = useT()
   const [ids, setIds] = useState<string[]>([])
+  const [forced, setForced] = useState<Record<string, string>>({}) // charId → set id ép (rỗng = tự động)
   const [results, setResults] = useState<RosterAssignment[] | null>(null)
   const [stale, setStale] = useState(false)
   const [adding, setAdding] = useState(CHARACTERS[0].id)
@@ -30,7 +32,7 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
   useEffect(() => setStale(true), [echoes, overrides])
 
   const assign = () => {
-    setResults(solveRoster(echoes, ids.map(resolve)))
+    setResults(solveRoster(echoes, ids.map(resolve), forced))
     setStale(false)
   }
 
@@ -75,6 +77,12 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
                 {p.name}
                 <span className="ml-1.5 text-[10px] text-slate-500">{ROLE_BADGE[p.archetype] ?? ''}</span>
               </span>
+              <SetPicker
+                value={forced[id] ?? ''}
+                preferred={p.preferredSets}
+                onChange={(v) => { setForced((f) => ({ ...f, [id]: v })); if (results) setStale(true) }}
+                className="max-w-[9rem] rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-xs"
+              />
               <button
                 className="px-1 text-xs text-slate-500 hover:text-slate-300 disabled:opacity-30"
                 aria-label={t('roster.moveUp')} disabled={i === 0}
@@ -88,7 +96,11 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
               <button
                 className="px-1 text-xs text-slate-600 hover:text-rose-400"
                 aria-label={t('roster.remove')}
-                onClick={() => { setIds(ids.filter((x) => x !== id)); setResults(null) }}
+                onClick={() => {
+                  setIds(ids.filter((x) => x !== id))
+                  setForced((f) => { const n = { ...f }; delete n[id]; return n })
+                  setResults(null)
+                }}
               >✕</button>
             </li>
             )

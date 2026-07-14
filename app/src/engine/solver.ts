@@ -166,12 +166,17 @@ export function scoreLoadout(echoes: Echo[], profile: CharacterProfile): Loadout
   }
 }
 
-export function solveBest5(echoes: Echo[], profile: CharacterProfile): LoadoutResult | null {
+/**
+ * @param forcedSet nếu truyền, CHỈ ghép echo thuộc set này (ép bộ theo set đã chọn) —
+ *   solver tự tối ưu 5 mảnh trong set đó; kho không đủ 5 → bộ thiếu slot (note.partialSlots).
+ */
+export function solveBest5(echoes: Echo[], profile: CharacterProfile, forcedSet?: string): LoadoutResult | null {
+  const src = forcedSet ? echoes.filter((e) => e.set === forcedSet) : echoes
   const theoMax = theoreticalMax(profile)
   const maxSetBonus = maxPossibleSetBonus(profile, theoMax)
   // Pool theo cost: điểm = substat + GIÁ TRỊ main stat + ưu tiên main đúng meta, cắt top-K
   const pools: Record<number, Candidate[]> = { 1: [], 3: [], 4: [] }
-  for (const e of echoes) {
+  for (const e of src) {
     const scored = scoreEcho(e, profile)
     const prefs = profile.mainStatPrefs[String(e.cost) as '1' | '3' | '4'] ?? []
     pools[e.cost]?.push({

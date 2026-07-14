@@ -7,6 +7,7 @@ import LoadoutView from './components/LoadoutView'
 import OcrImport from './components/OcrImport'
 import RankingTable from './components/RankingTable'
 import RosterPanel from './components/RosterPanel'
+import SetPicker from './components/SetPicker'
 import Stale from './components/Stale'
 import { useToast } from './components/Toast'
 import WeightEditor from './components/WeightEditor'
@@ -61,6 +62,7 @@ export default function App() {
   const [loadout, setLoadout] = useState<LoadoutResult | null>(null)
   const [solved, setSolved] = useState(false)
   const [stale, setStale] = useState(false)
+  const [forcedSet, setForcedSet] = useState('') // '' = tự động; set id = ép solver theo set đó
   const [showWeights, setShowWeights] = useState(false)
   const [editingEcho, setEditingEcho] = useState<Echo | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -101,7 +103,7 @@ export default function App() {
   }, [echoes, overrides])
 
   const solve = () => {
-    setLoadout(solveBest5(usableEchoes, profile))
+    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined))
     setSolved(true)
     setStale(false)
   }
@@ -232,17 +234,25 @@ export default function App() {
               value={charId}
               overrides={overrides}
               onChange={(id) => {
-                // Đổi nhân vật → kết quả cũ thuộc nhân vật khác, bỏ hẳn (khác với stale)
+                // Đổi nhân vật → kết quả cũ thuộc nhân vật khác, bỏ hẳn (khác với stale);
+                // set đề cử khác nhau nên bỏ luôn ràng buộc set đã ép
                 setCharId(id)
                 setSolved(false)
                 setLoadout(null)
                 setStale(false)
+                setForcedSet('')
               }}
             />
             <button
               className={`rounded px-2 py-1 text-xs ${showWeights ? 'bg-amber-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
               onClick={() => setShowWeights(!showWeights)}
             >{t('app.weights')}</button>
+            <label className="ml-1 text-sm text-slate-400">{t('setpick.label')}</label>
+            <SetPicker
+              value={forcedSet}
+              preferred={profile.preferredSets}
+              onChange={(v) => { setForcedSet(v); if (solved) setStale(true) }}
+            />
             <button
               className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600"
               onClick={solve}

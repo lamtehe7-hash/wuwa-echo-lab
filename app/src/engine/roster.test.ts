@@ -71,3 +71,29 @@ describe('solveRoster — kho cạn', () => {
     expect(second!.echoes.map((s) => s.echo.id)).toEqual(['bad'])
   })
 })
+
+describe('solveRoster — forcedSets: mỗi nhân vật ép set riêng', () => {
+  const mk = (id: string, set: string, cost: 1 | 3 | 4): Echo => ({
+    id, name: id, cost, set, rarity: 5, level: 25, mainStat: 'critRate',
+    substats: [{ stat: 'critDmg', value: 21 }],
+  })
+  // 2 set, mỗi set đủ bộ 5 (cost 4-3-3-1-1 = 12)
+  const echoes: Echo[] = [
+    mk('h1', 'havoc-eclipse', 4), mk('h2', 'havoc-eclipse', 3), mk('h3', 'havoc-eclipse', 3), mk('h4', 'havoc-eclipse', 1), mk('h5', 'havoc-eclipse', 1),
+    mk('m1', 'midnight-veil', 4), mk('m2', 'midnight-veil', 3), mk('m3', 'midnight-veil', 3), mk('m4', 'midnight-veil', 1), mk('m5', 'midnight-veil', 1),
+  ]
+
+  it('mỗi kết quả chỉ chứa echo thuộc đúng set bị ép của nhân vật đó', () => {
+    const roster = solveRoster(echoes, [camellya, roccia], { camellya: 'havoc-eclipse', roccia: 'midnight-veil' })
+    expect(roster[0].result!.echoes.every((s) => s.echo.set === 'havoc-eclipse')).toBe(true)
+    expect(roster[1].result!.echoes.every((s) => s.echo.set === 'midnight-veil')).toBe(true)
+    // vẫn không trùng echo giữa 2 người
+    const a = new Set(roster[0].result!.echoes.map((s) => s.echo.id))
+    expect(roster[1].result!.echoes.some((s) => a.has(s.echo.id))).toBe(false)
+  })
+
+  it('không truyền forcedSets → hành vi cũ (không lọc theo set)', () => {
+    const roster = solveRoster(echoes, [camellya])
+    expect(roster[0].result!.echoes.length).toBe(5)
+  })
+})

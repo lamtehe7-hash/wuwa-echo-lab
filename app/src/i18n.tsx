@@ -47,6 +47,13 @@ const DICT: Record<string, Entry> = {
   'picker.overridden': { vi: 'Đã chỉnh trọng số riêng', en: 'Custom weights applied' },
   'picker.hint': { vi: '＊ = đã chỉnh trọng số riêng · badge: DPS / Sub / Buff / Heal', en: '＊ = custom weights · badges: DPS / Sub / Buff / Heal' },
 
+  // ── SetPicker (ép solver theo 1 set echo) ──
+  'setpick.label': { vi: 'Set echo:', en: 'Echo set:' },
+  'setpick.auto': { vi: 'Tự động (mọi set)', en: 'Auto (any set)' },
+  'setpick.recommended': { vi: '⭐ Set đề cử', en: '⭐ Recommended sets' },
+  'setpick.others': { vi: 'Set khác', en: 'Other sets' },
+  'setpick.tip': { vi: 'Ép solver chỉ ghép echo thuộc set này. ⭐ = set đề cử cho nhân vật (theo meta cộng đồng).', en: 'Force the solver to use only echoes of this set. ⭐ = recommended for this character (community meta).' },
+
   // ── Stale (kết quả solve cũ khi kho/trọng số đổi) ──
   'stale.notice': { vi: 'Kho / trọng số đã thay đổi — kết quả này là bản cũ.', en: 'Inventory / weights changed — this result is outdated.' },
   'stale.resolve': { vi: '🧩 Giải lại', en: '🧩 Re-solve' },

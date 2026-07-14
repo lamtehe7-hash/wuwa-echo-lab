@@ -37,6 +37,13 @@ const DICT: Record<string, Entry> = {
   'scanner.result': { vi: 'Format: {fmt} · đọc được {n} echo · bỏ {m}', en: 'Format: {fmt} · {n} echoes parsed · {m} skipped' },
   'scanner.add': { vi: '➕ Thêm {n} vào kho', en: '➕ Add {n} to inventory' },
   'scanner.replace': { vi: '↻ Thay thế kho ({n})', en: '↻ Replace inventory ({n})' },
+  'vault.tip': { vi: 'Kho echo đang dùng. Tạo nhiều kho (tài khoản chính/phụ) — mỗi kho lưu riêng echo, trọng số, bộ đang đeo.', en: 'Active echo vault. Create multiple vaults (main/alt account) — each stores its own echoes, weights, equipped sets.' },
+  'vault.new': { vi: 'Kho mới', en: 'New vault' },
+  'vault.rename': { vi: 'Đổi tên', en: 'Rename' },
+  'vault.delete': { vi: 'Xoá kho', en: 'Delete vault' },
+  'vault.newPrompt': { vi: 'Tên kho mới:', en: 'New vault name:' },
+  'vault.renamePrompt': { vi: 'Đổi tên kho:', en: 'Rename vault:' },
+  'vault.deleteConfirm': { vi: 'Xoá kho "{name}" và toàn bộ echo trong đó? Không hoàn tác được.', en: 'Delete vault "{name}" and all its echoes? This cannot be undone.' },
 
   // ── Equipped (bộ hiện tại + delta trước–sau) ──
   'equip.current': { vi: 'Bộ hiện tại', en: 'Current set' },

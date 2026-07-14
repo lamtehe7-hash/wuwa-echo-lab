@@ -17,8 +17,9 @@ import { SONATA_BY_ID } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
 import { scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import { useLang, useT } from './i18n'
-import { exportJson, importJson, mergeProfile, newId, useEchoInventory, useEquipped, useOverrides } from './store'
+import { exportJson, importJson, mergeProfile, newId, useEchoInventory, useEquipped, useOverrides, useVaults } from './store'
 import ScannerImport from './components/ScannerImport'
+import VaultBar from './components/VaultBar'
 import type { Echo, LoadoutResult } from './types'
 
 // Điều hướng tab theo tác vụ (pattern GO/Fribbels/wuwa.build — research/ui-ux.md §3):
@@ -48,13 +49,13 @@ function parseHash(): { tab: Tab; char?: string } {
   return { tab, char }
 }
 
-export default function App() {
+function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typeof useVaults> }) {
   const t = useT()
   const { lang, setLang } = useLang()
   const push = useToast()
-  const { echoes, setEchoes } = useEchoInventory()
-  const { overrides, setOverrides } = useOverrides()
-  const { equipped, setEquipped } = useEquipped()
+  const { echoes, setEchoes } = useEchoInventory(vaultId)
+  const { overrides, setOverrides } = useOverrides(vaultId)
+  const { equipped, setEquipped } = useEquipped(vaultId)
   const initial = useRef(parseHash()).current
   const [tab, setTab] = useState<Tab>(initial.tab)
   const [charId, setCharId] = useState(
@@ -161,6 +162,7 @@ export default function App() {
       <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-xl font-bold text-slate-100">WuWa Echo Optimizer <span className="text-xs font-normal text-slate-500">{t('app.subtitle')}</span></h1>
         <div className="flex items-center gap-2 self-center">
+          <VaultBar {...vaults} />
           <a
             href={REPO}
             target="_blank"
@@ -390,4 +392,11 @@ export default function App() {
       </footer>
     </div>
   )
+}
+
+// Wrapper: quản lý registry vault + remount AppInner theo key=activeId (mỗi vault có kho/override/
+// equipped riêng; remount để useState(load…) đọc đúng vault mới, tránh race persist khi đổi vault).
+export default function App() {
+  const vaults = useVaults()
+  return <AppInner key={vaults.activeId} vaultId={vaults.activeId} vaults={vaults} />
 }

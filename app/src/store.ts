@@ -3,17 +3,23 @@ import type { CharacterProfile, Echo, EchoCost, MainStatKey, Substat, SubstatKey
 import { MAINSTATS } from './data/mainstats'
 import { MAX_SUBSTATS, SUBSTATS } from './data/substats'
 
-const KEY = 'wuwa-echo-optimizer:v1'
-const OVERRIDE_KEY = 'wuwa-echo-optimizer:overrides:v1'
+// ---- Storage namespaced theo VAULT (nhiều "kho" tách biệt: main/alt account — C5) ----
+const echoesKeyOf = (v: string) => `wuwa-echo-optimizer:v1:${v}`
+const overrideKeyOf = (v: string) => `wuwa-echo-optimizer:overrides:v1:${v}`
+const equippedKeyOf = (v: string) => `wuwa-echo-optimizer:equipped:v1:${v}`
+// Key CŨ (chưa namespace) — di trú sang vault mặc định lần đầu chạy bản multi-vault.
+const OLD_ECHOES_KEY = 'wuwa-echo-optimizer:v1'
+const OLD_OVERRIDE_KEY = 'wuwa-echo-optimizer:overrides:v1'
+const OLD_EQUIPPED_KEY = 'wuwa-echo-optimizer:equipped:v1'
 
 interface PersistShape {
   version: 1
   echoes: Echo[]
 }
 
-export function loadEchoes(): Echo[] {
+export function loadEchoes(vaultId: string): Echo[] {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(echoesKeyOf(vaultId))
     if (!raw) return []
     const data = JSON.parse(raw) as PersistShape
     return Array.isArray(data.echoes) ? data.echoes : []
@@ -22,20 +28,94 @@ export function loadEchoes(): Echo[] {
   }
 }
 
-export function saveEchoes(echoes: Echo[]) {
+export function saveEchoes(vaultId: string, echoes: Echo[]) {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ version: 1, echoes } satisfies PersistShape))
+    localStorage.setItem(echoesKeyOf(vaultId), JSON.stringify({ version: 1, echoes } satisfies PersistShape))
   } catch (err) {
     // Quota đầy / storage bị chặn: đừng crash app (chỉ mất persist lần này)
     console.error('saveEchoes failed:', err)
   }
 }
 
-/** Hook kho echo có persist localStorage */
-export function useEchoInventory() {
-  const [echoes, setEchoes] = useState<Echo[]>(loadEchoes)
-  useEffect(() => saveEchoes(echoes), [echoes])
+/** Hook kho echo có persist localStorage (theo vault). vaultId CỐ ĐỊNH trong vòng đời mount
+ *  (App remount theo key=activeVaultId) nên không có race persist khi đổi vault. */
+export function useEchoInventory(vaultId: string) {
+  const [echoes, setEchoes] = useState<Echo[]>(() => loadEchoes(vaultId))
+  useEffect(() => saveEchoes(vaultId, echoes), [echoes, vaultId])
   return { echoes, setEchoes }
+}
+
+// ---- Registry các vault (kho) + vault đang chọn ----
+const VAULTS_KEY = 'wuwa-echo-optimizer:vaults:v1'
+export interface Vault {
+  id: string
+  name: string
+}
+interface VaultsState {
+  vaults: Vault[]
+  activeId: string
+}
+
+function loadVaults(): VaultsState {
+  try {
+    const raw = localStorage.getItem(VAULTS_KEY)
+    if (raw) {
+      const s = JSON.parse(raw) as VaultsState
+      if (Array.isArray(s.vaults) && s.vaults.length > 0 && s.vaults.some((v) => v.id === s.activeId)) return s
+    }
+  } catch {
+    // rơi xuống khởi tạo mặc định
+  }
+  // Lần đầu: tạo vault 'main' + DI TRÚ dữ liệu cũ (chưa namespace) sang nó (không mất kho hiện có).
+  const state: VaultsState = { vaults: [{ id: 'main', name: 'Kho chính' }], activeId: 'main' }
+  try {
+    const moves: [string, string][] = [
+      [OLD_ECHOES_KEY, echoesKeyOf('main')],
+      [OLD_OVERRIDE_KEY, overrideKeyOf('main')],
+      [OLD_EQUIPPED_KEY, equippedKeyOf('main')],
+    ]
+    for (const [oldK, newK] of moves) {
+      const val = localStorage.getItem(oldK)
+      if (val !== null && localStorage.getItem(newK) === null) localStorage.setItem(newK, val)
+    }
+    localStorage.setItem(VAULTS_KEY, JSON.stringify(state))
+  } catch {
+    // storage chặn → vẫn chạy in-memory
+  }
+  return state
+}
+
+export function useVaults() {
+  const [state, setState] = useState<VaultsState>(loadVaults)
+  useEffect(() => {
+    try {
+      localStorage.setItem(VAULTS_KEY, JSON.stringify(state))
+    } catch (err) {
+      console.error('saveVaults failed:', err)
+    }
+  }, [state])
+  const setActiveId = (id: string) => setState((s) => (s.vaults.some((v) => v.id === id) ? { ...s, activeId: id } : s))
+  const addVault = (name: string): string => {
+    const id = newId()
+    setState((s) => ({ vaults: [...s.vaults, { id, name: name.trim() || `Kho ${s.vaults.length + 1}` }], activeId: id }))
+    return id
+  }
+  const renameVault = (id: string, name: string) =>
+    setState((s) => ({ ...s, vaults: s.vaults.map((v) => (v.id === id ? { ...v, name: name.trim() || v.name } : v)) }))
+  const deleteVault = (id: string) =>
+    setState((s) => {
+      if (s.vaults.length <= 1) return s // luôn giữ ≥1 kho
+      try {
+        localStorage.removeItem(echoesKeyOf(id))
+        localStorage.removeItem(overrideKeyOf(id))
+        localStorage.removeItem(equippedKeyOf(id))
+      } catch {
+        // bỏ qua
+      }
+      const vaults = s.vaults.filter((v) => v.id !== id)
+      return { vaults, activeId: s.activeId === id ? vaults[0].id : s.activeId }
+    })
+  return { vaults: state.vaults, activeId: state.activeId, setActiveId, addVault, renameVault, deleteVault }
 }
 
 export function exportJson(echoes: Echo[]) {
@@ -127,46 +207,44 @@ export interface ProfileOverride {
   erTarget?: number | null
 }
 
-function loadOverrides(): Record<string, ProfileOverride> {
+function loadOverrides(vaultId: string): Record<string, ProfileOverride> {
   try {
-    return JSON.parse(localStorage.getItem(OVERRIDE_KEY) ?? '{}')
+    return JSON.parse(localStorage.getItem(overrideKeyOf(vaultId)) ?? '{}')
   } catch {
     return {}
   }
 }
 
-export function useOverrides() {
-  const [overrides, setOverrides] = useState<Record<string, ProfileOverride>>(loadOverrides)
+export function useOverrides(vaultId: string) {
+  const [overrides, setOverrides] = useState<Record<string, ProfileOverride>>(() => loadOverrides(vaultId))
   useEffect(() => {
     try {
-      localStorage.setItem(OVERRIDE_KEY, JSON.stringify(overrides))
+      localStorage.setItem(overrideKeyOf(vaultId), JSON.stringify(overrides))
     } catch (err) {
       console.error('saveOverrides failed:', err)
     }
-  }, [overrides])
+  }, [overrides, vaultId])
   return { overrides, setOverrides }
 }
 
-// ---- Bộ echo "đang đeo" theo nhân vật (lưu id — echo sửa/tune vẫn bám theo) ----
+// ---- Bộ echo "đang đeo" theo nhân vật (lưu id — echo sửa/tune vẫn bám theo), theo vault ----
 
-const EQUIPPED_KEY = 'wuwa-echo-optimizer:equipped:v1'
-
-/** Hook map charId → danh sách echo id của bộ hiện tại (persist localStorage) */
-export function useEquipped() {
+/** Hook map charId → danh sách echo id của bộ hiện tại (persist localStorage theo vault) */
+export function useEquipped(vaultId: string) {
   const [equipped, setEquipped] = useState<Record<string, string[]>>(() => {
     try {
-      return JSON.parse(localStorage.getItem(EQUIPPED_KEY) ?? '{}')
+      return JSON.parse(localStorage.getItem(equippedKeyOf(vaultId)) ?? '{}')
     } catch {
       return {}
     }
   })
   useEffect(() => {
     try {
-      localStorage.setItem(EQUIPPED_KEY, JSON.stringify(equipped))
+      localStorage.setItem(equippedKeyOf(vaultId), JSON.stringify(equipped))
     } catch (err) {
       console.error('saveEquipped failed:', err)
     }
-  }, [equipped])
+  }, [equipped, vaultId])
   return { equipped, setEquipped }
 }
 

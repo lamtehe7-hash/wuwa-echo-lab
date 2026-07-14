@@ -43,6 +43,8 @@ const DICT: Record<string, Entry> = {
   'inv.sortLevel': { vi: 'Sắp xếp: Level', en: 'Sort: Level' },
   'inv.sortNew': { vi: 'Sắp xếp: Mới thêm', en: 'Sort: Newest' },
   'inv.count': { vi: '{shown}/{total} echo', en: '{shown}/{total} echoes' },
+  'inv.viewTable': { vi: 'Xem dạng bảng', en: 'Table view' },
+  'inv.viewGrid': { vi: 'Xem dạng lưới card', en: 'Card grid view' },
   'inv.emptyFiltered': { vi: 'Không có echo nào khớp bộ lọc.', en: 'No echoes match the filters.' },
 
   // ── EmptyState (kho trống — màn hình lần đầu) ──

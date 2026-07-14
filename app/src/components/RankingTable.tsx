@@ -6,6 +6,7 @@ import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS, maxRoll } from '../data/substats'
 import { rankEchoes, tuneAdvice } from '../engine/score'
 import { useT, useTMessage } from '../i18n'
+import EchoCard from './EchoCard'
 
 // Bảng xếp hạng kho echo cho 1 nhân vật — trả lời "trong N echo này, dùng con nào?"
 // Kèm thanh công cụ tìm/lọc/sắp xếp (tham khảo trang artifact của Genshin Optimizer —
@@ -27,6 +28,7 @@ const VERDICT_CLS: Record<string, string> = {
 }
 
 const VERDICTS = ['keep-tuning', 'done', 'usable', 'trash'] as const
+const VIEW_KEY = 'wuwa-inv-view'
 const SORT_KEYS = ['score', 'rv', 'level', 'new'] as const
 type SortKey = (typeof SORT_KEYS)[number]
 /** Key i18n của option sort: score → inv.sortScore … */
@@ -47,6 +49,19 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
   const [mainF, setMainF] = useState<'' | MainStatKey>('')
   const [verdictF, setVerdictF] = useState<string>('')
   const [sortKey, setSortKey] = useState<SortKey>('score')
+  // Bảng cho power-user (Fribbels) ⇄ lưới card trực quan (GO) — research/ui-ux.md §3.2.
+  // Nhớ lựa chọn; lần đầu: màn hẹp mặc định lưới (bảng phải cuộn ngang trên mobile).
+  const [view, setView] = useState<'table' | 'grid'>(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_KEY)
+      if (saved === 'table' || saved === 'grid') return saved
+    } catch { /* storage bị chặn — dùng mặc định */ }
+    return window.matchMedia('(max-width: 640px)').matches ? 'grid' : 'table'
+  })
+  const changeView = (v: 'table' | 'grid') => {
+    setView(v)
+    try { localStorage.setItem(VIEW_KEY, v) } catch { /* ignore */ }
+  }
 
   // Option lọc lấy từ những gì THẬT SỰ có trong kho (danh sách đầy đủ 34 set / 13 main quá dài)
   const setOptions = useMemo(() => {
@@ -107,6 +122,19 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
           <select className={selCls} value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} aria-label={t('inv.sortScore')}>
             {SORT_KEYS.map((k) => <option key={k} value={k}>{t(SORT_LABEL_KEY[k])}</option>)}
           </select>
+          <span className="flex overflow-hidden rounded border border-slate-700">
+            {(['table', 'grid'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                title={t(v === 'table' ? 'inv.viewTable' : 'inv.viewGrid')}
+                aria-label={t(v === 'table' ? 'inv.viewTable' : 'inv.viewGrid')}
+                aria-pressed={view === v}
+                className={`px-2 py-1 ${view === v ? 'bg-sky-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+                onClick={() => changeView(v)}
+              >{v === 'table' ? '▤' : '▦'}</button>
+            ))}
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {[null, 4, 3, 1].map((c) => (
@@ -130,6 +158,36 @@ export default function RankingTable({ echoes, profile, onDelete, onEdit }: Prop
 
       {rows.length === 0 ? (
         <p className="p-4 text-sm text-slate-500">{t('inv.emptyFiltered')}</p>
+      ) : view === 'grid' ? (
+        <div className="grid items-start gap-2 p-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+          {rows.map(({ r, advice }) => (
+            <div key={r.echo.id}>
+              {/* Cả card là nút mở modal sửa (EchoCard không chứa button nên hợp lệ) */}
+              <button type="button" className="block w-full text-left" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>
+                <EchoCard
+                  echo={r.echo}
+                  compact
+                  className="transition-colors hover:border-sky-600"
+                  footer={
+                    <span className="rounded bg-slate-800/90 px-1 py-0.5 font-mono text-[10px] font-semibold text-slate-100" title={`substat ${r.score.toFixed(1)} + main ${r.mainScore.toFixed(1)}`}>
+                      {r.totalScore.toFixed(1)}
+                    </span>
+                  }
+                />
+              </button>
+              <div className="mt-0.5 flex items-center justify-between px-0.5 text-xs">
+                <span className={VERDICT_CLS[advice.verdict]} title={tm(advice.reason)}>
+                  {t(`ranking.verdict.${advice.verdict}`)}
+                  {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}
+                </span>
+                <span className="shrink-0">
+                  <button className="mr-2 text-slate-500 hover:text-sky-300" onClick={() => onEdit(r.echo)}>{t('ranking.edit')}</button>
+                  <button className="text-slate-600 hover:text-rose-400" onClick={() => onDelete(r.echo.id)}>{t('ranking.delete')}</button>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">

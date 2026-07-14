@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { SonataSet } from '../types'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { SET_ICON } from '../data/setIcons'
+import { iconUrl } from '../data/iconAssets'
 import { ELEMENT_COLOR } from '../data/elementColors'
 import { useT } from '../i18n'
 
@@ -24,7 +25,7 @@ const byName = (a: SonataSet, b: SonataSet) => a.name.localeCompare(b.name)
 /** Icon set: ảnh game8, lỗi → chấm màu nguyên tố (set không nguyên tố = xám) */
 function SetIcon({ id }: { id: string }) {
   const [err, setErr] = useState(false)
-  const url = SET_ICON[id]
+  const url = iconUrl(SET_ICON[id])
   const el = SONATA_BY_ID[id]?.element
   const color = el ? ELEMENT_COLOR[el] : '#64748b'
   if (url && !err) {

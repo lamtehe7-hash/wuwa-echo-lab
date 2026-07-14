@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { CharacterProfile, Echo, MainStatKey } from '../types'
 import { findEchoInfo } from '../data/echoIndex'
+import { iconUrl } from '../data/iconAssets'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS, maxRoll } from '../data/substats'
@@ -283,7 +284,7 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
                         {(() => {
                           const info = findEchoInfo(r.echo.name)
                           return info ? (
-                            <img src={info.icon} alt="" loading="lazy" referrerPolicy="no-referrer"
+                            <img src={iconUrl(info.icon)} alt="" loading="lazy" referrerPolicy="no-referrer"
                               className="h-6 w-6 shrink-0 rounded-full border border-slate-700 bg-slate-800 object-cover"
                               onError={(e) => { e.currentTarget.style.display = 'none' }} />
                           ) : null

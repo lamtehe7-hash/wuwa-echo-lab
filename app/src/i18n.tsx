@@ -168,6 +168,8 @@ const DICT: Record<string, Entry> = {
   'loadout.summary': { vi: 'Substat {sub} + set bonus {bonus}', en: 'Substat {sub} + set bonus {bonus}' },
   'loadout.erFromEcho': { vi: 'ER từ echo: {er}%', en: 'ER from echoes: {er}%' },
   'loadout.setPrefix': { vi: 'Set', en: 'Set' },
+  'loadout.exportPng': { vi: '🖼 Xuất ảnh PNG', en: '🖼 Export PNG' },
+  'loadout.exportTip': { vi: 'Lưu bộ này thành 1 ảnh PNG để chia sẻ (icon nhúng sẵn, không cần mạng).', en: 'Save this loadout as a PNG image to share (icons embedded, works offline).' },
   'loadout.damageLabel': { vi: 'Damage tương đối', en: 'Relative damage' },
   'loadout.damageTip': {
     vi: 'Ước lượng damage tương đối so với khi không đeo echo — mô hình bắt crit dạng TÍCH (1 + CR×CD) và bracket %DMG (element + attack-type cộng dồn, nhân với phần còn lại — đúng công thức WuWa). Chỉ để so sánh phương án, không phải damage tuyệt đối. Baseline giả định, xem engine/damage.ts.',

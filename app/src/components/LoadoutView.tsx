@@ -1,6 +1,7 @@
 import type { CharacterProfile, LoadoutResult } from '../types'
 import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
+import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
 
@@ -65,13 +66,21 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
         ))}
       </div>
       {result.note.map((n, i) => <p key={i} className="text-xs text-amber-400">⚠ {tm(n)}</p>)}
-      {onPin && (
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
-          onClick={onPin}
-        >{t('equip.pin')}</button>
-      )}
+          className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+          title={t('loadout.exportTip')}
+          onClick={() => void exportLoadoutCard(result, profile)}
+        >{t('loadout.exportPng')}</button>
+        {onPin && (
+          <button
+            type="button"
+            className="rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
+            onClick={onPin}
+          >{t('equip.pin')}</button>
+        )}
+      </div>
     </div>
   )
 }

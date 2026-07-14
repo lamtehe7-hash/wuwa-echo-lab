@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { EchoCost, MainStatKey, Substat } from '../types'
 import { findEchoInfo } from '../data/echoIndex'
+import { iconUrl } from '../data/iconAssets'
 import { ELEMENT_COLOR } from '../data/elementColors'
 import { FIXED_SECONDARY, MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
@@ -81,7 +82,7 @@ export default function EchoCard({
         <div className="flex items-center gap-2">
           {info && !imgError ? (
             <img
-              src={info.icon}
+              src={iconUrl(info.icon)}
               alt=""
               loading="lazy"
               referrerPolicy="no-referrer"

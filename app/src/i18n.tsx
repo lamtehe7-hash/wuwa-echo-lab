@@ -86,6 +86,16 @@ const DICT: Record<string, Entry> = {
 
   // ── App ──
   'app.subtitle': { vi: 'bản 3.5 · dữ liệu lưu trong trình duyệt', en: 'v3.5 · data stored in your browser' },
+
+  // ── Header / Footer (giới thiệu nguồn GitHub) ──
+  'app.githubTip': { vi: 'Xem mã nguồn mở trên GitHub', en: 'View open source on GitHub' },
+  'footer.source': { vi: 'Mã nguồn mở trên GitHub', en: 'Open source on GitHub' },
+  'footer.releases': { vi: '⬇ Tải bản Windows', en: '⬇ Windows download' },
+  'footer.web': { vi: '🌐 Bản web', en: '🌐 Web version' },
+  'footer.intro': {
+    vi: 'Dự án cộng đồng phi lợi nhuận, không liên kết / được tài trợ bởi Kuro Games. Chạy hoàn toàn trong trình duyệt — không backend, không thu thập dữ liệu. Góp ý / báo lỗi / xem cách hoạt động tại kho GitHub.',
+    en: 'Non-profit community project, not affiliated with or endorsed by Kuro Games. Runs entirely in your browser — no backend, no data collection. Feedback / bug reports / how it works on the GitHub repo.',
+  },
   'app.importError': { vi: 'Import lỗi: {msg}', en: 'Import failed: {msg}' },
   'app.importConfirmReplace': { vi: 'Kho hiện có {n} echo — import sẽ THAY THẾ toàn bộ bằng nội dung file. Tiếp tục?', en: 'Inventory has {n} echoes — importing will REPLACE them all with the file contents. Continue?' },
   'app.importInvalidFormat': { vi: 'File không đúng định dạng (không có echo hợp lệ).', en: 'Invalid file format (no valid echoes found).' },

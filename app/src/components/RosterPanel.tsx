@@ -90,7 +90,7 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
                 value={forced[id] ?? ''}
                 preferred={p.preferredSets}
                 onChange={(v) => { setForced((f) => ({ ...f, [id]: v })); if (results) setStale(true) }}
-                className="w-56 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+                className="w-56 px-2 py-1 text-xs"
               />
               <button
                 className="px-1 text-xs text-slate-500 hover:text-slate-300 disabled:opacity-30"

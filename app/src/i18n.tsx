@@ -23,6 +23,13 @@ const DICT: Record<string, Entry> = {
   'toast.importedDropped': { vi: 'Đã nhập {n} echo · bỏ {m} mục không hợp lệ', en: 'Imported {n} echoes · skipped {m} invalid entries' },
   'toast.savedBatch': { vi: 'Đã lưu {n} echo vào kho', en: 'Saved {n} echoes to inventory' },
 
+  // ── Tabs (điều hướng chính) ──
+  'tabs.inventory': { vi: 'Kho Echo', en: 'Inventory' },
+  'tabs.optimize': { vi: 'Tối ưu', en: 'Optimize' },
+  'tabs.roster': { vi: 'Đội hình', en: 'Team' },
+  'tabs.import': { vi: 'Import', en: 'Import' },
+  'importTab.jsonTitle': { vi: '📄 Sao lưu / khôi phục JSON', en: '📄 JSON backup / restore' },
+
   // ── Stale (kết quả solve cũ khi kho/trọng số đổi) ──
   'stale.notice': { vi: 'Kho / trọng số đã thay đổi — kết quả này là bản cũ.', en: 'Inventory / weights changed — this result is outdated.' },
   'stale.resolve': { vi: '🧩 Giải lại', en: '🧩 Re-solve' },
@@ -55,7 +62,6 @@ const DICT: Record<string, Entry> = {
   'app.importError': { vi: 'Import lỗi: {msg}', en: 'Import failed: {msg}' },
   'app.importConfirmReplace': { vi: 'Kho hiện có {n} echo — import sẽ THAY THẾ toàn bộ bằng nội dung file. Tiếp tục?', en: 'Inventory has {n} echoes — importing will REPLACE them all with the file contents. Continue?' },
   'app.importInvalidFormat': { vi: 'File không đúng định dạng (không có echo hợp lệ).', en: 'Invalid file format (no valid echoes found).' },
-  'app.importFromImage': { vi: '📷 Import từ ảnh (beta)', en: '📷 Import from image (beta)' },
   'app.inventoryCount': { vi: 'Kho: {n} echo (cost 4: {c4} · cost 3: {c3} · cost 1: {c1})', en: 'Inventory: {n} echoes (cost 4: {c4} · cost 3: {c3} · cost 1: {c1})' },
   'app.character': { vi: 'Nhân vật:', en: 'Character:' },
   'app.weights': { vi: '⚖ trọng số', en: '⚖ weights' },

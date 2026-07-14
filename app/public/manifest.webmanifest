@@ -1,0 +1,22 @@
+{
+  "name": "WuWa Echo Optimizer",
+  "short_name": "WuWa Echo",
+  "description": "Tối ưu Echo cho Wuthering Waves — chấm điểm substat, solver bộ-5, gán cả đội, import OCR ảnh/video. Chạy hoàn toàn offline trong trình duyệt.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "lang": "vi",
+  "categories": ["games", "utilities"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

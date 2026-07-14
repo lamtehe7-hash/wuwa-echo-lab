@@ -1,4 +1,5 @@
 import type { CharacterProfile, WeightKey } from '../types'
+import { ARCHETYPE_WEIGHTS } from '../data/characters'
 import { SUBSTATS, SUBSTAT_KEYS } from '../data/substats'
 import type { ProfileOverride } from '../store'
 import { useT } from '../i18n'
@@ -24,6 +25,18 @@ export default function WeightEditor({ base, merged, override, onChange }: Props
     onChange({ ...override, weights: { ...override?.weights, [stat]: v } })
   }
 
+  // Áp preset role (wuwa.uk pattern — research/ui-ux.md §3.4): người mới chọn role thay vì hiểu
+  // từng weight. Ghi TƯỜNG MINH mọi key (kể cả 0) để weight của preset nhân vật gốc không lọt qua merge.
+  const applyPreset = (arch: string) => {
+    const preset = ARCHETYPE_WEIGHTS[arch]
+    if (!preset) return
+    const weights: Partial<Record<WeightKey, number>> = {}
+    for (const k of [...SUBSTAT_KEYS, 'elementDmg', 'healingBonus'] as WeightKey[]) {
+      weights[k] = preset[k] ?? 0
+    }
+    onChange({ ...override, weights })
+  }
+
   const hasOverride = override && (Object.keys(override.weights ?? {}).length > 0 || override.erTarget !== undefined)
 
   return (
@@ -36,6 +49,17 @@ export default function WeightEditor({ base, merged, override, onChange }: Props
           </button>
         )}
       </div>
+      <label className="flex items-center justify-between gap-2 text-xs text-slate-400">
+        <span>{t('weights.presetLabel')}</span>
+        <select
+          className="rounded border border-slate-700 bg-slate-800 px-1 py-0.5 text-xs"
+          value=""
+          onChange={(e) => { if (e.target.value) applyPreset(e.target.value) }}
+        >
+          <option value="">{t('weights.presetPick')}</option>
+          {Object.keys(ARCHETYPE_WEIGHTS).map((a) => <option key={a} value={a}>{t(`weights.arch.${a}`)}</option>)}
+        </select>
+      </label>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1">
         {SUBSTAT_KEYS.map((k) => {
           const v = merged.weights[k] ?? 0

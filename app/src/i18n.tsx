@@ -14,16 +14,49 @@ const DICT: Record<string, Entry> = {
   // ── common ──
   'common.exportJson': { vi: 'Export JSON', en: 'Export JSON' },
   'common.importJson': { vi: 'Import JSON', en: 'Import JSON' },
+  'common.undo': { vi: 'Hoàn tác', en: 'Undo' },
+  'common.close': { vi: 'Đóng', en: 'Close' },
+
+  // ── Toast (Toast.tsx + nơi gọi useToast) ──
+  'toast.deleted': { vi: 'Đã xoá {name}', en: 'Deleted {name}' },
+  'toast.imported': { vi: 'Đã nhập {n} echo từ file', en: 'Imported {n} echoes from file' },
+  'toast.importedDropped': { vi: 'Đã nhập {n} echo · bỏ {m} mục không hợp lệ', en: 'Imported {n} echoes · skipped {m} invalid entries' },
+  'toast.savedBatch': { vi: 'Đã lưu {n} echo vào kho', en: 'Saved {n} echoes to inventory' },
+
+  // ── Stale (kết quả solve cũ khi kho/trọng số đổi) ──
+  'stale.notice': { vi: 'Kho / trọng số đã thay đổi — kết quả này là bản cũ.', en: 'Inventory / weights changed — this result is outdated.' },
+  'stale.resolve': { vi: '🧩 Giải lại', en: '🧩 Re-solve' },
+
+  // ── Thanh công cụ kho (RankingTable) ──
+  'inv.search': { vi: 'Tìm theo tên echo / set…', en: 'Search echo / set name…' },
+  'inv.allSets': { vi: 'Mọi set', en: 'All sets' },
+  'inv.allMains': { vi: 'Mọi main stat', en: 'All main stats' },
+  'inv.sortScore': { vi: 'Sắp xếp: Điểm', en: 'Sort: Score' },
+  'inv.sortRv': { vi: 'Sắp xếp: RV', en: 'Sort: RV' },
+  'inv.sortLevel': { vi: 'Sắp xếp: Level', en: 'Sort: Level' },
+  'inv.sortNew': { vi: 'Sắp xếp: Mới thêm', en: 'Sort: Newest' },
+  'inv.count': { vi: '{shown}/{total} echo', en: '{shown}/{total} echoes' },
+  'inv.emptyFiltered': { vi: 'Không có echo nào khớp bộ lọc.', en: 'No echoes match the filters.' },
+
+  // ── EmptyState (kho trống — màn hình lần đầu) ──
+  'empty.title': { vi: 'Kho echo đang trống', en: 'Your echo inventory is empty' },
+  'empty.subtitle': { vi: 'Nạp kho theo một trong ba cách để bắt đầu:', en: 'Load your inventory one of three ways to get started:' },
+  'empty.ocrTitle': { vi: '📷 Import từ ảnh / video', en: '📷 Import from images / video' },
+  'empty.ocrDesc': { vi: 'Chụp panel echo trong game rồi thả vào — OCR chạy ngay trên máy, không upload đi đâu.', en: 'Screenshot the in-game echo panel and drop it in — OCR runs locally, nothing is uploaded.' },
+  'empty.jsonTitle': { vi: '📄 Import JSON', en: '📄 Import JSON' },
+  'empty.jsonDesc': { vi: 'Khôi phục kho từ file backup đã export trước đó.', en: 'Restore your inventory from a previously exported backup file.' },
+  'empty.demoTitle': { vi: '🎲 Dữ liệu demo', en: '🎲 Demo data' },
+  'empty.demoDesc': { vi: 'Nạp 10 echo mẫu để khám phá tính năng trước.', en: 'Load 10 sample echoes to explore the features first.' },
+  'empty.steps': { vi: '① Nạp kho → ② Chọn nhân vật → ③ Tìm bộ 5 tối ưu', en: '① Load inventory → ② Pick a character → ③ Find the best 5-set' },
+  'empty.manualHint': { vi: 'Hoặc nhập tay từng echo bằng form "Thêm echo" bên cạnh.', en: 'Or add echoes manually with the "Add echo" form on the side.' },
 
   // ── App ──
   'app.subtitle': { vi: 'bản 3.5 · dữ liệu lưu trong trình duyệt', en: 'v3.5 · data stored in your browser' },
   'app.importError': { vi: 'Import lỗi: {msg}', en: 'Import failed: {msg}' },
   'app.importConfirmReplace': { vi: 'Kho hiện có {n} echo — import sẽ THAY THẾ toàn bộ bằng nội dung file. Tiếp tục?', en: 'Inventory has {n} echoes — importing will REPLACE them all with the file contents. Continue?' },
-  'app.importDropped': { vi: 'Đã bỏ qua {n} mục không hợp lệ trong file.', en: 'Skipped {n} invalid entry(ies) in the file.' },
   'app.importInvalidFormat': { vi: 'File không đúng định dạng (không có echo hợp lệ).', en: 'Invalid file format (no valid echoes found).' },
   'app.importFromImage': { vi: '📷 Import từ ảnh (beta)', en: '📷 Import from image (beta)' },
   'app.inventoryCount': { vi: 'Kho: {n} echo (cost 4: {c4} · cost 3: {c3} · cost 1: {c1})', en: 'Inventory: {n} echoes (cost 4: {c4} · cost 3: {c3} · cost 1: {c1})' },
-  'app.loadDemo': { vi: 'Nạp 10 echo mẫu để xem thử', en: 'Load 10 sample echoes to try' },
   'app.character': { vi: 'Nhân vật:', en: 'Character:' },
   'app.weights': { vi: '⚖ trọng số', en: '⚖ weights' },
   'app.all': { vi: 'Tất cả', en: 'All' },
@@ -53,7 +86,6 @@ const DICT: Record<string, Entry> = {
   'ranking.verdict.usable': { vi: 'Tạm dùng', en: 'Usable' },
   'ranking.verdict.trash': { vi: 'Bỏ', en: 'Trash' },
   'ranking.emptyAll': { vi: 'Chưa có echo nào trong kho.', en: 'No echoes in inventory.' },
-  'ranking.emptyCost': { vi: 'Chưa có echo nào cost {cost} trong kho.', en: 'No cost-{cost} echoes in inventory.' },
   'ranking.colEcho': { vi: 'Echo', en: 'Echo' },
   'ranking.colMain': { vi: 'Main', en: 'Main' },
   'ranking.colSubstat': { vi: 'Substat', en: 'Substat' },
@@ -61,7 +93,6 @@ const DICT: Record<string, Entry> = {
   'ranking.colAdvice': { vi: 'Tư vấn', en: 'Advice' },
   'ranking.expected': { vi: 'kỳ vọng {n}', en: 'expected {n}' },
   'ranking.delete': { vi: 'xóa', en: 'delete' },
-  'ranking.deleteConfirm': { vi: 'Xóa echo này khỏi kho?', en: 'Delete this echo from the inventory?' },
   'ranking.edit': { vi: 'sửa', en: 'edit' },
   'ranking.editTip': { vi: 'Xem chi tiết / sửa echo này', en: 'View details / edit this echo' },
 
@@ -96,12 +127,26 @@ const DICT: Record<string, Entry> = {
   // ── RosterPanel ──
   'roster.help': { vi: 'Gán cả đội (mỗi echo chỉ 1 người dùng — ưu tiên từ trên xuống)', en: 'Assign whole team (each echo used by one only — priority top-down)' },
   'roster.addMember': { vi: '+ thêm vào đội', en: '+ add to team' },
+  'roster.moveUp': { vi: 'Chuyển lên', en: 'Move up' },
+  'roster.moveDown': { vi: 'Chuyển xuống', en: 'Move down' },
+  'roster.remove': { vi: 'Bỏ khỏi đội', en: 'Remove from team' },
   'roster.assign': { vi: '🧩 Gán echo cho cả đội', en: '🧩 Assign echoes to team' },
   'roster.noResult': { vi: 'Không đủ echo để ghép bộ.', en: 'Not enough echoes to build a set.' },
 
   // ── WeightEditor ──
   'weights.title': { vi: 'Trọng số — {name}', en: 'Weights — {name}' },
   'weights.reset': { vi: '↺ về preset gốc', en: '↺ reset to preset' },
+  'weights.presetLabel': { vi: 'Áp preset role', en: 'Apply role preset' },
+  'weights.presetPick': { vi: '— chọn preset —', en: '— pick a preset —' },
+  'weights.arch.critSkill': { vi: 'Crit DPS (Skill)', en: 'Crit DPS (Skill)' },
+  'weights.arch.critBasic': { vi: 'Crit DPS (Basic)', en: 'Crit DPS (Basic)' },
+  'weights.arch.critHeavy': { vi: 'Crit DPS (Heavy)', en: 'Crit DPS (Heavy)' },
+  'weights.arch.critLiberation': { vi: 'Crit DPS (Liberation)', en: 'Crit DPS (Liberation)' },
+  'weights.arch.critHpSkill': { vi: 'Crit DPS (scale HP)', en: 'Crit DPS (HP-scale)' },
+  'weights.arch.subDpsEr': { vi: 'Sub-DPS / ER', en: 'Sub-DPS / ER' },
+  'weights.arch.buffer': { vi: 'Buffer (ER)', en: 'Buffer (ER)' },
+  'weights.arch.healerAtk': { vi: 'Healer (scale ATK)', en: 'Healer (ATK-scale)' },
+  'weights.arch.healerHp': { vi: 'Healer (scale HP)', en: 'Healer (HP-scale)' },
   'weights.erTarget': { vi: 'Mục tiêu tổng ER% (gồm 100 gốc; bỏ trống = không gate)', en: 'Target total ER% (incl. 100 base; blank = no gate)' },
   'weights.help': {
     vi: 'Thang 0–1: 1 roll MAX của stat = w điểm. CR = CD = 1 cho DPS (1 roll CD ≈ 1 roll CR về EV quanh tỉ lệ crit 1:2).',
@@ -121,6 +166,9 @@ const DICT: Record<string, Entry> = {
     en: 'Beta — works best with English echo-panel screenshots at 1920×1080. The echo name ("+25" line) and sonata set (round icon next to "+25", or the "Sonata Effect" text when visible) are detected automatically. Always double-check results before saving — OCR can misread.',
   },
   'ocr.run': { vi: 'Chạy OCR ({n} ảnh)', en: 'Run OCR ({n} images)' },
+  'ocr.pasteHint': { vi: 'Mẹo: Ctrl+V dán ảnh vừa chụp (Win+Shift+S), hoặc kéo-thả ảnh vào panel này.', en: 'Tip: Ctrl+V to paste a fresh screenshot (Win+Shift+S), or drag & drop images onto this panel.' },
+  'ocr.filesSelected': { vi: 'Đã chọn {n} ảnh', en: '{n} images selected' },
+  'ocr.clearFiles': { vi: 'bỏ chọn', en: 'clear' },
   'ocr.starting': { vi: 'đang khởi động…', en: 'starting…' },
   'ocr.modeImage': { vi: 'Ảnh', en: 'Images' },
   'ocr.modeVideo': { vi: 'Video (beta)', en: 'Video (beta)' },

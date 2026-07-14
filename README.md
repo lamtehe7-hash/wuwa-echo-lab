@@ -20,7 +20,8 @@ Chạy hoàn toàn phía client (không backend, không thu thập dữ liệu),
 - **Nhập kho Echo bằng tay** — form chọn sonata set, cost, main stat (theo mốc hợp lệ của cost) và
   substat (giá trị chọn từ đúng 8 mốc roll khả dĩ), tránh nhập sai số liệu.
 - **Xếp hạng Echo theo nhân vật** — chấm điểm weighted roll-efficiency dựa trên bộ trọng số substat
-  của từng nhân vật/archetype, có xét độ phù hợp main stat (3 mức: đúng / tạm dùng / sai).
+  của từng nhân vật/archetype, có xét độ phù hợp main stat (3 mức: đúng / tạm dùng / sai). Kho có
+  tìm kiếm theo tên, lọc theo cost / set / main stat / tư vấn, sắp xếp theo điểm / RV / level / mới thêm.
 - **Tư vấn tune tiếp** — với Echo main stat đúng nhưng substat còn dở dang, ước lượng kỳ vọng
   (expected value) để quyết định có nên đổ tuner tiếp hay bỏ.
 - **Tìm bộ 5 Echo tối ưu cho 1 nhân vật** — solver tự sinh layout cost hợp lệ (tổng ≤ 12), tính cả
@@ -29,11 +30,12 @@ Chạy hoàn toàn phía client (không backend, không thu thập dữ liệu),
 - **Gán Echo cho cả đội hình** — giải tuần tự theo thứ tự ưu tiên nhân vật, cho phép khoá
   (lock) Echo đã dùng để không bị nhân vật khác giành mất.
 - **Chỉnh trọng số theo ý riêng** — ghi đè bộ trọng số substat / mục tiêu ER mặc định cho từng nhân
-  vật, lưu riêng theo trình duyệt.
+  vật (có preset role: Crit DPS / Sub-DPS / Buffer / Healer… để áp nhanh), lưu riêng theo trình duyệt.
 - **Import bằng OCR từ ảnh / video (beta)** — chụp/quay màn hình panel Echo rồi thả vào tool:
   tự nhận tên Echo, sonata set (từ icon), cost, level, main stat và substat (snap về mốc roll hợp
   lệ). OCR chạy **ngay trên máy** (tesseract.js, tài nguyên tự chứa — không gọi CDN, không upload
-  ảnh đi đâu); kết quả hiện dạng card như in-game, có nút *Lưu tất cả / Lưu echo 100%*.
+  ảnh đi đâu); kết quả hiện dạng card như in-game, có nút *Lưu tất cả / Lưu echo 100%*. Hỗ trợ dán
+  ảnh bằng **Ctrl+V** (Win+Shift+S xong dán thẳng) và kéo-thả ảnh vào panel.
 - **Export / Import JSON** — sao lưu hoặc chuyển kho Echo giữa các thiết bị bằng file JSON tự định
   nghĩa (chưa có chuẩn chung cho cộng đồng WuWa).
 - **Dữ liệu demo** — nút nạp sẵn vài Echo mẫu để thử nhanh không cần nhập tay.

@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import EchoEditModal from './components/EchoEditModal'
 import EchoForm from './components/EchoForm'
+import EmptyState from './components/EmptyState'
 import LoadoutView from './components/LoadoutView'
 import OcrImport from './components/OcrImport'
 import RankingTable from './components/RankingTable'
 import RosterPanel from './components/RosterPanel'
+import Stale from './components/Stale'
+import { useToast } from './components/Toast'
 import WeightEditor from './components/WeightEditor'
 import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
+import { SONATA_BY_ID } from './data/sonata'
 import { solveBest5 } from './engine/solver'
 import { useLang, useT } from './i18n'
 import { exportJson, importJson, mergeProfile, useEchoInventory, useOverrides } from './store'
@@ -16,12 +20,13 @@ import type { Echo, LoadoutResult } from './types'
 export default function App() {
   const t = useT()
   const { lang, setLang } = useLang()
+  const push = useToast()
   const { echoes, setEchoes } = useEchoInventory()
   const { overrides, setOverrides } = useOverrides()
   const [charId, setCharId] = useState(CHARACTERS[0].id)
-  const [costFilter, setCostFilter] = useState<number | null>(null)
   const [loadout, setLoadout] = useState<LoadoutResult | null>(null)
   const [solved, setSolved] = useState(false)
+  const [stale, setStale] = useState(false)
   const [showWeights, setShowWeights] = useState(false)
   const [showOcr, setShowOcr] = useState(false)
   const [editingEcho, setEditingEcho] = useState<Echo | null>(null)
@@ -31,13 +36,29 @@ export default function App() {
   const addEcho = (echo: Echo) => setEchoes((prev) => [...prev, echo])
 
   const resolve = (id: string) => mergeProfile(CHARACTER_BY_ID[id], overrides[id])
-  const profile = resolve(charId)
+  // useMemo giữ identity profile giữa các render — memo chấm điểm trong RankingTable mới có tác dụng
+  const profile = useMemo(() => mergeProfile(CHARACTER_BY_ID[charId], overrides[charId]), [charId, overrides])
 
-  // Kho đổi (thêm/xóa/import) → kết quả solve cũ không còn khớp, ẩn đi để tránh hiển thị stale
+  // Kho/trọng số đổi → kết quả solve không còn khớp: GIỮ hiển thị nhưng đánh dấu cũ (mờ + nút giải lại)
   useEffect(() => {
-    setSolved(false)
-    setLoadout(null)
-  }, [echoes])
+    setStale(true)
+  }, [echoes, overrides])
+
+  const solve = () => {
+    setLoadout(solveBest5(echoes, profile))
+    setSolved(true)
+    setStale(false)
+  }
+
+  // Xoá ngay + toast có "Hoàn tác" (thay cho confirm chặn luồng)
+  const deleteEcho = (id: string) => {
+    const echo = echoes.find((e) => e.id === id)
+    if (!echo) return
+    setEchoes((prev) => prev.filter((e) => e.id !== id))
+    push(t('toast.deleted', { name: echo.name || SONATA_BY_ID[echo.set]?.name || echo.set }), {
+      action: { label: t('common.undo'), fn: () => setEchoes((prev) => [...prev, echo]) },
+    })
+  }
 
   const stats = useMemo(() => {
     const byCost: Record<number, number> = { 1: 0, 3: 0, 4: 0 }
@@ -65,9 +86,11 @@ export default function App() {
                     // Import THAY THẾ kho — hỏi trước khi ghi đè dữ liệu đang có
                     if (echoes.length > 0 && !window.confirm(t('app.importConfirmReplace', { n: echoes.length }))) return
                     setEchoes(imported)
-                    if (dropped > 0) alert(t('app.importDropped', { n: dropped }))
+                    push(dropped > 0
+                      ? t('toast.importedDropped', { n: imported.length, m: dropped })
+                      : t('toast.imported', { n: imported.length }))
                   })
-                  .catch((err) => alert(t('app.importError', { msg: err.message === 'invalid-format' ? t('app.importInvalidFormat') : err.message })))
+                  .catch((err) => push(t('app.importError', { msg: err.message === 'invalid-format' ? t('app.importInvalidFormat') : err.message }), { kind: 'error' }))
               }
               e.target.value = ''
             }}
@@ -91,12 +114,6 @@ export default function App() {
           <p className="text-xs text-slate-500">
             {t('app.inventoryCount', { n: echoes.length, c4: stats[4], c3: stats[3], c1: stats[1] })}
           </p>
-          {echoes.length === 0 && (
-            <button
-              className="w-full rounded border border-dashed border-slate-700 py-1.5 text-xs text-slate-400 hover:bg-slate-900"
-              onClick={() => setEchoes(DEMO_ECHOES)}
-            >{t('app.loadDemo')}</button>
-          )}
           {showWeights && (
             <WeightEditor
               base={CHARACTER_BY_ID[charId]}
@@ -106,57 +123,67 @@ export default function App() {
                 const next = { ...overrides }
                 if (ov === undefined) delete next[charId]
                 else next[charId] = ov
-                setOverrides(next)
-                setSolved(false)
+                setOverrides(next) // kết quả solve tự chuyển sang trạng thái "cũ" qua effect [overrides]
               }}
             />
           )}
         </aside>
 
         <main className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-sm text-slate-400">{t('app.character')}</label>
-            <select className={sel} value={charId} onChange={(e) => { setCharId(e.target.value); setSolved(false) }}>
-              {CHARACTERS.map((c) => <option key={c.id} value={c.id}>{c.name}{overrides[c.id] ? ' *' : ''}</option>)}
-            </select>
-            <button
-              className={`rounded px-2 py-1 text-xs ${showWeights ? 'bg-amber-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-              onClick={() => setShowWeights(!showWeights)}
-            >{t('app.weights')}</button>
-            <div className="flex gap-1 text-xs">
-              {[null, 4, 3, 1].map((c) => (
-                <button
-                  key={String(c)}
-                  className={`rounded px-2 py-1 ${costFilter === c ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-                  onClick={() => setCostFilter(c)}
-                >
-                  {c === null ? t('app.all') : t('app.costFilter', { c })}
-                </button>
-              ))}
-            </div>
-            <button
-              className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600"
-              onClick={() => { setLoadout(solveBest5(echoes, profile)); setSolved(true) }}
-            >{t('app.findBest5')}</button>
-          </div>
-
-          {solved && <LoadoutView result={loadout} profile={profile} />}
-
-          <div className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-900/60 p-2">
-            <RankingTable
-              echoes={echoes}
-              profile={profile}
-              costFilter={costFilter}
-              onDelete={(id) => setEchoes(echoes.filter((e) => e.id !== id))}
-              onEdit={setEditingEcho}
+          {echoes.length === 0 ? (
+            <EmptyState
+              onOcr={() => setShowOcr(true)}
+              onImportJson={() => fileRef.current?.click()}
+              onDemo={() => setEchoes(DEMO_ECHOES)}
             />
-          </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-sm text-slate-400">{t('app.character')}</label>
+                <select
+                  className={sel} value={charId}
+                  onChange={(e) => {
+                    // Đổi nhân vật → kết quả cũ thuộc nhân vật khác, bỏ hẳn (khác với stale)
+                    setCharId(e.target.value)
+                    setSolved(false)
+                    setLoadout(null)
+                    setStale(false)
+                  }}
+                >
+                  {CHARACTERS.map((c) => <option key={c.id} value={c.id}>{c.name}{overrides[c.id] ? ' *' : ''}</option>)}
+                </select>
+                <button
+                  className={`rounded px-2 py-1 text-xs ${showWeights ? 'bg-amber-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+                  onClick={() => setShowWeights(!showWeights)}
+                >{t('app.weights')}</button>
+                <button
+                  className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600"
+                  onClick={solve}
+                >{t('app.findBest5')}</button>
+              </div>
 
-          <RosterPanel echoes={echoes} overrides={overrides} resolve={resolve} />
+              {solved && (
+                <Stale stale={stale} onResolve={solve}>
+                  <LoadoutView result={loadout} profile={profile} />
+                </Stale>
+              )}
 
-          <p className="text-xs text-slate-600">
-            {t('app.scoreHelp')}
-          </p>
+              <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-2">
+                <RankingTable
+                  echoes={echoes}
+                  profile={profile}
+                  onDelete={deleteEcho}
+                  onEdit={setEditingEcho}
+                />
+              </div>
+
+              <RosterPanel echoes={echoes} overrides={overrides} resolve={resolve} />
+
+              <p className="text-xs text-slate-600">
+                {t('app.scoreHelp')}
+              </p>
+            </>
+          )}
         </main>
       </div>
 

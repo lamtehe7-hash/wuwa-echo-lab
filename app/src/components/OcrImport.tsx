@@ -12,6 +12,7 @@ import { newId } from '../store'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
 import EchoFields, { type EchoFieldsValue } from './EchoFields'
+import { useToast } from './Toast'
 
 // Import từ ảnh/video (beta): OCR client-side bằng tesseract.js, passive-only — user tự
 // chụp/quay màn hình rồi tải lên, tool không tự động hoá hay tương tác với game. Mỗi echo
@@ -88,9 +89,13 @@ function draftToItem(fileName: string, draft: ReturnType<typeof parseEchoText>):
 
 export default function OcrImport({ onAdd }: Props) {
   const t = useT()
+  const push = useToast()
   const [mode, setMode] = useState<'image' | 'video'>('image')
   const [preprocessOn, setPreprocessOn] = useState(true)
   const [files, setFiles] = useState<File[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  /** Đếm dragenter/leave lồng nhau (leave bắn khi rê qua phần tử con) — 0 mới thật sự rời panel */
+  const dragDepth = useRef(0)
   const [results, setResults] = useState<DraftItem[]>([])
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState<{ file: string; index: number; total: number; p: OcrProgress } | null>(null)
@@ -116,6 +121,24 @@ export default function OcrImport({ onAdd }: Props) {
   }, [])
   // Đổi/đóng video → nhả objectURL của video cũ
   useEffect(() => () => { if (video) releaseVideo(video.el) }, [video])
+
+  /** Gom ảnh từ input/paste/drop vào hàng chờ (cộng dồn, không thay thế — cho phép trộn 3 nguồn) */
+  const addImages = (list: FileList | File[]) => {
+    const imgs = Array.from(list).filter((f) => f.type.startsWith('image/'))
+    if (imgs.length === 0) return
+    setMode('image')
+    setFiles((prev) => [...prev, ...imgs])
+  }
+
+  // Ctrl+V dán ảnh clipboard (Win+Shift+S → dán thẳng, khỏi lưu file) — chỉ khi panel đang mở
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (e.clipboardData?.files.length) addImages(e.clipboardData.files)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- addImages chỉ dùng setter ổn định
+  }, [])
 
   const runOcr = async () => {
     if (files.length === 0 || running) return
@@ -176,7 +199,7 @@ export default function OcrImport({ onAdd }: Props) {
     } catch {
       if (token !== pickTokenRef.current) return
       setVideo(null)
-      alert(t('ocr.videoLoadError'))
+      push(t('ocr.videoLoadError'), { kind: 'error' })
     }
   }
 
@@ -252,7 +275,26 @@ export default function OcrImport({ onAdd }: Props) {
   const complete = pending.filter(isComplete)
 
   return (
-    <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-3">
+    <div
+      className={`space-y-3 rounded-lg border p-3 transition-colors ${dragOver ? 'border-sky-500 bg-sky-950/30' : 'border-slate-800 bg-slate-900'}`}
+      onDragEnter={(e) => {
+        if (!e.dataTransfer.types.includes('Files')) return
+        e.preventDefault()
+        dragDepth.current++
+        setDragOver(true)
+      }}
+      onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault() }}
+      onDragLeave={() => {
+        dragDepth.current = Math.max(0, dragDepth.current - 1)
+        if (dragDepth.current === 0) setDragOver(false)
+      }}
+      onDrop={(e) => {
+        e.preventDefault()
+        dragDepth.current = 0
+        setDragOver(false)
+        addImages(e.dataTransfer.files)
+      }}
+    >
       <div>
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm font-semibold text-slate-300">{t('ocr.title')}</div>
@@ -276,23 +318,37 @@ export default function OcrImport({ onAdd }: Props) {
       </label>
 
       {mode === 'image' && (
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="text-xs text-slate-400"
-            onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-          />
-          <button
-            type="button"
-            className="rounded bg-sky-600 px-3 py-1 text-xs font-semibold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={files.length === 0 || running}
-            onClick={() => void runOcr()}
-          >
-            {t('ocr.run', { n: files.length })}
-          </button>
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="text-xs text-slate-400"
+              onChange={(e) => {
+                addImages(e.target.files ?? [])
+                e.target.value = '' // cộng dồn vào hàng chờ — số lượng hiện ở dòng dưới, không dựa vào label của input
+              }}
+            />
+            <button
+              type="button"
+              className="rounded bg-sky-600 px-3 py-1 text-xs font-semibold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={files.length === 0 || running}
+              onClick={() => void runOcr()}
+            >
+              {t('ocr.run', { n: files.length })}
+            </button>
+          </div>
+          {files.length > 0 && (
+            <p className="text-xs text-slate-400">
+              {t('ocr.filesSelected', { n: files.length })}{' '}
+              <button type="button" className="text-slate-500 underline hover:text-rose-400" onClick={() => setFiles([])}>
+                ({t('ocr.clearFiles')})
+              </button>
+            </p>
+          )}
+          <p className="text-xs text-slate-500">{t('ocr.pasteHint')}</p>
         </div>
       )}
 
@@ -374,12 +430,18 @@ export default function OcrImport({ onAdd }: Props) {
               className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
               disabled={complete.length === 0}
               title={t('ocr.saveCompleteTip')}
-              onClick={() => complete.forEach(addToInventory)}
+              onClick={() => {
+                complete.forEach(addToInventory)
+                push(t('toast.savedBatch', { n: complete.length }))
+              }}
             >{t('ocr.saveComplete', { n: complete.length })}</button>
             <button
               type="button"
               className="rounded border border-emerald-700 px-3 py-1 text-xs font-semibold text-emerald-400 hover:bg-emerald-950/60"
-              onClick={() => pending.forEach(addToInventory)}
+              onClick={() => {
+                pending.forEach(addToInventory)
+                push(t('toast.savedBatch', { n: pending.length }))
+              }}
             >{t('ocr.saveAll', { n: pending.length })}</button>
           </span>
         </div>

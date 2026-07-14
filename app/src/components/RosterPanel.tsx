@@ -4,13 +4,14 @@ import { CHARACTERS } from '../data/characters'
 import { solveRoster } from '../engine/roster'
 import type { ProfileOverride } from '../store'
 import LoadoutView from './LoadoutView'
+import Stale from './Stale'
 import { useT } from '../i18n'
 
 // Gán kho echo cho cả đội: chọn nhân vật theo thứ tự ưu tiên, mỗi echo chỉ 1 người dùng.
 
 interface Props {
   echoes: Echo[]
-  /** Override trọng số/erTarget — chỉ dùng làm dep invalidate kết quả khi user chỉnh weights */
+  /** Override trọng số/erTarget — chỉ dùng làm dep đánh dấu kết quả cũ khi user chỉnh weights */
   overrides: Record<string, ProfileOverride>
   /** Trả về profile đã merge override */
   resolve: (id: string) => CharacterProfile
@@ -20,10 +21,16 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
   const t = useT()
   const [ids, setIds] = useState<string[]>([])
   const [results, setResults] = useState<RosterAssignment[] | null>(null)
+  const [stale, setStale] = useState(false)
   const [adding, setAdding] = useState(CHARACTERS[0].id)
 
-  // Kho echo đổi HOẶC user chỉnh trọng số/erTarget → kết quả gán đội cũ không còn khớp
-  useEffect(() => setResults(null), [echoes, overrides])
+  // Kho echo đổi HOẶC user chỉnh trọng số/erTarget → kết quả gán đội cũ: giữ hiển thị + banner giải lại
+  useEffect(() => setStale(true), [echoes, overrides])
+
+  const assign = () => {
+    setResults(solveRoster(echoes, ids.map(resolve)))
+    setStale(false)
+  }
 
   const move = (i: number, dir: -1 | 1) => {
     const j = i + dir
@@ -31,7 +38,7 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
     const next = [...ids]
     ;[next[i], next[j]] = [next[j], next[i]]
     setIds(next)
-    setResults(null)
+    setResults(null) // đội hình đổi = bài toán khác — bỏ kết quả (khác với "cũ")
   }
 
   const sel = 'bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm'
@@ -50,7 +57,7 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
         <button
           className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600 disabled:opacity-40"
           disabled={ids.length === 0}
-          onClick={() => setResults(solveRoster(echoes, ids.map(resolve)))}
+          onClick={assign}
         >{t('roster.assign')}</button>
       </div>
 
@@ -60,20 +67,36 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
             <li key={id} className="flex items-center gap-2 rounded bg-slate-900 px-2 py-1 text-sm">
               <span className="w-5 text-center text-xs text-slate-500">{i + 1}</span>
               <span className="flex-1">{resolve(id).name}</span>
-              <button className="px-1 text-xs text-slate-500 hover:text-slate-300" onClick={() => move(i, -1)}>↑</button>
-              <button className="px-1 text-xs text-slate-500 hover:text-slate-300" onClick={() => move(i, 1)}>↓</button>
-              <button className="px-1 text-xs text-slate-600 hover:text-rose-400" onClick={() => { setIds(ids.filter((x) => x !== id)); setResults(null) }}>✕</button>
+              <button
+                className="px-1 text-xs text-slate-500 hover:text-slate-300 disabled:opacity-30"
+                aria-label={t('roster.moveUp')} disabled={i === 0}
+                onClick={() => move(i, -1)}
+              >↑</button>
+              <button
+                className="px-1 text-xs text-slate-500 hover:text-slate-300 disabled:opacity-30"
+                aria-label={t('roster.moveDown')} disabled={i === ids.length - 1}
+                onClick={() => move(i, 1)}
+              >↓</button>
+              <button
+                className="px-1 text-xs text-slate-600 hover:text-rose-400"
+                aria-label={t('roster.remove')}
+                onClick={() => { setIds(ids.filter((x) => x !== id)); setResults(null) }}
+              >✕</button>
             </li>
           ))}
         </ol>
       )}
 
-      {results?.map((r) => (
-        <div key={r.profile.id}>
-          <div className="mb-1 mt-2 text-sm font-medium text-slate-200">{r.profile.name}</div>
-          <LoadoutView result={r.result} profile={r.profile} />
-        </div>
-      ))}
+      {results && (
+        <Stale stale={stale} onResolve={assign}>
+          {results.map((r) => (
+            <div key={r.profile.id}>
+              <div className="mb-1 mt-2 text-sm font-medium text-slate-200">{r.profile.name}</div>
+              <LoadoutView result={r.result} profile={r.profile} />
+            </div>
+          ))}
+        </Stale>
+      )}
     </div>
   )
 }

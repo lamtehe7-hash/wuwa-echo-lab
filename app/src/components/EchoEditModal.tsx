@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Echo } from '../types'
+import type { CharacterProfile, Echo } from '../types'
 import { useT } from '../i18n'
 import EchoCard from './EchoCard'
 import EchoFields, { type EchoFieldsValue } from './EchoFields'
@@ -11,10 +11,13 @@ export default function EchoEditModal({
   echo,
   onSave,
   onClose,
+  profile,
 }: {
   echo: Echo
   onSave: (updated: Echo) => void
   onClose: () => void
+  /** Nhân vật đang chọn — tô màu substat trên preview theo mức đánh giá */
+  profile?: CharacterProfile
 }) {
   const t = useT()
   const [value, setValue] = useState<EchoFieldsValue>({
@@ -52,7 +55,7 @@ export default function EchoEditModal({
         </div>
 
         <div className="grid gap-3 md:grid-cols-[260px_1fr]">
-          <EchoCard echo={value} className="self-start" />
+          <EchoCard echo={value} profile={profile} className="self-start" />
           <EchoFields value={value} onChange={(patch) => setValue((prev) => ({ ...prev, ...patch }))} />
         </div>
 

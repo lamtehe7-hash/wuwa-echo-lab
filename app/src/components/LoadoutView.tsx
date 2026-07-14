@@ -69,6 +69,7 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
             key={s.echo.id}
             echo={s.echo}
             compact
+            profile={profile}
             footer={
               <span
                 className={`rounded px-1 py-0.5 font-mono text-[10px] font-semibold ${s.mainStatFit ? 'bg-emerald-900/60 text-emerald-300' : 'bg-rose-950/60 text-rose-300'}`}

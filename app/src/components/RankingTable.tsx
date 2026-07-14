@@ -6,9 +6,11 @@ import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS, maxRoll } from '../data/substats'
 import { rankEchoes, tuneAdvice } from '../engine/score'
+import { maxSubstatWeight, rateSubstat } from '../engine/substatRating'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
 import ScoreBadge from './ScoreBadge'
+import SubstatLegend from './SubstatLegend'
 
 // Bảng xếp hạng kho echo cho 1 nhân vật — trả lời "trong N echo này, dùng con nào?"
 // Kèm thanh công cụ tìm/lọc/sắp xếp (tham khảo trang artifact của Genshin Optimizer —
@@ -116,6 +118,7 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
     return <p className="p-4 text-sm text-slate-500">{t('ranking.emptyAll')}</p>
   }
 
+  const maxW = maxSubstatWeight(profile) // mẫu số "độ liên quan" — tính 1 lần cho cả bảng
   const selCls = 'rounded border border-slate-700 bg-slate-800 px-2 py-1'
   const chip = (active: boolean) =>
     `rounded px-2 py-1 ${active ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`
@@ -197,6 +200,8 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
         )}
       </div>
 
+      <SubstatLegend className="mx-1 mb-2" />
+
       {rows.length === 0 ? (
         <p className="p-4 text-sm text-slate-500">{t('inv.emptyFiltered')}</p>
       ) : view === 'grid' ? (
@@ -209,8 +214,9 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
                 <EchoCard
                   echo={r.echo}
                   compact
+                  profile={profile}
                   className="transition-colors hover:border-sky-600"
-                  footer={<ScoreBadge r={r} variant="badge" />}
+                  footer={<ScoreBadge r={r} profile={profile} variant="badge" />}
                 />
               </div>
               <div className="mt-0.5 flex items-center justify-between px-0.5 text-xs">
@@ -301,15 +307,25 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
                     <td className={`pr-2 ${r.fitLevel === 1 ? 'text-emerald-400' : r.fitLevel >= 0.6 ? 'text-amber-400' : 'text-rose-400'}`}>
                       {MAINSTAT_LABELS[r.echo.mainStat]}{r.fitLevel === 1 ? '' : r.fitLevel >= 0.6 ? ' ～' : ' ✗'}
                     </td>
-                    <td className="pr-2 text-xs text-slate-400">
-                      {r.breakdown.map((b) => (
-                        <span key={b.stat} className={`mr-2 inline-block ${b.weighted > 0 ? '' : 'opacity-40'}`}>
-                          {SUBSTATS[b.stat].label} {b.value}{SUBSTATS[b.stat].isPct ? '%' : ''}
-                        </span>
-                      ))}
+                    <td className="pr-2 text-xs">
+                      {r.breakdown.map((b) => {
+                        const rt = rateSubstat(profile, b.stat, b.value, maxW)
+                        return (
+                          <span
+                            key={b.stat}
+                            className={`mr-2 inline-flex items-center gap-1 ${rt.tier === 0 ? 'opacity-50' : ''}`}
+                            title={t('tier.subTip', { tier: t(rt.labelKey), i: rt.rollTier, n: rt.rollTierCount })}
+                          >
+                            <span className="text-slate-400">{SUBSTATS[b.stat].label}</span>
+                            <span className={`font-mono ${rt.tier >= 5 ? 'font-semibold' : ''}`} style={{ color: rt.color }}>
+                              {b.value}{SUBSTATS[b.stat].isPct ? '%' : ''}
+                            </span>
+                          </span>
+                        )
+                      })}
                     </td>
                     <td className="pr-2 text-right">
-                      <ScoreBadge r={r} />
+                      <ScoreBadge r={r} profile={profile} />
                     </td>
                     <td className={`pr-2 text-xs ${VERDICT_CLS[advice.verdict]}`} title={tm(advice.reason)}>
                       {t(`ranking.verdict.${advice.verdict}`)}

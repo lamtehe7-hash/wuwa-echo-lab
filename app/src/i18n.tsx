@@ -174,6 +174,23 @@ const DICT: Record<string, Entry> = {
     en: 'Roll Value — average substat roll quality vs the max tier (100% = every line rolled max)',
   },
   'card.noSubs': { vi: '(chưa có substat)', en: '(no substats yet)' },
+  'card.mainFitTip': { vi: 'Độ hợp main stat với nhân vật (✓ chuẩn · ～ tạm dùng · ✗ sai)', en: 'Main-stat fit for this character (✓ ideal · ～ usable · ✗ off)' },
+
+  // ── Đánh giá substat theo nhân vật (thang màu 8 bậc, xem SubstatLegend) ──
+  'tier.irrelevant': { vi: 'Không liên quan', en: 'Irrelevant' },
+  'tier.low': { vi: 'Thấp', en: 'Low' },
+  'tier.minor': { vi: 'Nhẹ', en: 'Minor' },
+  'tier.moderate': { vi: 'Vừa', en: 'Moderate' },
+  'tier.useful': { vi: 'Hữu ích', en: 'Useful' },
+  'tier.high': { vi: 'Cao', en: 'High' },
+  'tier.major': { vi: 'Rất cao', en: 'Major' },
+  'tier.essential': { vi: 'Cốt lõi', en: 'Essential' },
+  'tier.legendTitle': { vi: 'Đánh giá substat', en: 'Substat rating' },
+  'tier.legendHint': {
+    vi: 'Màu = mức đóng góp của substat CHO NHÂN VẬT đang chọn = độ liên quan (đúng dòng cần) × chất lượng roll (giá trị cao). Đổi nhân vật → màu đổi theo.',
+    en: 'Color = how much a substat contributes FOR the selected character = relevance (right stat) × roll quality (high value). Switch character → colors update.',
+  },
+  'tier.subTip': { vi: 'Đánh giá: {tier} · mốc roll {i}/{n}', en: 'Rating: {tier} · roll tier {i}/{n}' },
 
   // ── EchoEditModal (sửa echo trong kho) ──
   'echoEdit.title': { vi: 'Sửa echo trong kho', en: 'Edit inventory echo' },

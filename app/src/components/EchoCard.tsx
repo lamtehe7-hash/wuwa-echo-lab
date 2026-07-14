@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from 'react'
-import type { EchoCost, MainStatKey, Substat } from '../types'
+import type { CharacterProfile, EchoCost, MainStatKey, Substat } from '../types'
 import { findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
 import { ELEMENT_COLOR } from '../data/elementColors'
 import { FIXED_SECONDARY, MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS, maxRoll } from '../data/substats'
+import { mainFitLevel, maxSubstatWeight, rateSubstat } from '../engine/substatRating'
 import { useT } from '../i18n'
 
 // Card hiển thị echo theo phong cách panel in-game (tham khảo WuWa + Genshin Optimizer):
@@ -49,6 +50,7 @@ export default function EchoCard({
   compact = false,
   footer,
   className = '',
+  profile,
 }: {
   echo: EchoCardData
   /** true = bản gọn cho lưới nhiều cột (LoadoutView): ẩn stat cố định, chữ nhỏ hơn */
@@ -56,9 +58,13 @@ export default function EchoCard({
   /** Nội dung thêm ở chân card (điểm số, nút…) — hiển thị cạnh set */
   footer?: ReactNode
   className?: string
+  /** Có → tô màu substat theo mức đánh giá cho nhân vật này (relevance × roll); không → theo chất lượng roll thuần */
+  profile?: CharacterProfile
 }) {
   const t = useT()
   const [imgError, setImgError] = useState(false)
+  const maxW = profile ? maxSubstatWeight(profile) : 0
+  const mainFit = profile ? mainFitLevel(profile, echo.cost, echo.mainStat) : null
   const R = RARITY_STYLE[echo.rarity] ?? RARITY_STYLE[5]
   const sonata = SONATA_BY_ID[echo.set]
   const info = findEchoInfo(echo.name)
@@ -114,7 +120,15 @@ export default function EchoCard({
       <div className={`space-y-1 ${compact ? 'px-2 pb-1.5' : 'px-2.5 pb-2'}`}>
         {/* Main stat — dòng vàng nổi bật như in-game; giá trị là mốc +25 (engine chấm theo +25) */}
         <div className="flex items-baseline justify-between gap-2 border-b border-slate-800 pb-1">
-          <span className={`font-medium text-amber-300 ${subText}`}>{MAINSTAT_LABELS[echo.mainStat]}</span>
+          <span className={`flex items-baseline gap-1 font-medium text-amber-300 ${subText}`}>
+            {MAINSTAT_LABELS[echo.mainStat]}
+            {mainFit !== null && (
+              <span
+                className={mainFit === 1 ? 'text-emerald-400' : mainFit >= 0.6 ? 'text-amber-400' : 'text-rose-400'}
+                title={t('card.mainFitTip')}
+              >{mainFit === 1 ? '✓' : mainFit >= 0.6 ? '～' : '✗'}</span>
+            )}
+          </span>
           <span
             className={`font-mono font-semibold text-amber-200 ${compact ? 'text-sm' : 'text-base'} ${echo.level < 25 ? 'opacity-60' : ''}`}
             title={echo.level < 25 && mainDef ? t('card.mainAtLevel', { level: echo.level, max: mainDef.max }) : t('card.mainAt25')}
@@ -129,13 +143,36 @@ export default function EchoCard({
           </div>
         )}
 
-        {/* Substats + thanh mốc roll (kiểu roll-quality của Genshin Optimizer) */}
+        {/* Substats: có profile → tô màu theo MỨC đánh giá (relevance × roll, 8 bậc như tool
+            cộng đồng); không có → theo chất lượng roll thuần. Thanh dài = mốc roll, màu = mức. */}
         {echo.substats.length === 0 ? (
           <div className="py-1 text-xs text-slate-600">{t('card.noSubs')}</div>
         ) : (
           echo.substats.map((s) => {
             const rolls = SUBSTATS[s.stat].rolls
             const idx = rollIndex(rolls, s.value)
+            const barPct = ((idx + 1) / rolls.length) * 100
+            if (profile) {
+              const r = rateSubstat(profile, s.stat, s.value, maxW)
+              const dim = r.tier === 0
+              return (
+                <div key={s.stat} className={`flex items-center justify-between gap-2 ${subText}`}>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
+                    <span className={`truncate ${dim ? 'text-slate-500' : 'text-slate-300'}`} title={SUBSTATS[s.stat].label}>{SUBSTATS[s.stat].label}</span>
+                  </span>
+                  <span
+                    className="flex shrink-0 items-center gap-1.5"
+                    title={t('tier.subTip', { tier: t(r.labelKey), i: idx + 1, n: rolls.length })}
+                  >
+                    <span className={`font-mono ${r.tier >= 5 ? 'font-semibold' : ''}`} style={{ color: r.color }}>{fmtValue(s)}</span>
+                    <span className="h-1 w-7 overflow-hidden rounded-full bg-slate-800">
+                      <span className="block h-full" style={{ width: `${barPct}%`, backgroundColor: r.color }} />
+                    </span>
+                  </span>
+                </div>
+              )
+            }
             const q = rolls.length > 1 ? idx / (rolls.length - 1) : 1
             const barColor = q >= 0.72 ? 'bg-amber-400' : q >= 0.4 ? 'bg-sky-500' : 'bg-slate-500'
             return (
@@ -147,7 +184,7 @@ export default function EchoCard({
                     className="h-1 w-7 overflow-hidden rounded-full bg-slate-800"
                     title={t('card.rollTier', { i: idx + 1, n: rolls.length })}
                   >
-                    <span className={`block h-full ${barColor}`} style={{ width: `${((idx + 1) / rolls.length) * 100}%` }} />
+                    <span className={`block h-full ${barColor}`} style={{ width: `${barPct}%` }} />
                   </span>
                 </span>
               </div>

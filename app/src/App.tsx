@@ -9,6 +9,7 @@ import RankingTable from './components/RankingTable'
 import RosterPanel from './components/RosterPanel'
 import SetPicker from './components/SetPicker'
 import Stale from './components/Stale'
+import SubstatLegend from './components/SubstatLegend'
 import { useToast } from './components/Toast'
 import WeightEditor from './components/WeightEditor'
 import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
@@ -272,6 +273,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             >{t('app.findBest5')}</button>
           </div>
 
+          <SubstatLegend />
+
           {showWeights && (
             <div className="max-w-md">
               <WeightEditor
@@ -370,6 +373,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
       {editingEcho && (
         <EchoEditModal
           echo={editingEcho}
+          profile={profile}
           onClose={() => setEditingEcho(null)}
           onSave={(updated) => {
             setEchoes((prev) => prev.map((e) => (e.id === updated.id ? updated : e)))

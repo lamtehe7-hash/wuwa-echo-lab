@@ -1,6 +1,7 @@
-import type { BonusStatKey, CharacterProfile, Echo, Element, MainStatKey, ScoredEcho, SubstatKey, TuneAdvice } from '../types'
+import type { BonusStatKey, CharacterProfile, Echo, Element, ScoredEcho, SubstatKey, TuneAdvice } from '../types'
 import { MAINSTATS } from '../data/mainstats'
 import { MAX_SUBSTATS, SUBSTAT_KEYS, SUBSTATS, expectedRoll, maxRoll } from '../data/substats'
+import { mainFitLevel } from './substatRating'
 
 // Chấm điểm weighted roll-efficiency (PROPOSAL.md §4):
 //   raw = Σ w[stat] × (value / maxRoll(stat))
@@ -23,12 +24,6 @@ export function theoreticalMax(profile: CharacterProfile): number {
   const ws = SUBSTAT_KEYS.map((k) => profile.weights[k] ?? 0).sort((a, b) => b - a)
   const top5 = ws.slice(0, 5).reduce((s, w) => s + w, 0)
   return top5 > 0 ? top5 : 1
-}
-
-/** Substat "họ hàng" của main stat — để suy ra mức fit dự phòng từ trọng số */
-const MAIN_TO_SUB: Partial<Record<MainStatKey, SubstatKey>> = {
-  hpPct: 'hpPct', atkPct: 'atkPct', defPct: 'defPct',
-  critRate: 'critRate', critDmg: 'critDmg', energyRegen: 'energyRegen',
 }
 
 // ---- Quy đổi main stat / set bonus stat về đơn vị "roll chuẩn có trọng số" ----
@@ -74,11 +69,7 @@ export function mainStatRaw(echo: Echo, profile: CharacterProfile): number {
  *  0.25 — sai hẳn (vd DEF% cho DPS)
  */
 export function mainStatFitLevel(echo: Echo, profile: CharacterProfile): number {
-  const prefs = profile.mainStatPrefs[String(echo.cost) as '1' | '3' | '4'] ?? []
-  if (prefs.includes(echo.mainStat)) return 1
-  const related = MAIN_TO_SUB[echo.mainStat]
-  if (related && (profile.weights[related] ?? 0) >= 0.5) return 0.6
-  return 0.25
+  return mainFitLevel(profile, echo.cost, echo.mainStat)
 }
 
 export function scoreEcho(echo: Echo, profile: CharacterProfile): ScoredEcho {

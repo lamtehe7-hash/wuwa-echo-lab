@@ -13,6 +13,7 @@ import { CHARACTER_BY_ID } from '../data/characters'
 const camellya = CHARACTER_BY_ID['camellya'] // atk-scaling, attackType = basicAtk (weight .75)
 const carlotta = CHARACTER_BY_ID['carlotta'] // atk-scaling, attackType = skillDmg
 const shorekeeper = CHARACTER_BY_ID['shorekeeper'] // hp-scaling
+const mornye = CHARACTER_BY_ID['mornye'] // def-scaling (buffer/healer, defPct weight cao nhất)
 
 function echo(overrides: Partial<Echo>): Echo {
   return {
@@ -94,6 +95,19 @@ describe('scaling: hp-scaling dùng HP%, bỏ ATK%', () => {
     const tHp = emptyTotals(); tHp.hpPct = 30
     const tAtk = emptyTotals(); tAtk.atkPct = 30
     expect(damageBreakdown(tHp, b).statFactor).toBeGreaterThan(damageBreakdown(tAtk, b).statFactor)
+    expect(damageBreakdown(tAtk, b).statFactor).toBeCloseTo(damageBreakdown(emptyTotals(), b).statFactor, 10)
+  })
+})
+
+describe('scaling: def-scaling (Mornye) dùng DEF%, bỏ ATK%/HP%', () => {
+  it('characterBaseline(mornye) → scaling def', () => {
+    expect(characterBaseline(mornye).scaling).toBe('def')
+  })
+  it('DEF% tăng statFactor, ATK% không', () => {
+    const b = characterBaseline(mornye)
+    const tDef = emptyTotals(); tDef.defPct = 30
+    const tAtk = emptyTotals(); tAtk.atkPct = 30
+    expect(damageBreakdown(tDef, b).statFactor).toBeGreaterThan(damageBreakdown(emptyTotals(), b).statFactor)
     expect(damageBreakdown(tAtk, b).statFactor).toBeCloseTo(damageBreakdown(emptyTotals(), b).statFactor, 10)
   })
 })

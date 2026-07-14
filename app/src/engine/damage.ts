@@ -27,6 +27,8 @@ export interface StatTotals {
   flatAtk: number
   hpPct: number
   flatHp: number
+  defPct: number
+  flatDef: number
   critRate: number
   critDmg: number
   elementalDmg: number
@@ -35,7 +37,7 @@ export interface StatTotals {
 
 export function emptyTotals(): StatTotals {
   return {
-    atkPct: 0, flatAtk: 0, hpPct: 0, flatHp: 0,
+    atkPct: 0, flatAtk: 0, hpPct: 0, flatHp: 0, defPct: 0, flatDef: 0,
     critRate: 0, critDmg: 0, elementalDmg: 0,
     attackTypeDmg: { basicAtk: 0, heavyAtk: 0, skillDmg: 0, liberationDmg: 0 },
   }
@@ -56,17 +58,20 @@ function addEcho(t: StatTotals, echo: Echo): void {
       case 'atk': t.flatAtk += s.value; break
       case 'hpPct': t.hpPct += s.value; break
       case 'hp': t.flatHp += s.value; break
+      case 'defPct': t.defPct += s.value; break
+      case 'def': t.flatDef += s.value; break
       case 'critRate': t.critRate += s.value; break
       case 'critDmg': t.critDmg += s.value; break
       case 'basicAtk': case 'heavyAtk': case 'skillDmg': case 'liberationDmg':
         t.attackTypeDmg[s.stat] += s.value; break
-      // def/defPct/energyRegen: không đóng góp vào damage của nhân vật atk/hp-scaling
+      // energyRegen: không đóng góp trực tiếp vào statFactor damage
     }
   }
   const mv = mainStatValue(echo)
   const mk = echo.mainStat
   if (mk === 'atkPct') t.atkPct += mv
   else if (mk === 'hpPct') t.hpPct += mv
+  else if (mk === 'defPct') t.defPct += mv
   else if (mk === 'critRate') t.critRate += mv
   else if (mk === 'critDmg') t.critDmg += mv
   else if (ELEMENTAL_MAIN.has(mk)) t.elementalDmg += mv
@@ -79,9 +84,9 @@ export function aggregateTotals(echoes: Echo[]): StatTotals {
 }
 
 export interface DamageBaseline {
-  /** Nhân vật scale damage theo ATK hay HP */
-  scaling: 'atk' | 'hp'
-  /** Chỉ số nền (ATK hoặc HP) TRƯỚC echo — quyết định tỉ lệ flat-vs-% (giả định, chỉnh được) */
+  /** Nhân vật scale damage/heal theo ATK, HP hay DEF (def: buffer/healer scale-DEF như Mornye) */
+  scaling: 'atk' | 'hp' | 'def'
+  /** Chỉ số nền (ATK/HP/DEF) TRƯỚC echo — quyết định tỉ lệ flat-vs-% (giả định, chỉnh được) */
   baseStat: number
   /** Crit Rate% nền (game gốc 5.0) */
   baseCR: number
@@ -93,10 +98,14 @@ export interface DamageBaseline {
   attackType: AttackTypeKey | null
 }
 
-/** Số nền dùng chung — tách riêng để dễ chỉnh/định cỡ. */
+/** Số nền dùng chung — tách riêng để dễ chỉnh/định cỡ.
+ *  Định cỡ theo web-research 14/07/2026: base ATK L90 của 5★ DPS ~413–463 (Prydwen/Game8),
+ *  cộng vũ khí 5★ (~550 base ATK) → ~1000 là mức "ATK trước echo" điển hình mà ATK% nhân lên.
+ *  base HP scaler ~10.8k–15k; base DEF của scale-DEF (Mornye) ~1356. */
 export const DEFAULT_BASELINE = {
-  baseAtk: 1200, // ATK nền giả định (base nhân vật + vũ khí) — cân bằng flat ATK vs ATK%
-  baseHp: 12000, // HP nền giả định cho nhân vật hp-scaling
+  baseAtk: 1000, // ATK nền (base nhân vật ~450 + vũ khí ~550) — cân bằng flat ATK vs ATK%
+  baseHp: 12000, // HP nền cho nhân vật hp-scaling
+  baseDef: 1400, // DEF nền cho nhân vật def-scaling (healer/buffer như Mornye)
   baseCR: 5.0,
   baseCD: 150.0,
   baseDmgBonus: 0,
@@ -105,7 +114,15 @@ export const DEFAULT_BASELINE = {
 /** Suy baseline từ archetype/weights của nhân vật (không cần data ngoài). */
 export function characterBaseline(profile: CharacterProfile): DamageBaseline {
   const w = profile.weights
-  const scaling: 'atk' | 'hp' = (w.hpPct ?? 0) > (w.atkPct ?? 0) ? 'hp' : 'atk'
+  // scaling = stat có trọng số cao nhất trong {atkPct, hpPct, defPct} (mặc định atk).
+  const atkW = w.atkPct ?? 0
+  const hpW = w.hpPct ?? 0
+  const defW = w.defPct ?? 0
+  let scaling: 'atk' | 'hp' | 'def' = 'atk'
+  if (hpW > atkW && hpW >= defW) scaling = 'hp'
+  else if (defW > atkW && defW >= hpW) scaling = 'def'
+  const baseStat =
+    scaling === 'hp' ? DEFAULT_BASELINE.baseHp : scaling === 'def' ? DEFAULT_BASELINE.baseDef : DEFAULT_BASELINE.baseAtk
   // Attack-type mà kit ăn = loại có trọng số cao nhất (0 → không rõ).
   let attackType: AttackTypeKey | null = null
   let bestW = 0
@@ -115,7 +132,7 @@ export function characterBaseline(profile: CharacterProfile): DamageBaseline {
   }
   return {
     scaling,
-    baseStat: scaling === 'hp' ? DEFAULT_BASELINE.baseHp : DEFAULT_BASELINE.baseAtk,
+    baseStat,
     baseCR: DEFAULT_BASELINE.baseCR,
     baseCD: DEFAULT_BASELINE.baseCD,
     baseDmgBonus: DEFAULT_BASELINE.baseDmgBonus,
@@ -142,8 +159,8 @@ export function damageIndex(t: StatTotals, b: DamageBaseline): number {
 }
 
 export function damageBreakdown(t: StatTotals, b: DamageBaseline): DamageBreakdown {
-  const scalePct = b.scaling === 'hp' ? t.hpPct : t.atkPct
-  const flat = b.scaling === 'hp' ? t.flatHp : t.flatAtk
+  const scalePct = b.scaling === 'hp' ? t.hpPct : b.scaling === 'def' ? t.defPct : t.atkPct
+  const flat = b.scaling === 'hp' ? t.flatHp : b.scaling === 'def' ? t.flatDef : t.flatAtk
   const statFactor = b.baseStat * (1 + scalePct / 100) + flat
 
   const crTotal = Math.min(100, b.baseCR + t.critRate)

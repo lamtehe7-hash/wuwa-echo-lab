@@ -96,13 +96,20 @@ export const CHARACTERS: CharacterProfile[] = [
   ch('lucy', 'Lucy', 'spectro', 'critHeavy', ['shadow-of-shattered-dreams', 'celestial-light', 'lingering-tunes'], { erTarget: 120 }),
   ch('rebecca', 'Rebecca', 'electro', 'critHeavy', ['shadow-of-shattered-dreams', 'void-thunder', 'reel-of-spliced-memories'], { erTarget: 125 }),
   ch('suisui', 'Suisui', 'glacio', 'healerHp', ['song-of-feathered-trace', 'rejuvenating-glow', 'moonlit-clouds'], { erTarget: 260, main: healerMain }),
-  // [UNVERIFIED — CẦN NGƯỜI DÙNG XÁC NHẬN]:
-  ch('denia', 'Denia', 'fusion', 'critLiberation', ['chromatic-foam', 'reel-of-spliced-memories', 'flaming-clawprint'], { erTarget: 125 }), // archetype critLiberation vs subDpsEr còn tranh cãi (nguồn ưu tiên ER > Crit)
-  ch('lucilla', 'Lucilla', 'glacio', 'subDpsEr', ['wishes-of-quiet-snowfall', 'moonlit-clouds'], { erTarget: 125 }), // erTarget suy theo Zhezhi, chưa có số cụ thể
-  ch('xuanling', 'Yangyang: Xuanling', 'havoc', 'critHeavy', ['song-of-feathered-trace', 'thread-of-severed-fate', 'havoc-eclipse']), // erTarget chưa rõ → dùng mặc định critHeavy
-  ch('mornye', 'Mornye', 'fusion', 'healerAtk', ['halo-of-starry-radiance', 'rejuvenating-glow'], { erTarget: 260, main: { '4': ['defPct'], '3': ['energyRegen'], '1': ['defPct'] }, weights: { energyRegen: 1, defPct: 0.7, def: 0.25, critDmg: 0.35, healingBonus: 0.5 } }), // scale DEF% — không archetype nào khớp, override thủ công
-  ch('sigrika', 'Sigrika', 'aero', 'critSkill', ['sound-of-true-name', 'sierra-gale'], { erTarget: 150, weights: { critRate: 1, critDmg: 1, atkPct: 0.75, atk: 0.3, energyRegen: 0.9, elementDmg: 0.85 } }), // scale "Echo Skill DMG" (không có SubstatKey) — xấp xỉ bằng ER cao
-  ch('buling', 'Buling', 'electro', 'healerAtk', ['rejuvenating-glow', 'moonlit-clouds'], { erTarget: 170, main: healerMain }), // thực ra bản 2.8 (không phải 3.x); erTarget 170 = trung bình 160–180
+  // ── Đã web-research 14/07/2026 (Prydwen/Game8/wuthering.gg qua 3 agent, cross-check ≥3 nguồn):
+  //    cả 6 mục ĐỀU CÓ THẬT; trọng số/erTarget/set/main đã hiệu chỉnh theo nguồn (bỏ [UNVERIFIED]).
+  //    Lưu ý: base-stat của bản mới chỉ đơn-nguồn, nhưng element/role/set/archetype thì ≥3 nguồn khớp.
+  ch('denia', 'Denia', 'fusion', 'critLiberation', ['chromatic-foam', 'reel-of-spliced-memories', 'pact-of-neonlight-leap'], { erTarget: 125, rarity: 5, version: '3.3', verified: true }), // sub-DPS ATK, crit, Liberation DMG; Chromatic Foam 5pc BiS (Fusion Burst) — sửa: bỏ flaming-clawprint, thêm pact
+  ch('lucilla', 'Lucilla', 'glacio', 'critBasic', ['wishes-of-quiet-snowfall', 'freezing-frost'], { rarity: 5, version: '3.4', verified: true }), // hybrid sub-DPS ATK, Basic-attack (Chafe mode); Liberation KHÔNG tốn energy → không erTarget (sửa: trước đoán subDpsEr/ER cao)
+  ch('xuanling', 'Yangyang: Xuanling', 'havoc', 'critHeavy', ['song-of-feathered-trace', 'havoc-eclipse'], { erTarget: 115, rarity: 5, version: '3.5', verified: true }), // Main DPS Heavy Attack; Song of Feathered Trace (set mới ra cùng 3.5) 5pc BiS
+  ch('mornye', 'Mornye', 'fusion', 'healerAtk', ['halo-of-starry-radiance', 'rejuvenating-glow'], { erTarget: 260, rarity: 5, version: '3.0', verified: true, main: { '4': ['healingBonus'], '3': ['energyRegen'], '1': ['defPct'] }, weights: { energyRegen: 1, defPct: 0.7, def: 0.25, critDmg: 0.35, healingBonus: 0.5 } }), // healer/buffer scale DEF% (heal + Outro +25% team DMG); Halo of Starry Radiance BiS (sửa: cost4 main → Healing Bonus)
+  ch('sigrika', 'Sigrika', 'aero', 'critSkill', ['sound-of-true-name', 'sierra-gale'], { erTarget: 150, rarity: 5, version: '3.2', verified: true, weights: { critRate: 1, critDmg: 1, atkPct: 0.75, atk: 0.3, energyRegen: 0.9, elementDmg: 0.85 } }), // Main DPS ATK, dmg là Echo Skill DMG; ER≥150 mở khoá passive (+2% Echo Skill DMG / 1% ER trên 125); Sound of True Name 5pc BiS
+  ch('buling', 'Buling', 'electro', 'healerAtk', ['rejuvenating-glow', 'moonlit-clouds'], { erTarget: 140, rarity: 4, version: '2.8', verified: true, main: { '4': ['healingBonus'], '3': ['energyRegen'], '1': ['atkPct'] } }), // 4★ healer ATK; Rejuvenating Glow 5pc BiS (sửa: erTarget 170→140, cost1 main → ATK%)
+  // ── Preset 2.x bổ sung (web-research 14/07/2026, ≥2 nguồn/nhân vật) ──
+  ch('phoebe', 'Phoebe', 'spectro', 'critHeavy', ['eternal-radiance', 'celestial-light', 'moonlit-clouds'], { erTarget: 120, rarity: 5, version: '2.1', verified: true }), // DPS/support 2 chế độ; Heavy Attack "Starflash" vs Spectro Frazzle; Eternal Radiance 5pc (DPS), Moonlit Clouds (support)
+  ch('augusta', 'Augusta', 'electro', 'critHeavy', ['crown-of-valor', 'void-thunder', 'lingering-tunes'], { erTarget: 120, rarity: 5, version: '2.6', verified: true }), // Main DPS Heavy Attack + burst "Second Ultimate" (Liberation); Crown of Valor + 2pc Electro/Lingering
+  ch('galbrena', 'Galbrena', 'fusion', 'critBasic', ['flamewings-shadow', 'molten-rift'], { erTarget: 115, rarity: 5, version: '2.7', verified: true }), // Main DPS stance-switch (Demon Hypostasis), Basic/Dodge-Counter; Flamewing's Shadow 3pc BiS
+  ch('qiuyuan', 'Qiuyuan', 'aero', 'subDpsEr', ['law-of-harmony', 'moonlit-clouds'], { erTarget: 130, rarity: 5, version: '2.7', verified: true }), // Sub-DPS/buffer khuếch đại Echo Skill DMG toàn đội (feed Crit DMG khi CR>50%); Law of Harmony 3pc
   // Generic — cho nhân vật chưa có preset
   ch('generic-skill', 'Generic: Crit DPS (Skill)', 'glacio', 'critSkill', []),
   ch('generic-basic', 'Generic: Crit DPS (Basic)', 'havoc', 'critBasic', []),

@@ -53,9 +53,9 @@ describe('finalStatBreakdown: cộng dồn đúng nguồn (ví dụ user 92.1% C
 })
 
 describe('resolveContext: base ATK char + vũ khí', () => {
-  it('atk-scaling: baseStat = charBase 456 + weapon 587', () => {
+  it('atk-scaling: baseStat = charBase 425 + weapon 587', () => {
     const r = resolveContext(xuanling, { weaponId: 'azure-oath' })
-    expect(r.baseStat).toBeCloseTo(456 + 587, 5)
+    expect(r.baseStat).toBeCloseTo(425 + 587, 5) // Xuanling base ATK 425 (datamine, thay ước lượng 456)
     expect(r.weaponBaseAtk).toBe(587)
     expect(r.hasContext).toBe(true)
   })

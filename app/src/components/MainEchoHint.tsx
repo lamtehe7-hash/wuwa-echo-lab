@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
 import { mainEchoesFor } from '../data/mainEchoes'
@@ -14,10 +14,13 @@ export default function MainEchoHint({
   charId,
   ownedNames,
   hasSelectedSet = false,
+  solveTick = 0,
 }: {
   charId: string
   ownedNames?: Set<string>
   hasSelectedSet?: boolean
+  /** Tăng mỗi lần bấm "Tìm bộ 5 tối ưu" — đổi giá trị → thu gọn banner. */
+  solveTick?: number
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -26,6 +29,13 @@ export default function MainEchoHint({
 
   // Tự thu gọn khi user chọn set (đã quyết định), tự mở khi bỏ chọn; đổi nhân vật cũng reset theo.
   useEffect(() => setCollapsed(hasSelectedSet), [hasSelectedSet, charId])
+
+  // Thu gọn sau mỗi lần "Tìm bộ 5 tối ưu" (bỏ qua lần mount đầu để giữ mở khi vừa vào).
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return }
+    setCollapsed(true)
+  }, [solveTick])
 
   if (recs.length === 0) return null
 

@@ -65,6 +65,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   )
   const [loadout, setLoadout] = useState<LoadoutResult | null>(null)
   const [solved, setSolved] = useState(false)
+  const [solveTick, setSolveTick] = useState(0)
   const [stale, setStale] = useState(false)
   const [forcedSet, setForcedSet] = useState('') // '' = tự động; set id = ép solver theo set đó
   const [objective, setObjective] = useState<SolveObjective>('score') // 'damage' = re-rank top-N theo damage model
@@ -111,6 +112,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective))
     setSolved(true)
     setStale(false)
+    setSolveTick((n) => n + 1) // báo hiệu MainEchoHint thu gọn sau mỗi lần "Tìm bộ 5 tối ưu"
   }
 
   // Echo bị đánh dấu "loại" (trash) không vào solver — vẫn hiện mờ trong kho.
@@ -280,7 +282,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             >{t('app.findBest5')}</button>
           </div>
 
-          <MainEchoHint charId={charId} ownedNames={ownedEchoNames} hasSelectedSet={!!forcedSet} />
+          <MainEchoHint charId={charId} ownedNames={ownedEchoNames} hasSelectedSet={!!forcedSet} solveTick={solveTick} />
 
           <SubstatLegend />
 

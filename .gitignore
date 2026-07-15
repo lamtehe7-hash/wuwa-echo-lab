@@ -17,6 +17,7 @@ app/public/tesseract/core/
 # Doc nội bộ (context bàn giao giữa các phiên Claude) — không đẩy lên GitHub
 PROJECT_TASK.md
 HANDOVER.md
+ARCHIVE_INTERNAL.md
 
 # Artifact nội bộ của Claude Code (mọi cấp thư mục)
 .claude/

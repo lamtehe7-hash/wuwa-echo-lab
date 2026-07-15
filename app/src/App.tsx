@@ -13,6 +13,7 @@ import Stale from './components/Stale'
 import SubstatLegend from './components/SubstatLegend'
 import { useToast } from './components/Toast'
 import WeightEditor from './components/WeightEditor'
+import BuildEditor from './components/BuildEditor'
 import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
 import { SONATA_BY_ID } from './data/sonata'
@@ -70,6 +71,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const [forcedSet, setForcedSet] = useState('') // '' = tự động; set id = ép solver theo set đó
   const [objective, setObjective] = useState<SolveObjective>('score') // 'damage' = re-rank top-N theo damage model
   const [showWeights, setShowWeights] = useState(false)
+  const [showBuild, setShowBuild] = useState(false)
   const [editingEcho, setEditingEcho] = useState<Echo | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -108,8 +110,12 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     setStale(true)
   }, [echoes, overrides])
 
+  // Build context (vũ khí+base+buff) cho damage model THẬT — mode Damage dùng để tối ưu theo crit thật
+  const buildCtx = overrides[charId]?.build
+  const activeSet = forcedSet || profile.preferredSets[0]
+
   const solve = () => {
-    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective))
+    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective, buildCtx))
     setSolved(true)
     setStale(false)
     setSolveTick((n) => n + 1) // báo hiệu MainEchoHint thu gọn sau mỗi lần "Tìm bộ 5 tối ưu"
@@ -277,6 +283,11 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               onClick={() => setShowWeights(!showWeights)}
             >{t('app.weights')}</button>
             <button
+              className={`rounded px-2 py-1 text-xs ${showBuild ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'} ${buildCtx ? 'ring-1 ring-sky-600' : ''}`}
+              onClick={() => setShowBuild(!showBuild)}
+              title={t('build.tip')}
+            >⚔ {t('app.build')}</button>
+            <button
               className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600"
               onClick={solve}
             >{t('app.findBest5')}</button>
@@ -286,19 +297,34 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
 
           <SubstatLegend />
 
-          {showWeights && (
-            <div className="max-w-md">
-              <WeightEditor
-                base={CHARACTER_BY_ID[charId]}
-                merged={profile}
-                override={overrides[charId]}
-                onChange={(ov) => {
-                  const next = { ...overrides }
-                  if (ov === undefined) delete next[charId]
-                  else next[charId] = ov
-                  setOverrides(next) // kết quả solve tự chuyển "cũ" qua effect [overrides]
-                }}
-              />
+          {(showWeights || showBuild) && (
+            <div className="grid gap-2 md:grid-cols-2">
+              {showWeights && (
+                <WeightEditor
+                  base={CHARACTER_BY_ID[charId]}
+                  merged={profile}
+                  override={overrides[charId]}
+                  onChange={(ov) => {
+                    const next = { ...overrides }
+                    if (ov === undefined) delete next[charId]
+                    else next[charId] = ov
+                    setOverrides(next) // kết quả solve tự chuyển "cũ" qua effect [overrides]
+                  }}
+                />
+              )}
+              {showBuild && (
+                <BuildEditor
+                  profile={profile}
+                  override={overrides[charId]}
+                  activeSet={activeSet}
+                  onChange={(ov) => {
+                    const next = { ...overrides }
+                    if (ov === undefined) delete next[charId]
+                    else next[charId] = ov
+                    setOverrides(next)
+                  }}
+                />
+              )}
             </div>
           )}
 
@@ -310,7 +336,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               </span>
               {equippedInfo.result && (
                 <span className="text-xs text-slate-500">
-                  ⚔ ×{loadoutDamage(equippedInfo.result.echoes.map((s) => s.echo), profile).multiplier.toFixed(2)}
+                  ⚔ ×{loadoutDamage(equippedInfo.result.echoes.map((s) => s.echo), profile, buildCtx, activeSet).multiplier.toFixed(2)}
                 </span>
               )}
               {equippedInfo.missing > 0 && <span className="text-xs text-amber-400">{t('equip.missing', { n: equippedInfo.missing })}</span>}
@@ -330,6 +356,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               <LoadoutView
                 result={loadout}
                 profile={profile}
+                ctx={buildCtx}
                 compareTotal={equippedInfo?.result?.total ?? null}
                 onPin={loadout ? () => {
                   setEquipped((prev) => ({ ...prev, [charId]: loadout.echoes.map((s) => s.echo.id) }))

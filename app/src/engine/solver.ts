@@ -1,4 +1,4 @@
-import type { CharacterProfile, Echo, LoadoutResult, LocMessage, ScoredEcho, SonataSet } from '../types'
+import type { BuildContext, CharacterProfile, Echo, LoadoutResult, LocMessage, ScoredEcho, SonataSet } from '../types'
 import { COST_CAP } from '../data/mainstats'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { maxRoll } from '../data/substats'
@@ -211,11 +211,20 @@ export type SolveObjective = 'score' | 'damage'
  *   chọn bộ có chỉ số damage TƯƠNG ĐỐI cao nhất — hợp DPS (score chỉ xấp xỉ tuyến tính damage).
  *   Damage model phi tuyến nên KHÔNG dùng trực tiếp làm objective DFS (phá prune); re-rank an toàn.
  */
+/** Set trội của 1 bộ (nhiều mảnh nhất) — dùng nạp buff set đúng cho damage model. */
+function dominantSet(r: LoadoutResult): string | undefined {
+  let best: string | undefined
+  let bestN = 0
+  for (const [setId, n] of Object.entries(r.setCounts)) if (n > bestN) { bestN = n; best = setId }
+  return best
+}
+
 export function solveBest5(
   echoes: Echo[],
   profile: CharacterProfile,
   forcedSet?: string,
   objective: SolveObjective = 'score',
+  ctx?: BuildContext,
 ): LoadoutResult | null {
   const src = forcedSet ? echoes.filter((e) => e.set === forcedSet) : echoes
   const theoMax = theoreticalMax(profile)
@@ -326,12 +335,13 @@ export function solveBest5(
 
   if (topN.length === 0) return null
   if (objective === 'damage') {
-    // Re-rank: chọn bộ có damage TƯƠNG ĐỐI cao nhất trong top-N (score-best luôn có mặt = topN[0]
-    // nên bộ chọn ra có damage ≥ bộ score-best). Tie-break giữ nguyên thứ tự score (ổn định).
+    // Re-rank: chọn bộ có damage TƯƠNG ĐỐI cao nhất trong top-N. Damage dùng baseline THẬT khi có
+    // ctx (vũ khí+base+forte+buff) → cán cân crit đúng, cost-4 Crit DMG được chọn lại khi CR đủ.
+    // activeSet = set trội của TỪNG bộ (nạp buff set đúng theo bộ đang xét).
     let bestI = 0
     let bestD = -Infinity
     for (let i = 0; i < topN.length; i++) {
-      const d = loadoutDamage(topN[i].echoes.map((se) => se.echo), profile).multiplier
+      const d = loadoutDamage(topN[i].echoes.map((se) => se.echo), profile, ctx, dominantSet(topN[i])).multiplier
       if (d > bestD) { bestD = d; bestI = i }
     }
     return topN[bestI]

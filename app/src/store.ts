@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { CharacterProfile, Echo, EchoCost, MainStatKey, Substat, SubstatKey, WeightKey } from './types'
+import type { BuildContext, CharacterProfile, Echo, EchoCost, MainStatKey, Substat, SubstatKey, WeightKey } from './types'
 import { MAINSTATS } from './data/mainstats'
 import { MAX_SUBSTATS, SUBSTATS } from './data/substats'
 
@@ -205,6 +205,8 @@ export interface ProfileOverride {
   /** number = override; null = user ĐÃ XOÁ gate (khác undefined = chưa đụng tới, dùng preset).
    *  Dùng null thay undefined vì JSON.stringify bỏ key undefined → mất trạng thái "đã xoá" khi reload. */
   erTarget?: number | null
+  /** Build context (vũ khí + base + buff) cho damage model THẬT — dùng ở tab Tối ưu mode Damage. */
+  build?: BuildContext
 }
 
 function loadOverrides(vaultId: string): Record<string, ProfileOverride> {

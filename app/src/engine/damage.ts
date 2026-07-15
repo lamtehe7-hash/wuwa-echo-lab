@@ -1,5 +1,7 @@
-import type { CharacterProfile, Echo, SubstatKey } from '../types'
+import type { BuildContext, CharacterProfile, Echo, StatBuff, SubstatKey, WeightKey } from '../types'
 import { MAINSTATS } from '../data/mainstats'
+import { WEAPON_BY_ID, weaponSecondaryValue } from '../data/weapons'
+import { CHARACTER_BASE_BY_ID, SET_BUFFS } from '../data/characterBase'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mô hình DAMAGE TƯƠNG ĐỐI (Phase 5, tuỳ chọn) — bổ sung, KHÔNG thay thế weighted
@@ -111,33 +113,159 @@ export const DEFAULT_BASELINE = {
   baseDmgBonus: 0,
 }
 
-/** Suy baseline từ archetype/weights của nhân vật (không cần data ngoài). */
-export function characterBaseline(profile: CharacterProfile): DamageBaseline {
+/** scaling = stat có trọng số cao nhất trong {atkPct, hpPct, defPct} (mặc định atk). */
+function deriveScaling(profile: CharacterProfile): 'atk' | 'hp' | 'def' {
   const w = profile.weights
-  // scaling = stat có trọng số cao nhất trong {atkPct, hpPct, defPct} (mặc định atk).
   const atkW = w.atkPct ?? 0
   const hpW = w.hpPct ?? 0
   const defW = w.defPct ?? 0
-  let scaling: 'atk' | 'hp' | 'def' = 'atk'
-  if (hpW > atkW && hpW >= defW) scaling = 'hp'
-  else if (defW > atkW && defW >= hpW) scaling = 'def'
-  const baseStat =
-    scaling === 'hp' ? DEFAULT_BASELINE.baseHp : scaling === 'def' ? DEFAULT_BASELINE.baseDef : DEFAULT_BASELINE.baseAtk
-  // Attack-type mà kit ăn = loại có trọng số cao nhất (0 → không rõ).
+  if (hpW > atkW && hpW >= defW) return 'hp'
+  if (defW > atkW && defW >= hpW) return 'def'
+  return 'atk'
+}
+
+/** Attack-type mà kit ăn = loại có trọng số cao nhất (null → không rõ). */
+function deriveAttackType(profile: CharacterProfile): AttackTypeKey | null {
+  const w = profile.weights
   let attackType: AttackTypeKey | null = null
   let bestW = 0
   for (const k of ATTACK_TYPE_KEYS) {
     const wk = w[k as SubstatKey] ?? 0
     if (wk > bestW) { bestW = wk; attackType = k }
   }
+  return attackType
+}
+
+/** Suy baseline từ archetype/weights của nhân vật (không cần data ngoài — giả định cũ). */
+export function characterBaseline(profile: CharacterProfile): DamageBaseline {
+  const scaling = deriveScaling(profile)
+  const baseStat =
+    scaling === 'hp' ? DEFAULT_BASELINE.baseHp : scaling === 'def' ? DEFAULT_BASELINE.baseDef : DEFAULT_BASELINE.baseAtk
   return {
     scaling,
     baseStat,
     baseCR: DEFAULT_BASELINE.baseCR,
     baseCD: DEFAULT_BASELINE.baseCD,
     baseDmgBonus: DEFAULT_BASELINE.baseDmgBonus,
-    attackType,
+    attackType: deriveAttackType(profile),
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUILD CONTEXT: dựng baseline THẬT từ vũ khí + base nhân vật + Forte nội tại + buff.
+// Mọi % cộng dồn trong từng loại; base CR=5, CD=150 khoá cứng. Degrade theo từng field:
+// thiếu vũ khí/base → statFactor rơi về giả định; crit/DMG% vẫn đúng nếu có forte/buff.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Cộng 1 stat theo WeightKey vào StatTotals (energyRegen/healingBonus không vào statFactor damage). */
+function applyWeightStat(t: StatTotals, key: WeightKey, v: number): void {
+  switch (key) {
+    case 'atkPct': t.atkPct += v; break
+    case 'atk': t.flatAtk += v; break
+    case 'hpPct': t.hpPct += v; break
+    case 'hp': t.flatHp += v; break
+    case 'defPct': t.defPct += v; break
+    case 'def': t.flatDef += v; break
+    case 'critRate': t.critRate += v; break
+    case 'critDmg': t.critDmg += v; break
+    case 'basicAtk': case 'heavyAtk': case 'skillDmg': case 'liberationDmg': t.attackTypeDmg[key] += v; break
+    case 'elementDmg': t.elementalDmg += v; break
+    // energyRegen, healingBonus: bỏ qua với statFactor damage
+  }
+}
+
+function addTotals(a: StatTotals, b: StatTotals): StatTotals {
+  return {
+    atkPct: a.atkPct + b.atkPct, flatAtk: a.flatAtk + b.flatAtk,
+    hpPct: a.hpPct + b.hpPct, flatHp: a.flatHp + b.flatHp,
+    defPct: a.defPct + b.defPct, flatDef: a.flatDef + b.flatDef,
+    critRate: a.critRate + b.critRate, critDmg: a.critDmg + b.critDmg,
+    elementalDmg: a.elementalDmg + b.elementalDmg,
+    attackTypeDmg: {
+      basicAtk: a.attackTypeDmg.basicAtk + b.attackTypeDmg.basicAtk,
+      heavyAtk: a.attackTypeDmg.heavyAtk + b.attackTypeDmg.heavyAtk,
+      skillDmg: a.attackTypeDmg.skillDmg + b.attackTypeDmg.skillDmg,
+      liberationDmg: a.attackTypeDmg.liberationDmg + b.attackTypeDmg.liberationDmg,
+    },
+  }
+}
+
+type WeightMap = Partial<Record<WeightKey, number>>
+function addW(m: WeightMap, key: WeightKey, v: number): void { m[key] = (m[key] ?? 0) + v }
+function mergeW(m: WeightMap, src?: WeightMap): void { if (src) for (const k in src) addW(m, k as WeightKey, src[k as WeightKey]!) }
+function mapToTotals(m: WeightMap): StatTotals {
+  const t = emptyTotals()
+  for (const k in m) applyWeightStat(t, k as WeightKey, m[k as WeightKey]!)
+  return t
+}
+
+/** Đóng góp stat từ echo (substat + main) dưới dạng WeightMap (gồm energyRegen, elementDmg). */
+export function echoWeightMap(echoes: Echo[]): WeightMap {
+  const m: WeightMap = {}
+  for (const e of echoes) {
+    for (const s of e.substats) addW(m, s.stat, s.value)
+    const mv = mainStatValue(e)
+    const mk = e.mainStat
+    if (mk === 'atkPct' || mk === 'hpPct' || mk === 'defPct' || mk === 'critRate' || mk === 'critDmg' || mk === 'energyRegen') addW(m, mk, mv)
+    else if (mk === 'healingBonus') addW(m, 'healingBonus', mv)
+    else if (ELEMENTAL_MAIN.has(mk)) addW(m, 'elementDmg', mv)
+  }
+  return m
+}
+
+export interface ResolvedContext {
+  /** Có nguồn non-echo thật (vũ khí / base tay / forte / buff) — UI biết đang dùng chỉ số thật */
+  hasContext: boolean
+  scaling: 'atk' | 'hp' | 'def'
+  attackType: AttackTypeKey | null
+  /** base ATK/HP/DEF của scaling stat = char (+ vũ khí ATK nếu scaling atk). Giả định nếu thiếu. */
+  baseStat: number
+  charBaseStat: number
+  weaponBaseAtk: number
+  /** Tổng non-echo (vũ khí secondary+passive + forte + buff active) — cộng vào echo cho damage */
+  nonEcho: StatTotals
+  /** Tách theo nguồn (cho bảng breakdown) — WeightMap gồm cả energyRegen */
+  weaponMap: WeightMap
+  forteMap: WeightMap
+  buffMap: WeightMap
+  /** Buff khả dụng + trạng thái (UI toggle) */
+  buffs: { buff: StatBuff; on: boolean }[]
+}
+
+/** Gộp mọi nguồn non-echo cho 1 nhân vật theo context. `activeSet` = set đang chạy (nạp buff set). */
+export function resolveContext(profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): ResolvedContext {
+  const scaling = deriveScaling(profile)
+  const attackType = deriveAttackType(profile)
+  const cb = CHARACTER_BASE_BY_ID[profile.id]
+  const weapon = ctx?.weaponId ? WEAPON_BY_ID[ctx.weaponId] : undefined
+  const manual = ctx?.manualBase
+
+  // Base stat của scaling: ưu tiên nhập tay → DB → giả định.
+  const charBaseStat =
+    scaling === 'hp' ? (manual?.hp ?? cb?.baseHp ?? DEFAULT_BASELINE.baseHp)
+    : scaling === 'def' ? (manual?.def ?? cb?.baseDef ?? DEFAULT_BASELINE.baseDef)
+    : (manual?.atk ?? cb?.baseAtk ?? DEFAULT_BASELINE.baseAtk)
+  const weaponBaseAtk = weapon?.baseAtk ?? 0
+  const hasRealBase = !!(weapon || manual?.atk || manual?.hp || manual?.def || cb)
+  // Nếu KHÔNG có base thật (không DB/không vũ khí/không nhập tay) → giữ giả định cũ để statFactor không tụt.
+  const baseStat = hasRealBase
+    ? charBaseStat + (scaling === 'atk' ? weaponBaseAtk : 0)
+    : (scaling === 'hp' ? DEFAULT_BASELINE.baseHp : scaling === 'def' ? DEFAULT_BASELINE.baseDef : DEFAULT_BASELINE.baseAtk)
+
+  // Nguồn tách riêng (cho breakdown).
+  const weaponMap: WeightMap = {}
+  if (weapon) { addW(weaponMap, weapon.secondary, weaponSecondaryValue(weapon)); mergeW(weaponMap, weapon.passiveFlat) }
+  const forteMap: WeightMap = { ...(cb?.forte ?? {}) }
+
+  // Buff khả dụng = buff vũ khí + buff set đang chạy. Trạng thái: override hoặc defaultOn.
+  const availBuffs: StatBuff[] = [...(weapon?.buffs ?? []), ...(activeSet ? SET_BUFFS[activeSet] ?? [] : [])]
+  const buffs = availBuffs.map((buff) => ({ buff, on: ctx?.buffStates?.[buff.id] ?? buff.defaultOn }))
+  const buffMap: WeightMap = {}
+  for (const { buff, on } of buffs) if (on) mergeW(buffMap, buff.stats)
+
+  const nonEcho = addTotals(addTotals(mapToTotals(weaponMap), mapToTotals(forteMap)), mapToTotals(buffMap))
+  const hasContext = !!(weapon || manual || cb || buffs.some((b) => b.on))
+  return { hasContext, scaling, attackType, baseStat, charBaseStat, weaponBaseAtk, nonEcho, weaponMap, forteMap, buffMap, buffs }
 }
 
 export interface DamageBreakdown {
@@ -182,17 +310,71 @@ export function damageBreakdown(t: StatTotals, b: DamageBaseline): DamageBreakdo
 }
 
 /**
- * Breakdown damage của một loadout cho nhân vật, kèm `multiplier` = index / index(build rỗng).
- * Dùng để so sánh damage tương đối giữa các phương án đeo echo.
+ * Breakdown damage của một loadout cho nhân vật, kèm `multiplier` = index / index(chỉ base+context,
+ * không echo). Dùng so sánh damage tương đối. `ctx`/`activeSet` bật baseline THẬT (vũ khí+base+forte+buff);
+ * bỏ trống = giả định cũ (tương thích ngược).
  */
-export function loadoutDamage(echoes: Echo[], profile: CharacterProfile): DamageBreakdown {
-  const b = characterBaseline(profile)
-  const bd = damageBreakdown(aggregateTotals(echoes), b)
-  const bare = damageBreakdown(emptyTotals(), b).index
+export function loadoutDamage(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): DamageBreakdown {
+  const r = resolveContext(profile, ctx, activeSet)
+  const b: DamageBaseline = {
+    scaling: r.scaling, baseStat: r.baseStat,
+    baseCR: DEFAULT_BASELINE.baseCR, baseCD: DEFAULT_BASELINE.baseCD, baseDmgBonus: 0,
+    attackType: r.attackType,
+  }
+  const bd = damageBreakdown(addTotals(aggregateTotals(echoes), r.nonEcho), b)
+  // "Không echo" vẫn giữ context (vũ khí/forte/buff) → multiplier = phần echo đóng góp thêm.
+  const bare = damageBreakdown(r.nonEcho, b).index
   return { ...bd, multiplier: bare > 0 ? bd.index / bare : 1 }
 }
 
 /** Rút gọn: ×lần damage so với không đeo echo (≥1). */
-export function loadoutDamageMultiplier(echoes: Echo[], profile: CharacterProfile): number {
-  return loadoutDamage(echoes, profile).multiplier
+export function loadoutDamageMultiplier(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): number {
+  return loadoutDamage(echoes, profile, ctx, activeSet).multiplier
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bảng chỉ số CUỐI: tách nguồn base + vũ khí + forte + echo + buff = tổng (cho UI).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface StatBreakdownRow {
+  stat: WeightKey
+  /** Hằng số game (critRate 5, critDmg 150; các stat khác 0) */
+  base: number
+  weapon: number
+  forte: number
+  echo: number
+  buff: number
+  total: number
+  /** true nếu stat cap 100 (critRate) và total đã bị cắt */
+  capped?: boolean
+}
+
+/** Thứ tự hiển thị + stat luôn hiện (có base). */
+const BREAKDOWN_ORDER: WeightKey[] = [
+  'critRate', 'critDmg', 'atkPct', 'hpPct', 'defPct', 'elementDmg',
+  'basicAtk', 'heavyAtk', 'skillDmg', 'liberationDmg', 'energyRegen', 'atk', 'hp', 'def',
+]
+const ALWAYS_SHOW = new Set<WeightKey>(['critRate', 'critDmg'])
+const BASE_CONST: Partial<Record<WeightKey, number>> = { critRate: DEFAULT_BASELINE.baseCR, critDmg: DEFAULT_BASELINE.baseCD, energyRegen: 100 }
+
+/**
+ * Bảng cộng dồn từng stat theo nguồn cho 1 loadout. Chỉ hiện stat có đóng góp (hoặc luôn hiện CR/CD).
+ * Ví dụ CR: base 5 + weapon 24.3 + forte 8 + echo 34.8 + buff 20 = 92.1.
+ */
+export function finalStatBreakdown(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): StatBreakdownRow[] {
+  const r = resolveContext(profile, ctx, activeSet)
+  const echoMap = echoWeightMap(echoes)
+  const rows: StatBreakdownRow[] = []
+  for (const stat of BREAKDOWN_ORDER) {
+    const base = BASE_CONST[stat] ?? 0
+    const weapon = r.weaponMap[stat] ?? 0
+    const forte = r.forteMap[stat] ?? 0
+    const echo = echoMap[stat] ?? 0
+    const buff = r.buffMap[stat] ?? 0
+    const rawTotal = base + weapon + forte + echo + buff
+    if (rawTotal === 0 && !ALWAYS_SHOW.has(stat)) continue
+    const capped = stat === 'critRate' && rawTotal > 100
+    rows.push({ stat, base, weapon, forte, echo, buff, total: capped ? 100 : rawTotal, capped })
+  }
+  return rows
 }

@@ -99,6 +99,64 @@ export interface CharacterProfile {
   preferredSets: string[]
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Build context: chỉ số KHÔNG từ echo (vũ khí + base nhân vật + Forte nội tại +
+// buff có điều kiện) để dựng baseline THẬT cho damage model (thay giả định cũ).
+// Quy ước: mọi % cộng dồn trong từng loại stat; ATK cuối = (baseATK char + vũ khí)
+// × (1+ΣATK%) + Σflat. Base CR = 5, base CD = 150 là HẰNG SỐ mọi resonator.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type WeaponType = 'sword' | 'broadblade' | 'pistols' | 'gauntlets' | 'rectifier'
+
+/** Stat mà secondary vũ khí có thể mang (subset của substat) */
+export type WeaponSecondaryKey = 'atkPct' | 'critRate' | 'critDmg' | 'energyRegen' | 'defPct' | 'hpPct'
+
+/** Buff có điều kiện (assumed active, hiển thị toggle) — từ vũ khí, set echo, hoặc kit */
+export interface StatBuff {
+  id: string
+  /** Nhãn hiển thị (giữ thuật ngữ game bằng EN) */
+  label: string
+  /** Stat cộng khi buff active (gồm elementDmg) */
+  stats: Partial<Record<WeightKey, number>>
+  /** Mặc định bật? (buff uptime cao / gần như luôn có trong rotation) */
+  defaultOn: boolean
+}
+
+export interface Weapon {
+  id: string
+  name: string
+  type: WeaponType
+  rarity: 3 | 4 | 5
+  /** ATK ở Lv.90 (main stat vũ khí) */
+  baseAtk: number
+  /** Secondary stat ở Lv.90 */
+  secondary: WeaponSecondaryKey
+  secondaryValue: number
+  /** Passive CỐ ĐỊNH (unconditional) — cộng thẳng, vd Azure Oath +12% All-Attribute DMG */
+  passiveFlat?: Partial<Record<WeightKey, number>>
+  /** Passive/buff CÓ ĐIỀU KIỆN (toggle) — vd heavy-attack amp sau khi inflicting Havoc Bane */
+  buffs?: StatBuff[]
+}
+
+/** Base stat + Forte nội tại của nhân vật ở Lv.90 (max ascension) */
+export interface CharacterBase {
+  id: string // khớp CharacterProfile.id
+  baseHp: number
+  baseAtk: number
+  baseDef: number
+  /** Forte "Stat Bonus" nội tại (tổng các node) — vd { critRate: 8 } hoặc { atkPct: 12 } */
+  forte: Partial<Record<WeightKey, number>>
+}
+
+/** Context build của 1 nhân vật (lưu trong ProfileOverride.build). Rỗng = dùng giả định cũ. */
+export interface BuildContext {
+  weaponId?: string
+  /** Override base ATK/HP/DEF khi nhân vật chưa có DB (hoặc muốn số thật của mình) */
+  manualBase?: { atk?: number; hp?: number; def?: number }
+  /** Bật/tắt từng buff (buffId → on). Thiếu key = theo defaultOn */
+  buffStates?: Record<string, boolean>
+}
+
 export interface ScoredEcho {
   echo: Echo
   /** Điểm substat thô (tổng w × rollEff) */

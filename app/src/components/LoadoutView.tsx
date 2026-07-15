@@ -1,4 +1,4 @@
-import type { CharacterProfile, LoadoutResult } from '../types'
+import type { BuildContext, CharacterProfile, LoadoutResult } from '../types'
 import { mainEchoesFor } from '../data/mainEchoes'
 import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
@@ -6,16 +6,27 @@ import { setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useLang, useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
+import StatBreakdown from './StatBreakdown'
 
 // Hiển thị bộ 5 tối ưu do solver trả về
 
-export default function LoadoutView({ result, profile, compareTotal = null, onPin }: {
+/** Set trội của bộ (nhiều mảnh nhất) — nạp buff set đúng cho damage/breakdown */
+function dominantSet(counts: Record<string, number>): string | undefined {
+  let best: string | undefined
+  let bestN = 0
+  for (const [id, n] of Object.entries(counts)) if (n > bestN) { bestN = n; best = id }
+  return best
+}
+
+export default function LoadoutView({ result, profile, compareTotal = null, onPin, ctx }: {
   result: LoadoutResult | null
   profile: CharacterProfile
   /** Điểm của "bộ hiện tại" đã ghi nhớ — hiện delta ▲/▼ cạnh tổng điểm (C1, pattern GO) */
   compareTotal?: number | null
   /** Có mặt → hiện nút "Đặt làm bộ hiện tại" ở chân kết quả */
   onPin?: () => void
+  /** Build context (vũ khí+base+buff) → damage + breakdown chỉ số thật */
+  ctx?: BuildContext
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -26,7 +37,9 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
   const delta = compareTotal !== null ? result.total - compareTotal : null
   const setList = Object.entries(result.setCounts).map(([id, n]) => `${SONATA_BY_ID[id]?.name ?? id} ×${n}`).join(', ')
   const setBreakdown = setBonusBreakdown(result.setCounts, profile).filter((e) => e.statScore > 0.05 || e.prefBonus > 0)
-  const dmg = loadoutDamage(result.echoes.map((s) => s.echo), profile)
+  const activeSet = dominantSet(result.setCounts)
+  const echoList = result.echoes.map((s) => s.echo)
+  const dmg = loadoutDamage(echoList, profile, ctx, activeSet)
   // Main echo đề cử (research/main-echo.md): bộ solver có chứa echo đề cử nào không?
   const recs = mainEchoesFor(profile.id)
   const loadoutNames = new Set(result.echoes.map((s) => s.echo.name?.trim().toLowerCase()).filter(Boolean))
@@ -67,7 +80,11 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
       )}
       <div className="text-xs text-slate-400" title={t('loadout.damageTip')}>
         ⚔ {t('loadout.damageLabel')}: <span className="cursor-help font-mono text-amber-300">×{dmg.multiplier.toFixed(2)}</span>
+        {ctx && (
+          <span className="ml-2 text-slate-500">CR <span className="font-mono text-slate-300">{dmg.critRateTotal.toFixed(1)}%</span> · CD <span className="font-mono text-slate-300">{dmg.critDmgTotal.toFixed(1)}%</span></span>
+        )}
       </div>
+      <StatBreakdown echoes={echoList} profile={profile} ctx={ctx} activeSet={activeSet} defaultOpen={!!ctx} />
       {recs.length > 0 && (
         usedRec ? (
           <div className="text-xs text-emerald-400" title={lang === 'vi' ? usedRec.reasonVi : usedRec.reason}>{t('mainEcho.inLoadout')}</div>

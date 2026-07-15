@@ -124,6 +124,7 @@ const DICT: Record<string, Entry> = {
   'app.inventoryCount': { vi: 'Kho: {n} echo (cost 4: {c4} · cost 3: {c3} · cost 1: {c1})', en: 'Inventory: {n} echoes (cost 4: {c4} · cost 3: {c3} · cost 1: {c1})' },
   'app.character': { vi: 'Nhân vật:', en: 'Character:' },
   'app.weights': { vi: '⚖ trọng số', en: '⚖ weights' },
+  'app.build': { vi: 'chỉ số nền', en: 'base stats' },
   'app.objScore': { vi: 'Điểm', en: 'Score' },
   'app.objDamage': { vi: 'Damage', en: 'Damage' },
   'app.objectiveTip': { vi: 'Mục tiêu tối ưu. "Điểm" = điểm weighted-linear (mặc định). "Damage" = giữ top-16 bộ theo điểm rồi chọn bộ có chỉ số damage TƯƠNG ĐỐI cao nhất (crit tích × bracket %DMG) — hợp DPS; healer/buffer nên để "Điểm".', en: 'Optimization objective. "Score" = weighted-linear score (default). "Damage" = keep top-16 by score then pick the highest RELATIVE damage index (crit product × %DMG bracket) — best for DPS; keep "Score" for healers/buffers.' },
@@ -223,9 +224,27 @@ const DICT: Record<string, Entry> = {
   'loadout.exportTip': { vi: 'Lưu bộ này thành 1 ảnh PNG để chia sẻ (icon nhúng sẵn, không cần mạng).', en: 'Save this loadout as a PNG image to share (icons embedded, works offline).' },
   'loadout.damageLabel': { vi: 'Damage tương đối', en: 'Relative damage' },
   'loadout.damageTip': {
-    vi: 'Ước lượng damage tương đối so với khi không đeo echo — mô hình bắt crit dạng TÍCH (1 + CR×CD) và bracket %DMG (element + attack-type cộng dồn, nhân với phần còn lại — đúng công thức WuWa). Chỉ để so sánh phương án, không phải damage tuyệt đối. Baseline giả định, xem engine/damage.ts.',
-    en: 'Estimated damage relative to wearing no echoes — the model captures multiplicative crit (1 + CR×CD) and the %DMG bracket (element + attack-type ADD together, then multiply the rest — per the WuWa formula). For comparing options only, not absolute damage. Assumed baseline, see engine/damage.ts.',
+    vi: 'Ước lượng damage tương đối so với khi không đeo echo — mô hình bắt crit dạng TÍCH (1 + CR×CD) và bracket %DMG (element + attack-type cộng dồn, nhân với phần còn lại — đúng công thức WuWa). Chỉ để so sánh phương án, không phải damage tuyệt đối. Chọn vũ khí + chỉ số nền ở "⚔ chỉ số nền" để tính crit THẬT. Xem engine/damage.ts.',
+    en: 'Estimated damage relative to wearing no echoes — the model captures multiplicative crit (1 + CR×CD) and the %DMG bracket (element + attack-type ADD together, then multiply the rest — per the WuWa formula). For comparing options only, not absolute damage. Pick a weapon + base stats under "⚔ base stats" for REAL crit. See engine/damage.ts.',
   },
+
+  // ── BuildEditor / StatBreakdown (chỉ số nền + bảng cộng dồn) ──
+  'build.title': { vi: 'Chỉ số nền (vũ khí · base · buff)', en: 'Base stats (weapon · base · buff)' },
+  'build.tip': { vi: 'Nạp vũ khí + base nhân vật + Forte + buff để mode Damage tính CRIT THẬT (base 5% + vũ khí + forte + echo + buff) và tối ưu đúng cán cân CR/CD.', en: 'Feed weapon + character base + Forte + buffs so Damage mode uses REAL crit (base 5% + weapon + forte + echo + buff) and optimizes the right CR/CD balance.' },
+  'build.weapon': { vi: 'Vũ khí', en: 'Weapon' },
+  'build.weaponNone': { vi: 'không chọn', en: 'none' },
+  'build.buffs': { vi: 'Buff có điều kiện (giả định active):', en: 'Conditional buffs (assumed active):' },
+  'build.summary': { vi: 'Base {scale} {base} · CR nền +{cr} · CD nền +{cd} (chưa gồm echo)', en: 'Base {scale} {base} · base CR +{cr} · base CD +{cd} (echoes not included)' },
+  'build.noDb': { vi: 'nhân vật chưa có base trong DB → đang dùng giả định; nhập base tay để chính xác', en: 'no base in DB → using assumption; enter base manually for accuracy' },
+  'statbd.title': { vi: 'Chỉ số cuối theo nguồn', en: 'Final stats by source' },
+  'statbd.stat': { vi: 'Chỉ số', en: 'Stat' },
+  'statbd.base': { vi: 'Base', en: 'Base' },
+  'statbd.weapon': { vi: 'Vũ khí', en: 'Weapon' },
+  'statbd.forte': { vi: 'Forte', en: 'Forte' },
+  'statbd.echo': { vi: 'Echo', en: 'Echo' },
+  'statbd.buff': { vi: 'Buff', en: 'Buff' },
+  'statbd.total': { vi: 'Tổng', en: 'Total' },
+  'statbd.capped': { vi: 'Đã chạm trần 100%', en: 'Capped at 100%' },
 
   // ── RosterPanel ──
   'roster.help': { vi: 'Gán cả đội (mỗi echo chỉ 1 người dùng — ưu tiên từ trên xuống)', en: 'Assign whole team (each echo used by one only — priority top-down)' },

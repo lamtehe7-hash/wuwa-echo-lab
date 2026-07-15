@@ -280,7 +280,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             >{t('app.findBest5')}</button>
           </div>
 
-          <MainEchoHint charId={charId} ownedNames={ownedEchoNames} />
+          <MainEchoHint charId={charId} ownedNames={ownedEchoNames} hasSelectedSet={!!forcedSet} />
 
           <SubstatLegend />
 

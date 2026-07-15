@@ -22,6 +22,8 @@ describe('MAIN_ECHOES integrity', () => {
         expect(info!.sets, `${id}: "${r.echo}" không thuộc set ${r.set}`).toContain(r.set)
         expect(SONATA_BY_ID[r.set], `${id}: set ${r.set} không tồn tại`).toBeTruthy()
         expect(r.reason.trim().length, `${id}: reason rỗng`).toBeGreaterThan(0)
+        expect(r.reasonVi?.trim().length, `${id}: "${r.echo}" thiếu reasonVi`).toBeGreaterThan(0)
+        expect(r.reasonVi.includes('`'), `${id}: reasonVi chứa backtick`).toBe(false)
       }
     }
   })

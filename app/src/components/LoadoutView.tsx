@@ -4,7 +4,7 @@ import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
 import { setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
-import { useT, useTMessage } from '../i18n'
+import { useLang, useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
 
 // Hiển thị bộ 5 tối ưu do solver trả về
@@ -18,6 +18,7 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
   onPin?: () => void
 }) {
   const t = useT()
+  const { lang } = useLang()
   const tm = useTMessage()
   if (!result) {
     return <p className="p-3 text-sm text-slate-500">{t('loadout.empty')}</p>
@@ -69,9 +70,9 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
       </div>
       {recs.length > 0 && (
         usedRec ? (
-          <div className="text-xs text-emerald-400" title={usedRec.reason}>{t('mainEcho.inLoadout')}</div>
+          <div className="text-xs text-emerald-400" title={lang === 'vi' ? usedRec.reasonVi : usedRec.reason}>{t('mainEcho.inLoadout')}</div>
         ) : (
-          <div className="text-xs text-amber-400" title={recs[0].reason}>{t('mainEcho.consider', { echo: recs[0].echo })}</div>
+          <div className="text-xs text-amber-400" title={lang === 'vi' ? recs[0].reasonVi : recs[0].reason}>{t('mainEcho.consider', { echo: recs[0].echo })}</div>
         )
       )}
       {/* Bộ 5 hiển thị dạng card in-game (grid 5 cột trên màn rộng, như hàng echo đang đeo) */}

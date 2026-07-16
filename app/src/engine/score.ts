@@ -141,7 +141,9 @@ export function tuneAdvice(echo: Echo, profile: CharacterProfile): TuneAdvice {
   const maxSlots = MAX_SUBSTATS[echo.rarity] ?? 5
   const remaining = Math.max(0, maxSlots - echo.substats.length)
   const expectedFinalRaw = scored.raw + remaining * expectedMarginalPerSlot(echo, profile)
-  const expectedFinal = (expectedFinalRaw / theoreticalMax(profile)) * 100
+  // Thang TỔNG điểm (substat + main) — cùng thang với totalScore/evFinal hiển thị khắp app;
+  // trước đây chỉ substat → 2 số "kỳ vọng" lệch nhau đúng mainScore trên cùng card (review 16/07)
+  const expectedFinal = (expectedFinalRaw / theoreticalMax(profile)) * 100 + scored.mainScore
 
   const goodThreshold = 0.5 // stat có trọng số ≥ 0.5 xem là "ngon" với nhân vật này
   const good = echo.substats.filter((s) => (profile.weights[s.stat] ?? 0) >= goodThreshold).length

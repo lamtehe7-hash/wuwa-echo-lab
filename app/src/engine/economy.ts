@@ -10,7 +10,7 @@ import {
   TUNERS_PER_SLOT,
 } from '../data/echoEconomy'
 import { MAX_SUBSTATS, SUBSTAT_KEYS, SUBSTATS, expectedRoll, maxRoll } from '../data/substats'
-import { scoreEcho, theoreticalMax } from './score'
+import { mainStatFitLevel, scoreEcho, theoreticalMax } from './score'
 
 // Kinh tế nâng cấp echo (task 70/F8 — nền cho F3 queue, F6 tuner planner, F10 build cost).
 // Mô hình đã chốt bằng datamine (research/echo-economy.md): mỗi mốc tune = 1 substat MỚI
@@ -53,12 +53,19 @@ function mulberry32(seed: number): () => number {
   }
 }
 
-/** Rút 1 mốc roll theo phân phối probs của stat (u ∈ [0,1)) */
-function sampleRoll(stat: (typeof SUBSTATS)[keyof typeof SUBSTATS], u: number): number {
+/**
+ * Rút 1 mốc roll theo phân phối probs của stat (u ∈ [0,1)).
+ * PHẢI chuẩn hoá CDF theo Σprobs: bảng cộng đồng không tròn 1 (PROB4 Σ=0.9971, PROB8 Σ=1.0001) —
+ * so u trực tiếp sẽ dồn phần residual cho mốc max (atk/def oversample +2.8% tương đối, review 16/07).
+ * (@internal — export chỉ để test)
+ */
+export function sampleRoll(stat: (typeof SUBSTATS)[keyof typeof SUBSTATS], u: number): number {
+  const total = stat.probs.reduce((s, p) => s + p, 0)
+  const scaled = u * total
   let acc = 0
   for (let i = 0; i < stat.probs.length; i++) {
     acc += stat.probs[i]
-    if (u < acc) return stat.rolls[i]
+    if (scaled < acc) return stat.rolls[i]
   }
   return stat.rolls[stat.rolls.length - 1] // phòng sai số cộng dồn float
 }
@@ -165,11 +172,14 @@ export interface RerollAdvice {
  * (case duy nhất chọn đích chính xác; cost = TRANSDUCER_COST_BY_LOCKED[4] = 3/lần).
  * Cơ chế verify 16/07 (research/echo-economy.md §5): reroll đổi LOẠI substat, chỉ 5★ full-tune,
  * được GIỮ CŨ nếu kết quả tệ hơn → EV = E[max(mới − cũ, 0)].
+ * Gate NGAY TRONG engine (tiền lệ tuneAdvice): main stat sai (fit < 0.6) → null — Transducer là
+ * currency giới hạn, không gợi ý đốt vào echo main sai dù EV substat dương.
  * GIẢ ĐỊNH (ghi rõ trong doc): pool redraw = 13 loại − 4 loại ĐANG KHOÁ (có thể ra lại loại cũ),
  * loại ra ĐỀU; giá trị theo PROB8/PROB4 (số cộng đồng — UI phải kèm disclaimer).
  */
 export function rerollAdvice(echo: Echo, profile: CharacterProfile): RerollAdvice | null {
   if (echo.rarity !== 5 || echo.substats.length !== 5) return null
+  if (mainStatFitLevel(echo, profile) < 0.6) return null
   const theoMax = theoreticalMax(profile)
   const cost = TRANSDUCER_COST_BY_LOCKED[4]
   let best: RerollAdvice | null = null

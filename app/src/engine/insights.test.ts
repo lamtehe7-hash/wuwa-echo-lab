@@ -4,7 +4,8 @@ import { CHARACTERS } from '../data/characters'
 import { DEMO_ECHOES } from '../data/demo'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { GRADE_BANDS, gradeOf, scoreEcho, theoreticalMaxTotal } from './score'
-import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary, swapSuggestions, triageCandidates, upgradeQueue, type OwnerFit } from './insights'
+import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary, swapSuggestions, triageCandidates, tunerBudgetPlan, upgradeQueue, type OwnerFit, type UpgradeQueueRow } from './insights'
+import type { UpgradePotential } from './economy'
 import { scoreLoadout } from './solver'
 import type { RosterAssignment } from '../types'
 
@@ -308,5 +309,55 @@ describe('upgradeQueue (F3/task 72)', () => {
     expect(r.evGain).toBeCloseTo(r.potential.evFinal - r.potential.current, 10)
     expect(r.potential.p10Final).toBe(r.potential.evFinal)
     expect(r.potential.expNeeded).toBe(142_600 - 16_500)
+  })
+
+  it('NHÓM THEO BẬC: 5★ trước 4★ dù ROI 4★ cao hơn — Tuner khoá bậc, trộn ranking là so 2 loại tiền (review 16/07 #2)', () => {
+    // 5★ đã ăn 4 substat ngon → pool còn lại nghèo, gainPerTuner thấp; 4★ pool nguyên → ROI cao hơn
+    const rich5 = mk('r5', {
+      substats: [
+        { stat: 'critRate', value: 8.7 }, { stat: 'critDmg', value: 17.4 },
+        { stat: 'atkPct', value: 9.4 }, { stat: 'basicAtk', value: 9.4 },
+      ],
+    })
+    const four = mk('r4', { rarity: 4, level: 20 })
+    const owners = new Map<string, OwnerFit[]>([['r5', [fit()]], ['r4', [fit()]]])
+    const rows = upgradeQueue([four, rich5], owners)
+    expect(rows.map((r) => r.echo.id)).toEqual(['r5', 'r4'])
+    // Tiền đề làm test có nghĩa: ROI 4★ thật sự cao hơn — sort cũ (gainPerTuner toàn cục) sẽ đảo thứ tự
+    expect(rows[1].potential.gainPerTuner).toBeGreaterThan(rows[0].potential.gainPerTuner)
+  })
+})
+
+describe('tunerBudgetPlan (F6 — walk trên danh sách ĐẦY ĐỦ, review 16/07 #3)', () => {
+  const row = (id: string, tuners: number, gain: number): UpgradeQueueRow => ({
+    echo: { id } as Echo,
+    owner: { profile: byId['camellya'], totalScore: 0, fitLevel: 1, setMatch: false },
+    potential: { tunersNeeded: tuners } as UpgradePotential,
+    evGain: gain,
+  })
+
+  it('cắt giữa danh sách: cộng dồn tunersNeeded, dừng ở row đầu tiên vượt budget', () => {
+    const rows = [row('a', 20, 5), row('b', 30, 4), row('c', 50, 3)]
+    expect(tunerBudgetPlan(rows, 55)).toEqual({ cutoff: 2, gainSum: 9, leftover: 5 })
+  })
+
+  it('budget không đủ row đầu → cutoff 0, giữ nguyên leftover', () => {
+    const rows = [row('a', 20, 5)]
+    expect(tunerBudgetPlan(rows, 19)).toEqual({ cutoff: 0, gainSum: 0, leftover: 19 })
+  })
+
+  it('budget dư cả danh sách → cutoff = length', () => {
+    const rows = [row('a', 20, 5), row('b', 30, 4), row('c', 50, 3)]
+    expect(tunerBudgetPlan(rows, 200)).toEqual({ cutoff: 3, gainSum: 12, leftover: 100 })
+  })
+
+  it('REGRESSION slice-trước-walk: budget phủ 12 row — walk full ra cutoff 12, slice(0,10) trước sẽ báo 10', () => {
+    const rows = Array.from({ length: 12 }, (_, i) => row(`e${i}`, 10, 1))
+    expect(tunerBudgetPlan(rows, 120)).toEqual({ cutoff: 12, gainSum: 12, leftover: 0 })
+  })
+
+  it('ngữ nghĩa PREFIX cutoff (không knapsack): dừng ở row vượt budget dù row sau rẻ hơn', () => {
+    const rows = [row('a', 20, 5), row('big', 100, 9), row('cheap', 10, 1)]
+    expect(tunerBudgetPlan(rows, 40)).toEqual({ cutoff: 1, gainSum: 5, leftover: 20 })
   })
 })

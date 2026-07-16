@@ -20,8 +20,14 @@ interface Props {
 export default function BuildCostEstimator({ echoes, profile }: Props) {
   const t = useT()
   const { lang } = useLang()
-  const [tunerRate, setTunerRate] = useState(() => localStorage.getItem(LS_TUNER) ?? '')
-  const [expRate, setExpRate] = useState(() => localStorage.getItem(LS_EXP) ?? '')
+  // localStorage bị chặn (private mode/policy) sẽ THROW ngay trong init → sập cả cây render;
+  // guard như mọi chỗ khác trong app (pattern App.tsx wuwa-seen)
+  const [tunerRate, setTunerRate] = useState(() => {
+    try { return localStorage.getItem(LS_TUNER) ?? '' } catch { return '' }
+  })
+  const [expRate, setExpRate] = useState(() => {
+    try { return localStorage.getItem(LS_EXP) ?? '' } catch { return '' }
+  })
 
   const need = useMemo(() => {
     let exp = 0

@@ -189,7 +189,7 @@ export interface LocMessage {
 export interface TuneAdvice {
   verdict: 'trash' | 'keep-tuning' | 'usable' | 'done'
   reason: LocMessage
-  /** Kỳ vọng điểm chuẩn hoá nếu tune nốt các slot còn lại */
+  /** Kỳ vọng TỔNG điểm (substat + main — cùng thang totalScore/evFinal) nếu tune nốt slot còn lại */
   expectedFinal: number
 }
 

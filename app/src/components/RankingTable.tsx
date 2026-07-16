@@ -5,10 +5,11 @@ import { iconUrl } from '../data/iconAssets'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS } from '../data/substats'
+import { recycleRefund } from '../engine/economy'
 import type { OwnerFit } from '../engine/insights'
 import { echoRv, rankEchoes, tuneAdvice } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
-import { useT, useTMessage } from '../i18n'
+import { formatNum, useLang, useT, useTMessage } from '../i18n'
 import BestOwnerBadge from './BestOwnerBadge'
 import EchoCard from './EchoCard'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
@@ -54,6 +55,7 @@ const SORT_LABEL_KEY: Record<SortKey, string> = { score: 'inv.sortScore', rv: 'i
 export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, pinnedBy, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
   const t = useT()
   const tm = useTMessage()
+  const { lang } = useLang()
   const [q, setQ] = useState('')
   const [excludedOnly, setExcludedOnly] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -108,6 +110,27 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
   // Chọn hàng loạt (chỉ chế độ bảng): echo khoá không chọn được
   const selectableIds = rows.filter((x) => !x.r.echo.lock).map((x) => x.r.echo.id)
   const selCount = selectableIds.filter((id) => selected.has(id)).length
+
+  // F9 (review 16/07 #6): tổng hoàn tài nguyên THẬT của lựa chọn (recycleRefund — 75% EXP /
+  // 30% tuner) thay câu tỉ lệ chung chung. Tuner khoá bậc → liệt kê theo bậc, không cộng gộp.
+  const selRefund = useMemo(() => {
+    if (selected.size === 0) return null
+    let exp = 0
+    const tunersByRarity = new Map<number, number>()
+    for (const { r } of rows) {
+      const e = r.echo
+      if (!selected.has(e.id) || e.lock) continue
+      const f = recycleRefund(e)
+      exp += f.exp
+      if (f.tuners > 0) tunersByRarity.set(e.rarity, (tunersByRarity.get(e.rarity) ?? 0) + f.tuners)
+    }
+    if (exp === 0 && tunersByRarity.size === 0) return null // lựa chọn chưa đầu tư gì — không có gì để hoàn
+    const tunerText = [...tunersByRarity.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([rar, n]) => `${n}×${rar}★`)
+      .join(' + ')
+    return { exp, tunerText: tunerText || '0' }
+  }, [rows, selected])
   const allSelected = selCount > 0 && selCount === selectableIds.length
   const trashCount = echoes.filter((e) => e.trash).length
   const toggleRow = (id: string) => setSelected((prev) => {
@@ -192,10 +215,12 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
         </div>
         {view === 'table' && selCount > 0 && (
           <div className="space-y-1 rounded border border-rose-900/60 bg-rose-950/20 px-2 py-1.5">
-            {/* F9 (task 58): nhắc cơ chế hoàn tài nguyên TRƯỚC khi bấm xoá (toast là quá muộn để cân nhắc) —
-                chỉ hiện khi có echo đã luyện (level>0) trong lựa chọn */}
-            {rows.some((x) => selected.has(x.r.echo.id) && !x.r.echo.lock && x.r.echo.level > 0) && (
-              <p className="text-slate-400">{t('inv.refundHint')}</p>
+            {/* F9 (task 58 + review 16/07 #6): nhắc hoàn tài nguyên TRƯỚC khi bấm xoá (toast là
+                quá muộn) — SỐ THẬT của lựa chọn qua recycleRefund, chỉ hiện khi có gì để hoàn */}
+            {selRefund && (
+              <p className="text-slate-400">
+                {t('inv.refundEstimate', { exp: formatNum(lang, selRefund.exp), tuners: selRefund.tunerText })}
+              </p>
             )}
             <div className="flex items-center gap-2">
               <span className="text-rose-300">{t('inv.count', { shown: selCount, total: rows.length })}</span>

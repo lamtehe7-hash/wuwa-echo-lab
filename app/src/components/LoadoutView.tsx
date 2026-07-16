@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { BuildContext, CharacterProfile, Echo, LoadoutResult } from '../types'
 import { mainEchoesFor } from '../data/mainEchoes'
 import { SONATA_BY_ID } from '../data/sonata'
@@ -29,6 +30,10 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
   const t = useT()
   const { lang } = useLang()
   const tm = useTMessage()
+  // Identity ổn định theo [result] — không memo thì mảng mới mỗi render phá cache useMemo
+  // của BuildCostEstimator (deps [echoes, profile]) → tính lại upgradePotential ×5 vô ích.
+  // Phải đứng TRƯỚC early-return (rules-of-hooks).
+  const echoList = useMemo(() => (result ? result.echoes.map((s) => s.echo) : []), [result])
   if (!result) {
     return <p className="p-3 text-sm text-slate-500">{t('loadout.empty')}</p>
   }
@@ -36,7 +41,6 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
   const setList = Object.entries(result.setCounts).map(([id, n]) => `${SONATA_BY_ID[id]?.name ?? id} ×${n}`).join(', ')
   const setBreakdown = setBonusBreakdown(result.setCounts, profile).filter((e) => e.statScore > 0.05 || e.prefBonus > 0)
   const activeSet = dominantSet(result.setCounts)
-  const echoList = result.echoes.map((s) => s.echo)
   const dmg = loadoutDamage(echoList, profile, ctx, activeSet)
   // Main echo đề cử (research/main-echo.md): bộ solver có chứa echo đề cử nào không?
   const recs = mainEchoesFor(profile.id)

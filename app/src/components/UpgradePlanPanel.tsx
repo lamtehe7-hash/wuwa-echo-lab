@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { Echo } from '../types'
-import type { UpgradeQueueRow } from '../engine/insights'
+import { tunerBudgetPlan, type UpgradeQueueRow } from '../engine/insights'
 import { SONATA_BY_ID } from '../data/sonata'
 import { echoDisplayName, findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
@@ -9,8 +9,9 @@ import { formatNum, useLang, useT } from '../i18n'
 
 // F3+F6 GỘP (task 72, spec designer 16/07): "Kế hoạch nâng cấp" — panel <details> đóng, tab Kho,
 // NGAY DƯỚI CleanupPanel (dọn rác trước → đầu tư sau). Danh sách top-10 echo đáng đổ EXP/Tuner
-// theo gainPerTuner (engine upgradeQueue); nhập ngân sách Tuner 5★ (F6) → lọc 5★ + vạch cắt
-// tại điểm hết ngân sách (Tuner đúng bậc — trộn bậc sẽ tính sai).
+// (engine upgradeQueue — nhóm theo bậc, trong bậc theo gainPerTuner); nhập ngân sách Tuner 5★
+// (F6) → lọc 5★ + walk engine `tunerBudgetPlan` trên DANH SÁCH ĐẦY ĐỦ (slice-trước-walk làm
+// budget lớn báo sai — review 16/07 #3), hiển thị vẫn cắt top-10.
 
 const TOP_N = 10
 
@@ -27,24 +28,16 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
   const [budgetRaw, setBudgetRaw] = useState('')
   const budget = Math.max(0, Math.floor(Number(budgetRaw) || 0))
 
-  // Ngân sách bật → chỉ echo 5★ (Tuner đúng bậc); walk tích luỹ tunersNeeded tìm điểm cắt
-  const shown = useMemo(() => {
-    const base = budget > 0 ? rows.filter((r) => r.echo.rarity === 5) : rows
-    return base.slice(0, TOP_N)
-  }, [rows, budget])
-  const { cutoff, affordable, gainSum, leftover } = useMemo(() => {
-    if (budget <= 0) return { cutoff: shown.length, affordable: 0, gainSum: 0, leftover: 0 }
-    let spent = 0
-    let k = 0
-    let gain = 0
-    for (const r of shown) {
-      if (spent + r.potential.tunersNeeded > budget) break
-      spent += r.potential.tunersNeeded
-      gain += r.evGain
-      k++
-    }
-    return { cutoff: k, affordable: k, gainSum: gain, leftover: budget - spent }
-  }, [shown, budget])
+  // Ngân sách bật → chỉ echo 5★ (Tuner đúng bậc); walk trên fiveStar ĐẦY ĐỦ rồi mới cắt hiển thị
+  const fiveStar = useMemo(() => rows.filter((r) => r.echo.rarity === 5), [rows])
+  const shown = useMemo(
+    () => (budget > 0 ? fiveStar : rows).slice(0, TOP_N),
+    [rows, fiveStar, budget],
+  )
+  const { cutoff, gainSum, leftover } = useMemo(
+    () => (budget > 0 ? tunerBudgetPlan(fiveStar, budget) : { cutoff: shown.length, gainSum: 0, leftover: 0 }),
+    [fiveStar, budget, shown.length],
+  )
 
   const fmtN = (n: number) => formatNum(lang, n)
 
@@ -72,7 +65,7 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
         </label>
 
         {budget > 0 && (
-          <p className="text-emerald-400">{t('upgrade.budgetResult', { k: affordable, gain: gainSum.toFixed(1) })}</p>
+          <p className="text-emerald-400">{t('upgrade.budgetResult', { k: cutoff, gain: gainSum.toFixed(1) })}</p>
         )}
 
         {shown.length > 0 && (

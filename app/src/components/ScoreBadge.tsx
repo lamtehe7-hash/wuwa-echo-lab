@@ -42,12 +42,14 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
     [open, r.echo, profile],
   )
   // F7 (task 74): reroll hint tính SỚM (chấm 🎲 hiện ngoài popover) — closed-form rẻ, gate trước:
-  // 5★ full-tune + main không sai hẳn + đáng ≥0.05 điểm/Transducer (ngưỡng epsilon delta của app)
+  // 5★ full-tune + main không sai hẳn + đáng ≥0.05 điểm/Transducer (ngưỡng epsilon delta của app).
+  // Deps theo r.echo (reference ổn định từ store) chứ KHÔNG phải r — ScoredEcho là object MỚI mỗi
+  // lần rows recompute → dep [r] chạy lại advice mọi row 5★-full theo từng phím search (review 16/07)
   const rerollHint = useMemo(() => {
     if (!profile || r.echo.rarity !== 5 || r.echo.substats.length !== 5 || r.fitLevel < 0.6) return null
     const adv = rerollAdvice(r.echo, profile)
     return adv && adv.evPerTransducer > 0.05 ? adv : null
-  }, [r, profile])
+  }, [r.echo, r.fitLevel, profile])
   const fmtN = (n: number) => formatNum(lang, n)
 
   const toggle = () => {

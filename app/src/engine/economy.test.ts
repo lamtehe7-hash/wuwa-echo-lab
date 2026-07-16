@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Echo } from '../types'
-import { recycleRefund, rerollAdvice, upgradePotential } from './economy'
+import { recycleRefund, rerollAdvice, sampleRoll, upgradePotential } from './economy'
 import { scoreEcho, tuneAdvice } from './score'
+import { SUBSTATS } from '../data/substats'
 import { CHARACTER_BY_ID } from '../data/characters'
 
 const camellya = CHARACTER_BY_ID['camellya']
@@ -86,11 +87,10 @@ describe('upgradePotential — EV/phân phối', () => {
     ],
   })
 
-  it('evFinal khớp tuneAdvice.expectedFinal + mainScore (2 đường tính độc lập)', () => {
+  it('evFinal khớp tuneAdvice.expectedFinal (2 đường tính độc lập, CÙNG thang totalScore — review 16/07 #4)', () => {
     const p = upgradePotential(half, camellya)
     const adv = tuneAdvice(half, camellya)
-    const main = scoreEcho(half, camellya).mainScore
-    expect(p.evFinal).toBeCloseTo(adv.expectedFinal + main, 8)
+    expect(p.evFinal).toBeCloseTo(adv.expectedFinal, 8)
   })
 
   it('thứ tự: current ≤ p10 ≤ evFinal(≈) ≤ p90 ≤ maxFinal; MC mean hội tụ về evFinal', () => {
@@ -149,6 +149,25 @@ describe('upgradePotential — EV/phân phối', () => {
   })
 })
 
+describe('sampleRoll — CDF chuẩn hoá theo Σprobs (review 16/07 #5)', () => {
+  it('atk (PROB4 Σ=0.9971): tần suất từng mốc = probs/Σ — mốc max KHÔNG ăn phần residual', () => {
+    const def = SUBSTATS.atk
+    const N = 100_000
+    const counts = new Map<number, number>()
+    for (let i = 0; i < N; i++) {
+      const v = sampleRoll(def, (i + 0.5) / N) // grid u đều — deterministic, không cần PRNG
+      counts.set(v, (counts.get(v) ?? 0) + 1)
+    }
+    const total = def.probs.reduce((s, p) => s + p, 0)
+    for (let m = 0; m < def.rolls.length; m++) {
+      expect((counts.get(def.rolls[m]) ?? 0) / N).toBeCloseTo(def.probs[m] / total, 3)
+    }
+    // Chống regression cụ thể: trước fix, u so CDF thô → mốc max 60 hứng residual 0.0029
+    // (tần suất 0.1065 thay vì 0.1036/0.9971 ≈ 0.1039 — oversample +2.8% tương đối)
+    expect((counts.get(60) ?? 0) / N).toBeLessThan(0.105)
+  })
+})
+
 describe('rerollAdvice (F7/task 74) — mô hình khoá-4 nhắm đích', () => {
   const fullSubs = (fifth: { stat: string; value: number }) => [
     { stat: 'critRate', value: 8.7 },
@@ -161,6 +180,13 @@ describe('rerollAdvice (F7/task 74) — mô hình khoá-4 nhắm đích', () => 
   it('gate: không phải 5★ / chưa full 5 substat → null', () => {
     expect(rerollAdvice(echo({ rarity: 4, substats: fullSubs({ stat: 'hp', value: 430 }) }), camellya)).toBeNull()
     expect(rerollAdvice(echo({ substats: fullSubs({ stat: 'hp', value: 430 }).slice(0, 4) }), camellya)).toBeNull()
+  })
+
+  it('gate fit trong ENGINE: main stat sai (fit < 0.6) → null dù substat chết đầy (review 16/07 #10)', () => {
+    // defPct: không thuộc mainStatPrefs Camellya + weight substat 0 → fit 0.25 — Transducer là
+    // currency giới hạn, engine không gợi ý đốt vào echo main sai (đồng bộ gate UI ScoreBadge)
+    const adv = rerollAdvice(echo({ mainStat: 'defPct', substats: fullSubs({ stat: 'hp', value: 430 }) }), camellya)
+    expect(adv).toBeNull()
   })
 
   it('chọn substat CHẾT (w=0) làm ứng viên reroll, EV dương, P cải thiện > 0', () => {

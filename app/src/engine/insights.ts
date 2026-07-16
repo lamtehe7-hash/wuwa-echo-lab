@@ -219,8 +219,9 @@ export interface UpgradeQueueRow {
 /**
  * F3 (task 72): hàng đợi nâng cấp toàn kho — echo nào đáng đổ EXP/Tuner TRƯỚC.
  * Ứng viên: chưa trash + còn slot substat chưa mở + có best-owner (reuse App `bestOwnersByEcho`,
- * cùng ngưỡng fit 0.6). Xếp theo `gainPerTuner` (ROI mỗi tuner — cùng chìa khoá phân bổ ngân
- * sách F6), hoà thì evGain. Trả về TOÀN BỘ đã sort — UI tự cắt top-N (chip đếm cần tổng).
+ * cùng ngưỡng fit 0.6). NHÓM THEO BẬC (5★ → 3★) vì Tuner khoá bậc — gainPerTuner của 2 bậc là
+ * 2 loại tiền khác nhau, trộn 1 ranking là so táo với cam (review 16/07); trong bậc xếp theo
+ * `gainPerTuner` (ROI — cùng chìa khoá F6), hoà thì evGain. Trả TOÀN BỘ đã sort — UI cắt top-N.
  */
 export function upgradeQueue(echoes: Echo[], ownersByEcho: Map<string, OwnerFit[]>): UpgradeQueueRow[] {
   const rows: UpgradeQueueRow[] = []
@@ -233,8 +234,39 @@ export function upgradeQueue(echoes: Echo[], ownersByEcho: Map<string, OwnerFit[
     rows.push({ echo: e, owner, potential, evGain: potential.evFinal - potential.current })
   }
   return rows.sort(
-    (a, b) => b.potential.gainPerTuner - a.potential.gainPerTuner || b.evGain - a.evGain,
+    (a, b) =>
+      b.echo.rarity - a.echo.rarity ||
+      b.potential.gainPerTuner - a.potential.gainPerTuner ||
+      b.evGain - a.evGain,
   )
+}
+
+export interface TunerBudgetPlan {
+  /** Số row ĐẦU danh sách đủ ngân sách tune trọn (walk tham lam theo thứ tự queue, dừng ở row đầu tiên vượt) */
+  cutoff: number
+  /** Tổng evGain của các row trước cutoff */
+  gainSum: number
+  /** Tuner còn dư sau khi tune các row trước cutoff */
+  leftover: number
+}
+
+/**
+ * F6 (task 72): kế hoạch tiêu ngân sách Tuner — walk tham lam theo thứ tự queue trên TOÀN BỘ
+ * rows truyền vào (caller lọc đúng bậc trước — Tuner khoá bậc). Ở đây, không slice-trước:
+ * cắt top-N trước khi walk làm budget lớn báo thiếu k/leftover sai (review 16/07 #3).
+ * Prefix cutoff (không knapsack): giữ đúng ngữ nghĩa "vạch cắt" trên danh sách đã xếp ROI.
+ */
+export function tunerBudgetPlan(rows: UpgradeQueueRow[], budget: number): TunerBudgetPlan {
+  let spent = 0
+  let cutoff = 0
+  let gainSum = 0
+  for (const r of rows) {
+    if (spent + r.potential.tunersNeeded > budget) break
+    spent += r.potential.tunersNeeded
+    gainSum += r.evGain
+    cutoff++
+  }
+  return { cutoff, gainSum, leftover: budget - spent }
 }
 
 const GROUP_RANK: Record<BacklogStatus, number> = { need: 0, farm: 0, enough: 1, surplus: 1 }

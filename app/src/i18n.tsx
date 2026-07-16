@@ -100,7 +100,7 @@ const DICT: Record<string, Entry> = {
   'inv.selectRow': { vi: 'Chọn echo này', en: 'Select this echo' },
   'inv.deleteSelected': { vi: '🗑 Xoá {n} đã chọn', en: '🗑 Delete {n} selected' },
   // Task 58/F9: nhắc cơ chế hoàn tài nguyên in-game trước khi xoá hàng loạt (% theo wiki, không có số tuyệt đối)
-  'inv.refundHint': { vi: '💡 Xoá trong game: echo đã luyện hoàn ~30% Tuner đã đổ; cho ăn (feed) hoàn ~75% EXP — không mất hẳn.', en: '💡 In-game: recycling a leveled echo refunds ~30% of its Tuner cost; feeding it refunds ~75% of its EXP — not a total loss.' },
+  'inv.refundEstimate': { vi: '💡 Tiêu thụ trong game (feed): lựa chọn này hoàn ~{exp} EXP + {tuners} Tuner (75% EXP · 30% Tuner đã đổ) — không mất hẳn.', en: '💡 Feeding this selection in-game refunds ~{exp} EXP + {tuners} Tuners (75% of EXP · 30% of Tuners invested) — not a total loss.' },
   'toast.deletedMany': { vi: 'Đã xoá {n} echo', en: 'Deleted {n} echoes' },
   'inv.emptyFiltered': { vi: 'Không có echo nào khớp bộ lọc.', en: 'No echoes match the filters.' },
 
@@ -347,7 +347,7 @@ const DICT: Record<string, Entry> = {
   'upgrade.atFull': { vi: 'Tại full ~{ev} điểm (P10–P90 {p10}–{p90})', en: 'At full ~{ev} pts (P10–P90 {p10}–{p90})' },
   'upgrade.costLine': { vi: 'Cần thêm {exp} EXP · {tuners} Tuner · {credits} Credit', en: 'Needs {exp} EXP · {tuners} Tuner · {credits} Credit' },
   'upgrade.planTitle': { vi: 'Kế hoạch nâng cấp', en: 'Upgrade plan' },
-  'upgrade.planSubtitle': { vi: 'Xếp theo điểm tăng thêm mỗi Tuner — đổ EXP/Tuner vào đây trước.', en: 'Ranked by points gained per Tuner — invest EXP/Tuner here first.' },
+  'upgrade.planSubtitle': { vi: 'Nhóm theo bậc (Tuner khoá bậc), trong bậc xếp theo điểm tăng mỗi Tuner — đổ EXP/Tuner vào đây trước.', en: 'Grouped by rarity (Tuners are rarity-locked), ranked by points per Tuner within each tier — invest here first.' },
   'upgrade.rowCost': { vi: '{exp} EXP · {tuners} Tuner', en: '{exp} EXP · {tuners} Tuner' },
   'upgrade.budgetLabel': { vi: 'Tuner 5★ đang có', en: '5★ Tuners on hand' },
   'upgrade.budgetHelp': { vi: 'Chỉ tính echo 5★ (Tuner đúng bậc).', en: 'Only counts 5★ echoes (Tuners are rarity-locked).' },

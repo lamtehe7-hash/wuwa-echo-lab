@@ -11,6 +11,7 @@ import {
   TUNER_RETURN_RATIO,
   TUNERS_PER_SLOT,
 } from './echoEconomy'
+import { MAX_SUBSTATS } from './substats'
 
 // Khoá số kinh tế echo (task 69/F5) — nguồn datamine 3.5, verify chéo: research/echo-economy.md.
 // Đổi số ở đây = game đổi bảng chi phí (bản vá) → phải đối chiếu lại doc trước khi sửa test.
@@ -43,6 +44,15 @@ describe('echoEconomy — bảng chi phí datamine', () => {
     expect(TUNE_SLOT_LEVELS[3]).toEqual([5, 10, 15])
     expect(TUNE_SLOT_LEVELS[4]).toEqual([5, 10, 15, 20])
     expect(TUNE_SLOT_LEVELS[5]).toEqual([5, 10, 15, 20, 25])
+  })
+
+  it('liên kết 2 bảng: TUNE_SLOT_LEVELS (datamine) khớp MAX_SUBSTATS (engine) từng bậc app — patch drift là fail ngay', () => {
+    // Review 16/07 #7: engine dùng MAX_SUBSTATS, data dùng TUNE_SLOT_LEVELS — không có test liên kết
+    // thì Kuro đổi số mốc tune ở bản vá sau là 2 bảng lệch nhau lặng lẽ.
+    for (const r of [3, 4, 5] as const) {
+      expect(TUNE_SLOT_LEVELS[r].length).toBe(MAX_SUBSTATS[r])
+      expect(TUNE_SLOT_LEVELS[r][TUNE_SLOT_LEVELS[r].length - 1]).toBe(ECHO_MAX_LEVEL[r])
+    }
   })
 
   it('hằng số tune/credit/refund', () => {

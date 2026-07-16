@@ -5,7 +5,8 @@ import { iconUrl } from '../data/iconAssets'
 import { ELEMENT_COLOR } from '../data/elementColors'
 import { FIXED_SECONDARY, MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
-import { SUBSTATS, maxRoll } from '../data/substats'
+import { SUBSTATS } from '../data/substats'
+import { echoRv } from '../engine/score'
 import { mainFitLevel, rateSubstat } from '../engine/substatRating'
 import { useT } from '../i18n'
 
@@ -75,10 +76,9 @@ export default function EchoCard({
   const elemColor = sonata?.element ? ELEMENT_COLOR[sonata.element] : '#94a3b8'
   const displayName = echo.name?.trim() || sonata?.name || echo.set
 
-  // RV — chất lượng roll trung bình (mỗi substat WuWa là 1 roll; chất lượng = giá trị/mốc max)
-  const rv = echo.substats.length > 0
-    ? Math.round((echo.substats.reduce((s, x) => s + x.value / maxRoll(x.stat), 0) / echo.substats.length) * 100)
-    : null
+  // RV — chất lượng roll trung bình (mỗi substat WuWa là 1 roll; chất lượng = giá trị/mốc max).
+  // Dùng chung `echoRv` (engine/score) — 1 nguồn với RankingTable/cleanup. null khi chưa có substat (ẩn badge).
+  const rv = echo.substats.length > 0 ? Math.round(echoRv(echo) * 100) : null
 
   const iconSize = compact ? 'h-8 w-8' : 'h-10 w-10'
   const subText = compact ? 'text-xs' : 'text-sm'

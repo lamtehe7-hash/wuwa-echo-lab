@@ -24,6 +24,7 @@ import { dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './en
 import InfoTip from './components/InfoTip'
 import SetFarmPriority from './components/SetFarmPriority'
 import FarmingBacklog from './components/FarmingBacklog'
+import CleanupPanel from './components/CleanupPanel'
 import PinnedOverview, { type PinnedRow } from './components/PinnedOverview'
 import type { PinnedOwner } from './components/PinnedByBadge'
 import { useLang, useT } from './i18n'
@@ -279,6 +280,19 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     setEchoes((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: e[key] ? undefined : true } : e)))
   }
 
+  // F11 (task 62): dọn kho theo luật — đánh dấu `trash` cho tập id (đã preview) + toast hoàn tác cả cụm.
+  // Guard thêm !trash/!lock (cleanupMatches đã lọc) → undo chỉ bỏ trash đúng echo mình vừa set (về undefined
+  // = trạng thái trước, vì chỉ set cho echo đang !trash).
+  const applyCleanup = (ids: string[]) => {
+    const idSet = new Set(ids)
+    const affected = new Set(echoes.filter((e) => idSet.has(e.id) && !e.trash && !e.lock).map((e) => e.id))
+    if (affected.size === 0) return
+    setEchoes((prev) => prev.map((e) => (affected.has(e.id) ? { ...e, trash: true } : e)))
+    push(t('cleanup.marked', { n: affected.size }), {
+      action: { label: t('common.undo'), fn: () => setEchoes((prev) => prev.map((e) => (affected.has(e.id) ? { ...e, trash: undefined } : e))) },
+    })
+  }
+
   // Xoá hàng loạt (bỏ qua echo khoá) + toast hoàn tác cả cụm
   const deleteMany = (ids: string[]) => {
     const idSet = new Set(ids)
@@ -376,6 +390,10 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
       </nav>
 
       {tab === 'inventory' && (empty ? emptyState : (
+        <div className="space-y-3">
+        {/* F11 (task 62): dọn kho theo luật — panel full-width TRÊN bảng (luật R1/R4 toàn roster, không
+            thuộc bảng scoped theo 1 nhân vật). Đóng mặc định (công cụ ít dùng). */}
+        <CleanupPanel echoes={echoes} profiles={allProfiles} ownersByEcho={bestOwnersByEcho} onApply={applyCleanup} />
         <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
           <aside className="space-y-3">
             <EchoForm onAdd={addEcho} />
@@ -394,6 +412,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               onEdit={setEditingEcho}
             />
           </div>
+        </div>
         </div>
       ))}
 

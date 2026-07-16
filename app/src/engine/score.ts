@@ -19,6 +19,13 @@ export function rollEfficiency(stat: SubstatKey, value: number): number {
   return value / maxRoll(stat)
 }
 
+/** RV — chất lượng roll trung bình (Σ value/maxRoll mỗi substat ÷ số substat), KHÔNG phụ thuộc nhân vật.
+ * 1 nguồn dùng chung: badge RV (EchoCard), sort RV (RankingTable), luật dọn kho (cleanup.ts). 0 substat → 0. */
+export function echoRv(echo: Pick<Echo, 'substats'>): number {
+  if (echo.substats.length === 0) return 0
+  return echo.substats.reduce((s, x) => s + x.value / maxRoll(x.stat), 0) / echo.substats.length
+}
+
 /** Tổng 5 trọng số lớn nhất — mẫu số chuẩn hoá */
 export function theoreticalMax(profile: CharacterProfile): number {
   const ws = SUBSTAT_KEYS.map((k) => profile.weights[k] ?? 0).sort((a, b) => b - a)

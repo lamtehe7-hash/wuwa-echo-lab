@@ -4,9 +4,9 @@ import { findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
-import { SUBSTATS, maxRoll } from '../data/substats'
+import { SUBSTATS } from '../data/substats'
 import type { OwnerFit } from '../engine/insights'
-import { rankEchoes, tuneAdvice } from '../engine/score'
+import { echoRv, rankEchoes, tuneAdvice } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
 import { useT, useTMessage } from '../i18n'
 import BestOwnerBadge from './BestOwnerBadge'
@@ -50,12 +50,6 @@ const SORT_KEYS = ['score', 'rv', 'level', 'new'] as const
 type SortKey = (typeof SORT_KEYS)[number]
 /** Key i18n của option sort: score → inv.sortScore … */
 const SORT_LABEL_KEY: Record<SortKey, string> = { score: 'inv.sortScore', rv: 'inv.sortRv', level: 'inv.sortLevel', new: 'inv.sortNew' }
-
-/** RV — chất lượng roll trung bình (cùng công thức với badge RV trong EchoCard) */
-function rvOf(e: Echo): number {
-  if (e.substats.length === 0) return 0
-  return e.substats.reduce((s, x) => s + x.value / maxRoll(x.stat), 0) / e.substats.length
-}
 
 export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, pinnedBy, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
   const t = useT()
@@ -102,7 +96,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
     let list = rankEchoes(filtered, profile).map((r) => ({ r, advice: tuneAdvice(r.echo, profile) }))
     if (verdictF) list = list.filter((x) => x.advice.verdict === verdictF)
     if (excludedOnly) list = list.filter((x) => x.r.echo.trash)
-    if (sortKey === 'rv') list = [...list].sort((a, b) => rvOf(b.r.echo) - rvOf(a.r.echo))
+    if (sortKey === 'rv') list = [...list].sort((a, b) => echoRv(b.r.echo) - echoRv(a.r.echo))
     else if (sortKey === 'level') list = [...list].sort((a, b) => b.r.echo.level - a.r.echo.level)
     else if (sortKey === 'new') {
       const order = new Map(echoes.map((e, i) => [e.id, i])) // thứ tự thêm vào kho

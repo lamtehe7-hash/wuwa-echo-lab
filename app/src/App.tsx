@@ -14,6 +14,7 @@ import SubstatLegend from './components/SubstatLegend'
 import { useToast } from './components/Toast'
 import WeightEditor from './components/WeightEditor'
 import BuildEditor from './components/BuildEditor'
+import BenchPanel from './components/BenchPanel'
 import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
 import { SONATA_BY_ID } from './data/sonata'
@@ -52,6 +53,21 @@ function parseHash(): { tab: Tab; char?: string } {
   return { tab, char }
 }
 
+const EMPTY_BENCH: (string | null)[] = [null, null, null, null, null]
+
+// Nạp bộ solver vào 5 ô bàn thử: echo cost-4 vào ô 0 (main echo), còn lại lấp ô 1–4 theo thứ tự.
+function toBenchSlots(list: Echo[]): (string | null)[] {
+  const slots: (string | null)[] = [null, null, null, null, null]
+  const main = list.find((e) => e.cost === 4) ?? list[0]
+  slots[0] = main ? main.id : null
+  let idx = 1
+  for (const e of list) {
+    if (e === main) continue
+    if (idx < 5) slots[idx++] = e.id
+  }
+  return slots
+}
+
 function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typeof useVaults> }) {
   const t = useT()
   const { lang, setLang } = useLang()
@@ -72,6 +88,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const [objective, setObjective] = useState<SolveObjective>('score') // 'damage' = re-rank top-N theo damage model
   const [showWeights, setShowWeights] = useState(false)
   const [showBuild, setShowBuild] = useState(false)
+  const [showBench, setShowBench] = useState(false)
+  const [benchSlots, setBenchSlots] = useState<(string | null)[]>(EMPTY_BENCH)
   const [editingEcho, setEditingEcho] = useState<Echo | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -119,6 +137,15 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     setSolved(true)
     setStale(false)
     setSolveTick((n) => n + 1) // báo hiệu MainEchoHint thu gọn sau mỗi lần "Tìm bộ 5 tối ưu"
+  }
+
+  // Mở/đóng bàn thử. Prefill 1 LẦN khi MỞ + ô còn trống + đã có bộ solver (nạp bộ đó để tinh chỉnh);
+  // chưa solve thì mở ra 5 ô trống. Không watch `loadout` bằng effect để không đè chỉnh tay.
+  const toggleBench = () => {
+    if (!showBench && benchSlots.every((s) => s === null) && loadout) {
+      setBenchSlots(toBenchSlots(loadout.echoes.map((s) => s.echo)))
+    }
+    setShowBench((v) => !v)
   }
 
   // Echo bị đánh dấu "loại" (trash) không vào solver — vẫn hiện mờ trong kho.
@@ -261,6 +288,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
                 setLoadout(null)
                 setStale(false)
                 setForcedSet('')
+                setBenchSlots(EMPTY_BENCH) // bộ bàn thử thuộc nhân vật cũ — reset để dựng lại cho nhân vật mới
               }}
             />
             <label className="ml-1 text-sm text-slate-400">{t('setpick.label')}</label>
@@ -287,6 +315,11 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               onClick={() => setShowBuild(!showBuild)}
               title={t('build.tip')}
             >⚔ {t('app.build')}</button>
+            <button
+              className={`rounded px-2 py-1 text-xs ${showBench ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+              onClick={toggleBench}
+              title={t('app.benchTip')}
+            >🧰 {t('app.bench')}</button>
             <button
               className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600"
               onClick={solve}
@@ -326,6 +359,21 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
                 />
               )}
             </div>
+          )}
+
+          {showBench && (
+            <BenchPanel
+              echoes={echoes}
+              profile={profile}
+              slots={benchSlots}
+              onChange={setBenchSlots}
+              ctx={buildCtx}
+              compareTotal={equippedInfo?.result?.total ?? null}
+              onPin={(ids) => {
+                setEquipped((prev) => ({ ...prev, [charId]: ids }))
+                push(t('toast.pinned', { name: profile.name }))
+              }}
+            />
           )}
 
           {equippedInfo && (

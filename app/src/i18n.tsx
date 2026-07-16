@@ -228,6 +228,26 @@ const DICT: Record<string, Entry> = {
     en: 'Estimated damage relative to wearing no echoes — the model captures multiplicative crit (1 + CR×CD) and the %DMG bracket (element + attack-type ADD together, then multiply the rest — per the WuWa formula). For comparing options only, not absolute damage. Pick a weapon + base stats under "⚔ base stats" for REAL crit. See engine/damage.ts.',
   },
 
+  // ── Bàn thử bộ (BenchPanel — kéo-thả thủ công + kho có filter) ──
+  'app.bench': { vi: 'Bàn thử bộ', en: 'Manual bench' },
+  'app.benchTip': { vi: 'Mở kho có filter để kéo-thả (hoặc bấm) echo vào 5 ô, thử/thay bộ thủ công — tự chấm điểm lại mỗi lần đổi.', en: 'Open a filtered inventory to drag (or click) echoes into 5 slots and hand-tune a set — rescored on every change.' },
+  'bench.title': { vi: 'Bàn thử bộ — kéo-thả thủ công', en: 'Manual bench — drag & drop' },
+  'bench.hint': { vi: 'Kéo (hoặc bấm) echo từ kho bên dưới vào 5 ô. Ô 👑 ngoài cùng bên trái là main echo.', en: 'Drag (or click) echoes from the inventory below into the 5 slots. The leftmost 👑 slot is the main echo.' },
+  'bench.mainBadge': { vi: 'Main', en: 'Main' },
+  'bench.mainTip': { vi: 'Ô main echo (slot đầu) — echo ở đây kích hoạt Echo Skill. Thường là echo cost 4.', en: 'Main-echo slot (first slot) — the echo here triggers its Echo Skill. Usually a cost-4 echo.' },
+  'bench.emptyMain': { vi: '👑 Ô main — kéo echo vào', en: '👑 Main slot — drop an echo' },
+  'bench.emptySlot': { vi: 'Kéo echo vào ô này', en: 'Drop an echo here' },
+  'bench.setMain': { vi: 'Đặt làm main', en: 'Set as main' },
+  'bench.remove': { vi: 'Bỏ khỏi ô', en: 'Remove from slot' },
+  'bench.addTip': { vi: 'Thêm {name} vào bàn thử (ô trống đầu tiên)', en: 'Add {name} to the bench (first empty slot)' },
+  'bench.full': { vi: 'Bộ đã đủ 5 ô — bỏ 1 ô trước khi thêm.', en: 'All 5 slots are full — remove one before adding.' },
+  'bench.cost': { vi: 'cost {c}/12', en: 'cost {c}/12' },
+  'bench.costWarn': { vi: 'Tổng cost {c} > 12 — vượt giới hạn Data Bank trong game.', en: 'Total cost {c} > 12 — exceeds the in-game Data Bank limit.' },
+  'bench.mainCostWarn': { vi: 'Ô main đang là echo cost {c} — main echo thường là cost 4.', en: 'Main slot holds a cost-{c} echo — the main echo is usually cost 4.' },
+  'bench.clear': { vi: '↺ Xóa hết', en: '↺ Clear all' },
+  'bench.stashTitle': { vi: 'Kho echo — kéo hoặc bấm để thêm', en: 'Inventory — drag or click to add' },
+  'bench.stashEmpty': { vi: 'Không có echo nào khớp (hoặc đã lên bàn hết).', en: 'No matching echoes (or all already placed).' },
+
   // ── BuildEditor / StatBreakdown (chỉ số nền + bảng cộng dồn) ──
   'build.title': { vi: 'Chỉ số nền (vũ khí · base · buff)', en: 'Base stats (weapon · base · buff)' },
   'build.tip': { vi: 'Nạp vũ khí + base nhân vật + Forte + buff để mode Damage tính CRIT THẬT (base 5% + vũ khí + forte + echo + buff) và tối ưu đúng cán cân CR/CD.', en: 'Feed weapon + character base + Forte + buffs so Damage mode uses REAL crit (base 5% + weapon + forte + echo + buff) and optimizes the right CR/CD balance.' },

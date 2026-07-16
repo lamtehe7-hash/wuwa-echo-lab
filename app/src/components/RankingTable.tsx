@@ -11,6 +11,7 @@ import { rateSubstat } from '../engine/substatRating'
 import { useT, useTMessage } from '../i18n'
 import BestOwnerBadge from './BestOwnerBadge'
 import EchoCard from './EchoCard'
+import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import ScoreBadge from './ScoreBadge'
 import SubstatLegend from './SubstatLegend'
 
@@ -25,6 +26,8 @@ interface Props {
   bestOwners?: Map<string, OwnerFit[]>
   /** Bấm tên nhân vật trong Best Owner → mở tab Tối ưu cho nhân vật đó */
   onJumpToChar?: (id: string) => void
+  /** U7 (task 60): echo id → nhân vật đang ghim bộ chứa echo đó (badge "Đang dùng bởi X") */
+  pinnedBy?: Map<string, PinnedOwner[]>
   onDelete: (id: string) => void
   /** Xoá hàng loạt (App bỏ qua echo khoá + toast hoàn tác cả cụm) */
   onDeleteMany: (ids: string[]) => void
@@ -54,7 +57,7 @@ function rvOf(e: Echo): number {
   return e.substats.reduce((s, x) => s + x.value / maxRoll(x.stat), 0) / e.substats.length
 }
 
-export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
+export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, pinnedBy, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
   const t = useT()
   const tm = useTMessage()
   const [q, setQ] = useState('')
@@ -123,6 +126,9 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
   if (echoes.length === 0) {
     return <p className="p-4 text-sm text-slate-500">{t('ranking.emptyAll')}</p>
   }
+
+  // U7: chủ nhân đang ghim echo này, TRỪ nhân vật đang xem (thấy "📌 chính mình" là nhiễu)
+  const pinsOf = (id: string) => (pinnedBy?.get(id) ?? []).filter((o) => o.id !== profile.id)
 
   const selCls = 'rounded border border-slate-700 bg-slate-800 px-2 py-1'
   const chip = (active: boolean) =>
@@ -230,6 +236,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                   className="transition-colors hover:border-sky-600"
                   footer={
                     <>
+                      <PinnedByBadge owners={pinsOf(r.echo.id)} variant="icon" />
                       {bestOwners && <BestOwnerBadge owners={bestOwners.get(r.echo.id) ?? []} onJump={onJumpToChar} variant="card" />}
                       <ScoreBadge r={r} profile={profile} variant="badge" />
                     </>
@@ -320,7 +327,10 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                           onClick={() => onEdit(r.echo)}
                         >{r.echo.name || SONATA_BY_ID[r.echo.set]?.name || r.echo.set}</button>
                       </div>
-                      <div className="text-xs text-slate-500">cost {r.echo.cost} · {r.echo.rarity}★ +{r.echo.level} · {SONATA_BY_ID[r.echo.set]?.name}</div>
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
+                        <span>cost {r.echo.cost} · {r.echo.rarity}★ +{r.echo.level} · {SONATA_BY_ID[r.echo.set]?.name}</span>
+                        <PinnedByBadge owners={pinsOf(r.echo.id)} variant="chip" />
+                      </div>
                     </td>
                     <td className={`pr-2 ${r.fitLevel === 1 ? 'text-emerald-400' : r.fitLevel >= 0.6 ? 'text-amber-400' : 'text-rose-400'}`}>
                       {MAINSTAT_LABELS[r.echo.mainStat]}{r.fitLevel === 1 ? '' : r.fitLevel >= 0.6 ? ' ～' : ' ✗'}

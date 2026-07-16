@@ -7,6 +7,7 @@ import { dominantSet, scoreLoadout, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
+import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import StatBreakdown from './StatBreakdown'
 
 // "Bàn thử bộ": sandbox chấm điểm THỦ CÔNG — kéo-thả (hoặc bấm) echo từ kho vào 5 ô rồi
@@ -29,9 +30,11 @@ interface Props {
   /** Điểm "bộ hiện tại" đã ghi nhớ — hiện delta ▲/▼ cạnh tổng điểm */
   compareTotal: number | null
   onPin: (ids: string[]) => void
+  /** U7 (task 60): echo id → nhân vật đang ghim echo đó (badge "Đang dùng bởi X" ở kho) */
+  pinnedBy?: Map<string, PinnedOwner[]>
 }
 
-export default function BenchPanel({ echoes, profile, slots, onChange, ctx, compareTotal, onPin }: Props) {
+export default function BenchPanel({ echoes, profile, slots, onChange, ctx, compareTotal, onPin, pinnedBy }: Props) {
   const t = useT()
   const tm = useTMessage()
   const [hover, setHover] = useState<number | null>(null)
@@ -337,7 +340,12 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                     selectedId === e.id ? 'ring-2 ring-sky-400' : ''
                   }`}
                 >
-                  <EchoCard echo={e} compact profile={profile} />
+                  <EchoCard
+                    echo={e}
+                    compact
+                    profile={profile}
+                    footer={<PinnedByBadge owners={(pinnedBy?.get(e.id) ?? []).filter((o) => o.id !== profile.id)} variant="chip" />}
+                  />
                 </button>
               ))}
             </div>

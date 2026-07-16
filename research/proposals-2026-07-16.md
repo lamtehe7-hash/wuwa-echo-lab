@@ -134,4 +134,5 @@ totalScore hiện **có thể vượt 100** (mainScore cộng thêm không cap).
 - 📌 **ĐỂ DÀNH (user chốt)**: nhóm kinh tế Tuner/EXP — F5 (research datamine bảng chi phí TRƯỚC, không đoán số)
   → F6 Tuner Planner, F8 Upgrade Advisor, F10 Build Cost; F7 Reroll Advisor phải verify cơ chế Transducer trước.
 - ⛔ **TRÁNH LÀM (user chốt — đừng đề xuất lại)**: F13 export mã Echo Management Plan, F16 multi-role preset.
-- Backlog mở còn lại (chưa quyết): U3 U6 U7 U11, F3 F4 F11 F12 F14 F15.
+- ✅ **XONG (task 60 — UI-5c)**: U3 (roster collapse), U6 (PinnedOverview tab Đội hình), U7 (PinnedByBadge "đang dùng bởi X").
+- Backlog mở còn lại (chưa quyết): U11, F3 F4 F11 F12 F14 F15.

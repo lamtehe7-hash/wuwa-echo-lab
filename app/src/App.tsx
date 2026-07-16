@@ -23,6 +23,8 @@ import { bestOwners } from './engine/insights'
 import { dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import InfoTip from './components/InfoTip'
 import SetFarmPriority from './components/SetFarmPriority'
+import PinnedOverview, { type PinnedRow } from './components/PinnedOverview'
+import type { PinnedOwner } from './components/PinnedByBadge'
 import { useLang, useT } from './i18n'
 import { exportJson, importJson, mergeProfile, newId, onPersistError, useEchoInventory, useEquipped, useOverrides, useVaults } from './store'
 import ScannerImport from './components/ScannerImport'
@@ -163,6 +165,38 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const bestOwnersByEcho = useMemo(
     () => new Map(echoes.map((e) => [e.id, bestOwners(e, allProfiles, 3)])),
     [echoes, allProfiles],
+  )
+
+  // U7 (task 60): echo id → nhân vật đang ghim bộ CHỨA echo đó (1 echo có thể ở bộ ghim nhiều người).
+  // Badge "Đang dùng bởi X" ở kho/bàn thử — ngăn kéo nhầm echo BiS của main sang thử nhân vật phụ.
+  const pinnedBy = useMemo(() => {
+    const m = new Map<string, PinnedOwner[]>()
+    for (const [cid, ids] of Object.entries(equipped)) {
+      const base = CHARACTER_BY_ID[cid]
+      if (!base || !ids?.length) continue
+      const owner: PinnedOwner = { id: cid, name: base.name, element: base.element }
+      for (const eid of ids) {
+        const arr = m.get(eid)
+        if (arr) arr.push(owner)
+        else m.set(eid, [owner])
+      }
+    }
+    return m
+  }, [equipped])
+
+  // U6 (task 60): tổng quan mọi nhân vật có bộ ghim — điểm chấm CÙNG công thức equippedInfo
+  // (scoreLoadout + buildCtx per nhân vật). Thứ tự theo roster gốc (allProfiles), không sort điểm.
+  const pinnedRows = useMemo<PinnedRow[]>(
+    () =>
+      allProfiles
+        .filter((p) => equipped[p.id]?.length)
+        .map((p) => {
+          const ids = equipped[p.id]
+          const found = ids.map((id) => echoes.find((e) => e.id === id)).filter((e): e is Echo => e !== undefined)
+          const result = scoreLoadout(found, p, overrides[p.id]?.build)
+          return { profile: p, total: result?.total ?? null, missing: ids.length - found.length }
+        }),
+    [allProfiles, equipped, echoes, overrides],
   )
 
   // Đổi nhân vật đang tối ưu (CharacterPicker + bấm tên trong Best Owner): kết quả cũ thuộc
@@ -348,6 +382,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               profile={profile}
               bestOwners={bestOwnersByEcho}
               onJumpToChar={jumpToChar}
+              pinnedBy={pinnedBy}
               onDelete={deleteEcho}
               onDeleteMany={deleteMany}
               onToggleFlag={toggleFlag}
@@ -464,6 +499,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               slots={benchSlots}
               onChange={setBenchSlots}
               ctx={buildCtx}
+              pinnedBy={pinnedBy}
               compareTotal={equippedInfo?.result?.total ?? null}
               onPin={(ids) => {
                 setEquipped((prev) => ({ ...prev, [charId]: ids }))
@@ -515,6 +551,9 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
         </div>
       ))}
 
+      {/* U6 (task 60): tổng quan nhân vật đã ghim bộ — đầu tab Đội hình, chỉ khi có ≥1 nhân vật ghim
+          (bỏ khi kho trống: pin có thể là id cũ đã xoá → toàn "—", nhiễu) */}
+      {tab === 'roster' && !empty && pinnedRows.length > 0 && <PinnedOverview rows={pinnedRows} onJump={jumpToChar} />}
       {/* F2 (task 58): ưu tiên farm set — KHÔNG cần kho nên hiện cả khi kho rỗng (giá trị cho user mới) */}
       {tab === 'roster' && <SetFarmPriority profiles={allProfiles} />}
       {tab === 'roster' && empty && emptyState}

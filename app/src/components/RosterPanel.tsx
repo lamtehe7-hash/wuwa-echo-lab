@@ -28,6 +28,9 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
   const [stale, setStale] = useState(false)
   const [adding, setAdding] = useState(CHARACTERS[0].id)
   const [addingSet, setAddingSet] = useState('') // set ép mặc định gán kèm khi thêm member
+  // U3 (task 60): thu gọn từng thành viên kết quả (undefined = mở). Không persist — nhất quán với
+  // state cục bộ khác của panel (ids/results/forced đều không lưu) + tránh e2e phụ thuộc browser cũ.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({})
 
   // Kho echo đổi HOẶC user chỉnh trọng số/erTarget → kết quả gán đội cũ: giữ hiển thị + banner giải lại
   useEffect(() => setStale(true), [echoes, overrides])
@@ -118,18 +121,43 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
       )}
 
       {results && (
-        <Stale stale={stale} onResolve={assign}>
-          {results.map((r) => (
-            <div key={r.profile.id} className="border-l-2 pl-2.5" style={{ borderColor: ELEMENT_COLOR[r.profile.element] }}>
-              <div className="mb-1 mt-2 flex items-center gap-1.5 text-sm font-medium text-slate-200">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: ELEMENT_COLOR[r.profile.element] }} />
-                {r.profile.name}
-                <span className="text-[10px] text-slate-500">{ROLE_BADGE[r.profile.archetype] ?? ''}</span>
-              </div>
-              <LoadoutView result={r.result} profile={r.profile} />
-            </div>
-          ))}
-        </Stale>
+        <>
+          {/* Nút Mở/Thu tất cả NGOÀI <Stale>: Stale làm mờ + chặn bấm children khi stale, nhưng
+              đóng/mở gọn không phụ thuộc dữ liệu cũ/mới nên phải bấm được kể cả lúc đang stale */}
+          <div className="flex justify-end gap-3 text-xs">
+            <button
+              className="text-slate-500 hover:text-slate-300"
+              onClick={() => setOpenMap(Object.fromEntries(results.map((r) => [r.profile.id, true])))}
+            >{t('roster.expandAll')}</button>
+            <button
+              className="text-slate-500 hover:text-slate-300"
+              onClick={() => setOpenMap(Object.fromEntries(results.map((r) => [r.profile.id, false])))}
+            >{t('roster.collapseAll')}</button>
+          </div>
+          <Stale stale={stale} onResolve={assign}>
+            {results.map((r) => (
+              <details
+                key={r.profile.id}
+                open={openMap[r.profile.id] ?? true}
+                onToggle={(e) => {
+                  const open = (e.currentTarget as HTMLDetailsElement).open
+                  setOpenMap((m) => (m[r.profile.id] === open ? m : { ...m, [r.profile.id]: open }))
+                }}
+                className="border-l-2 pl-2.5"
+                style={{ borderColor: ELEMENT_COLOR[r.profile.element] }}
+              >
+                {/* summary KHÔNG dùng flex: display:flex trên summary xoá marker ▶/▼ native (mất
+                    affordance so với 2 <details> kia trên cùng trang) → giữ inline, dot inline-block */}
+                <summary className="mb-1 mt-2 cursor-pointer text-sm font-medium text-slate-200">
+                  <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ backgroundColor: ELEMENT_COLOR[r.profile.element] }} />
+                  {r.profile.name}
+                  <span className="ml-1.5 text-[10px] text-slate-500">{ROLE_BADGE[r.profile.archetype] ?? ''}</span>
+                </summary>
+                <LoadoutView result={r.result} profile={r.profile} />
+              </details>
+            ))}
+          </Stale>
+        </>
       )}
     </div>
   )

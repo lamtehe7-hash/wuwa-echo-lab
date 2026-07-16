@@ -303,6 +303,19 @@ const DICT: Record<string, Entry> = {
   'roster.remove': { vi: 'Bỏ khỏi đội', en: 'Remove from team' },
   'roster.assign': { vi: '🧩 Gán echo cho cả đội', en: '🧩 Assign echoes to team' },
   'roster.noResult': { vi: 'Không đủ echo để ghép bộ.', en: 'Not enough echoes to build a set.' },
+  // Task 60/U3: thu gọn kết quả gán đội (mỗi thành viên là <details>)
+  'roster.expandAll': { vi: 'Mở tất cả', en: 'Expand all' },
+  'roster.collapseAll': { vi: 'Thu tất cả', en: 'Collapse all' },
+
+  // ── Task 60/U6: Tổng quan nhân vật đã ghim bộ (PinnedOverview — đầu tab Đội hình) ──
+  'pinned.title': { vi: 'Nhân vật đã ghim bộ', en: 'Pinned loadouts' },
+  'pinned.subtitle': { vi: '{n} nhân vật đang ghi nhớ bộ hiện tại', en: '{n} characters have a remembered current set' },
+  'pinned.missingChip': { vi: 'thiếu {n}', en: '{n} missing' },
+  'pinned.openTip': { vi: 'Mở tab Tối ưu cho nhân vật này', en: 'Open the Optimize tab for this character' },
+
+  // ── Task 60/U7: badge "Đang dùng bởi X" (PinnedByBadge — kho + bàn thử) ──
+  'pinby.tip': { vi: 'Đang dùng bởi: {names}', en: 'Currently used by: {names}' },
+  'pinby.more': { vi: '+{n} nữa', en: '+{n} more' },
 
   // ── WeightEditor ──
   'weights.title': { vi: 'Trọng số — {name}', en: 'Weights — {name}' },

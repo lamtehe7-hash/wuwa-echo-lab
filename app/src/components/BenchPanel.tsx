@@ -214,8 +214,9 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                   )}
                   {e ? (
                     <div>
-                      <EchoCard echo={e} compact profile={profile} />
-                      <div className="mt-0.5 flex items-center justify-between px-0.5 text-xs">
+                      {/* Hàng action TRÊN card (user yêu cầu 17/07); ô main: trái là span rỗng —
+                          badge 👑 Main absolute góc -top-2 -left-2 không đè nút nào */}
+                      <div className="mb-0.5 flex items-center justify-between px-0.5 text-xs">
                         {/* stopPropagation: wrapper có onClick "đặt echo đang chọn" (U2) — bấm 👑/✕ không được kích hoạt nó */}
                         {!isMain ? (
                           <button className="text-slate-500 hover:text-amber-300" title={t('bench.mainTip')} onClick={(ev) => { ev.stopPropagation(); setAsMain(i) }}>
@@ -225,12 +226,13 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                           <span />
                         )}
                         <button
-                          className="text-slate-600 hover:text-rose-400"
+                          className="rounded border border-slate-600 px-1 leading-none text-slate-500 hover:border-rose-400 hover:text-rose-400"
                           title={t('bench.remove')}
                           aria-label={t('bench.remove')}
                           onClick={(ev) => { ev.stopPropagation(); clearSlot(i) }}
                         >✕</button>
                       </div>
+                      <EchoCard echo={e} compact profile={profile} />
                     </div>
                   ) : (
                     // Ô trống = <button> thật (không chứa nút con): bấm/Enter đặt echo đang chọn (U2)

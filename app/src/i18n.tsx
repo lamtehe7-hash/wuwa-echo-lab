@@ -54,7 +54,10 @@ const DICT: Record<string, Entry> = {
   'equip.unpin': { vi: 'bỏ ghi nhớ', en: 'forget' },
   'equip.pin': { vi: '📌 Đặt làm bộ hiện tại', en: '📌 Set as current loadout' },
   'equip.deltaTip': { vi: 'Chênh lệch so với "bộ hiện tại" đã ghi nhớ', en: 'Difference vs the remembered "current set"' },
+  'equip.viewEdit': { vi: 'Xem/sửa', en: 'View/edit' },
+  'equip.viewEditTip': { vi: 'Mở trong Bàn thử bộ để xem 5 echo đang đeo và chỉnh sửa', en: 'Open in the bench to view and edit the 5 equipped echoes' },
   'toast.pinned': { vi: 'Đã ghi nhớ bộ hiện tại cho {name}', en: 'Current set remembered for {name}' },
+  'toast.benchLoaded': { vi: 'Đã nạp bộ hiện tại vào Bàn thử bộ', en: 'Loaded the current set into the bench' },
 
   // ── ScoreBadge (popover breakdown điểm) ──
   'breakdown.title': { vi: 'Điểm chi tiết', en: 'Score breakdown' },

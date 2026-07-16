@@ -65,7 +65,8 @@ function parseHash(): { tab: Tab; char?: string } {
 
 const EMPTY_BENCH: (string | null)[] = [null, null, null, null, null]
 
-// Nạp bộ solver vào 5 ô bàn thử: echo cost-4 vào ô 0 (main echo), còn lại lấp ô 1–4 theo thứ tự.
+// Nạp danh sách echo vào 5 ô bàn thử (prefill bộ solver + nút Xem/sửa bộ hiện tại):
+// echo cost-4 vào ô 0 (main echo), còn lại lấp ô 1–4 theo thứ tự.
 function toBenchSlots(list: Echo[]): (string | null)[] {
   const slots: (string | null)[] = [null, null, null, null, null]
   const main = list.find((e) => e.cost === 4) ?? list[0]
@@ -116,6 +117,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const [triageActive, setTriageActive] = useState(false)
   const [triageOrder, setTriageOrder] = useState<'worst' | 'newest'>('worst')
   const fileRef = useRef<HTMLInputElement>(null)
+  // Toolbar segmented (luôn mounted) — mốc scrollIntoView khi mở bench từ thanh Bộ hiện tại bên dưới
+  const toolbarRef = useRef<HTMLDivElement>(null)
 
   // State → hash (không bắn hashchange nên không loop); hashchange ngược lại cho back/sửa URL tay
   useEffect(() => {
@@ -324,6 +327,20 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
       if (newBench) { setNewBench(false); markSeen('bench') }
     }
     setActiveTool((cur) => (cur === tool ? null : tool))
+  }
+
+  // Nạp bộ đã ghi nhớ vào Bàn thử bộ để xem/sửa (nút "🧰 Xem/sửa" trên thanh Bộ hiện tại).
+  // Id đã xoá khỏi kho tự rơi khỏi list; đặt ô qua toBenchSlots (cost-4 → ô 👑) như prefill solver.
+  // Force-open chứ KHÔNG toggleTool (bấm lại = nạp lại, không đóng panel); bench render PHÍA TRÊN
+  // nút này nên phải scroll lên toolbar kẻo panel mở ngoài viewport mà user không thấy.
+  const loadEquippedIntoBench = () => {
+    const live = (equipped[charId] ?? []).flatMap((id) => { const e = echoById.get(id); return e ? [e] : [] })
+    const prevSlots = benchSlots
+    setBenchSlots(toBenchSlots(live))
+    setActiveTool('bench')
+    if (newBench) { setNewBench(false); markSeen('bench') }
+    toolbarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    push(t('toast.benchLoaded'), { action: { label: t('common.undo'), fn: () => setBenchSlots(prevSlots) } })
   }
 
   // U1: chấm amber "đã tuỳ chỉnh" trên segment — hiện cả khi panel đóng (trước đây đóng là mất dấu)
@@ -579,7 +596,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               <span className="block"><b>{t('app.objDamage')}</b>: {t('app.objectiveDamageDesc')}</span>
             </InfoTip>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div ref={toolbarRef} className="flex flex-wrap items-center gap-2">
             {/* U1: segmented — sky = panel đang mở; chấm amber = "đã tuỳ chỉnh" (kể cả khi đóng) */}
             <span className="inline-flex overflow-hidden rounded border border-slate-700 text-xs">
               {([
@@ -686,14 +703,22 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
                 </span>
               )}
               {equippedInfo.missing > 0 && <span className="text-xs text-amber-400">{t('equip.missing', { n: equippedInfo.missing })}</span>}
-              <button
-                className="ml-auto text-xs text-slate-500 hover:text-rose-400"
-                onClick={() => setEquipped((prev) => {
-                  const next = { ...prev }
-                  delete next[charId]
-                  return next
-                })}
-              >{t('equip.unpin')}</button>
+              {/* Nhóm nút cuối hàng: hành động điều hướng (hover sky) TRƯỚC hành động huỷ (hover rose) */}
+              <span className="ml-auto flex items-center gap-2">
+                <button
+                  className="text-xs text-slate-500 hover:text-sky-300"
+                  title={t('equip.viewEditTip')}
+                  onClick={loadEquippedIntoBench}
+                >🧰 {t('equip.viewEdit')}</button>
+                <button
+                  className="text-xs text-slate-500 hover:text-rose-400"
+                  onClick={() => setEquipped((prev) => {
+                    const next = { ...prev }
+                    delete next[charId]
+                    return next
+                  })}
+                >{t('equip.unpin')}</button>
+              </span>
             </div>
           )}
 

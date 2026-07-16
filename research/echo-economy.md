@@ -59,10 +59,23 @@ mỗi mốc là 1 substat MỚI. Engine `remainingPool`/`expectedMarginalPerSlot
 | 36000015 | Item "polish" trong phantomrarity (Calabash/Data Bank — không dùng cho app) | Q5 |
 | 36000016 | Transducer (reroll substat, 3.1+) | Q5 |
 
-## 5. Chưa chốt / ngoài phạm vi datamine
+## 5. Cơ chế Transducer (F7) — VERIFY 16/07 (game8 archives/578127 + công bố 3.1)
 
-- **Cơ chế Transducer reroll (F7)**: cost 1/1/1/2/3 theo slot đã có; nhưng *reroll đổi được LOẠI substat hay
-  chỉ giá trị?* — datamine tĩnh không trả lời. PHẢI verify web/in-game trước khi làm F7 (đúng gate proposal).
+- Reroll đổi **LOẠI** substat ("Adjust a Substat of an Echo to a random stat, excluding locked Substats") —
+  KHÔNG phải chỉ giá trị như proposal giả định ban đầu.
+- Chỉ dùng trên **5★ đã full-tune** (5/5 substat). Mỗi lần dùng reroll **1 substat**, chọn NGẪU NHIÊN trong
+  các substat KHÔNG khoá → muốn nhắm đúng 1 slot phải khoá 4 slot còn lại.
+- **Cost theo số substat khoá** (khớp `phantomvicepolishconfig` PropCount): khoá ≤2 → 1 · khoá 3 → 2 ·
+  khoá 4 → 3 Transducer (`TRANSDUCER_COST_BY_LOCKED`).
+- Sau khi thấy kết quả được **chọn giữ cũ hoặc nhận mới** (option miễn phí về stat — nhưng KHÔNG hoàn
+  Transducer khi giữ cũ) → EV advisor = E[max(mới − cũ, 0)] trên mỗi Transducer.
+- Nguồn cung khan hiếm: shop 30 Afterglow Coral ×2 lần đầu/version, sau đó 60, cap 99/version.
+- **Giả định còn lại (ghi rõ khi làm F7)**: pool loại khi redraw = 13 − loại các substat ĐANG KHOÁ
+  (theo câu chữ chính thức; có thể ra lại đúng loại cũ). Chưa có nguồn nói kết quả có được phép trùng
+  loại substat không-khoá khác hay không (game rule "không trùng loại" nghiêng về KHÔNG trùng).
+  PROB8/PROB4 vẫn là số cộng đồng [UNVERIFIED chính thức] → advisor phải kèm disclaimer.
+
+## 5b. Ngoài phạm vi datamine
 - **Income farm/ngày (Tacet Field mỗi 60 waveplate)**: số live-ops (đổi theo level/patch, không có trong datamine
   tĩnh). wuwa.uk ghi "1–2 Premium Tuner/run" — KHÔNG tin cậy (mâu thuẫn kinh nghiệm chơi phổ biến ~10–12).
   → F10 thiết kế income là **tham số user chỉnh được**, không hardcode.

@@ -4,7 +4,7 @@ import {
   ECHO_EXP_CUMULATIVE,
   ECHO_MAX_LEVEL,
   EXP_RETURN_RATIO,
-  TRANSDUCER_COST_BY_SLOT,
+  TRANSDUCER_COST_BY_LOCKED,
   TUBE_EXP,
   TUNE_CREDIT,
   TUNE_SLOT_LEVELS,
@@ -52,7 +52,7 @@ describe('echoEconomy — bảng chi phí datamine', () => {
     expect(CREDIT_PER_EXP).toBe(0.1)
     expect(EXP_RETURN_RATIO).toBe(0.75)
     expect(TUNER_RETURN_RATIO).toBe(0.3)
-    expect(TRANSDUCER_COST_BY_SLOT).toEqual([1, 1, 1, 2, 3])
+    expect(TRANSDUCER_COST_BY_LOCKED).toEqual([1, 1, 1, 2, 3])
   })
 
   it('verify chéo game8: feed echo 5★ +25 (hoàn 75%) → đủ đưa echo mới tới ĐÚNG +22', () => {

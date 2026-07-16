@@ -52,5 +52,6 @@ export const EXP_RETURN_RATIO = 0.75
 /** Hoàn tuner khi echo đã tune bị tiêu thụ/loại */
 export const TUNER_RETURN_RATIO = 0.3
 
-/** [F7 — cơ chế reroll CHƯA verify] Transducer cho lần reroll slot thứ i (0-based theo số substat đã mở) */
-export const TRANSDUCER_COST_BY_SLOT: readonly number[] = [1, 1, 1, 2, 3]
+/** Transducer cho 1 lần reroll, index = SỐ SUBSTAT KHOÁ (0–4). Verify 16/07 (game8 578127):
+ *  khoá ≤2 → 1, khoá 3 → 2, khoá 4 → 3; chỉ dùng trên 5★ FULL-TUNE; xem research/echo-economy.md §5 */
+export const TRANSDUCER_COST_BY_LOCKED: readonly number[] = [1, 1, 1, 2, 3]

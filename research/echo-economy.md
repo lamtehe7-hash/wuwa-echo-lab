@@ -1,0 +1,80 @@
+# Kinh tế Echo — bảng chi phí EXP / Tuner / Shell Credit (task 69 / F5)
+
+> Research 16/07/2026, datamine `Arikatsu/WutheringWaves_Data@3.5` (cùng nguồn đã verify 100% base stat).
+> Data sinh tự động: `app/src/data/echoEconomy.ts` (script `app/scripts/gen-echo-economy.mts`).
+> Số khoá bằng test `app/src/data/echoEconomy.test.ts`. **Không đoán số** — mọi giá trị có nguồn dưới đây.
+
+## 1. Nguồn datamine (BinData/…)
+
+| File | Cho biết |
+|---|---|
+| `phantom/phantomlevel.json` | EXP **tăng thêm** để đạt level L, theo `GroupId` (4 nhóm) |
+| `phantom/phantomquality.json` | `LevelLimit` max +10/15/20/25 theo bậc 2–5★; `SlotUnlockLevel` mốc tune; `IdentifyCost` 10 tuner đúng-bậc/slot (item 36000011–14 = tuner Q2–Q5); `IdentifyCoin` credit/lần tune |
+| `phantom/phantomexpitem.json` | 4 ống EXP (Sealed Tube, item 36000001–04 = Q2–Q5): 500/1000/2000/5000 |
+| `phantom/phantomvicepolishconfig.json` | Transducer reroll theo slot: 1/1/1/2/3 (item 36000016) — **cơ chế chưa verify, xem §5** |
+| `common_param/commonparam.json` | `PhantomLevelUpCoinCost`=100‰ → **0.1 credit/EXP**; `PhantomExpReturnRatio`=750‰ → **hoàn 75% EXP**; `PhantomIdentifyReturnRatio`=300‰ → **hoàn 30% tuner**; `PhantomTotalCost`=12 (khớp COST_CAP engine) |
+
+Decode: `BinData` = base64 → LE uint32 (4 byte) hoặc int64 (8 byte); ratio đơn vị ‰ (per-mille).
+Join nhóm level ↔ bậc: qua `LevelLimit` (nhóm có max Level = LevelLimit của bậc) — KHÔNG hardcode GroupId.
+
+## 2. Bảng đã chốt
+
+**EXP tích luỹ +0 → max** (curve tăng nghiêm ngặt, xem echoEconomy.ts cho từng level):
+
+| Bậc | Max | Tổng EXP | Tỉ lệ vs 5★ (từng level, exact) |
+|---|---|---|---|
+| 5★ | +25 | **142.600** | 1.0 |
+| 4★ | +20 | 63.280 | ×0.8 |
+| 3★ | +15 | 15.840 | ×0.4 |
+| 2★ | +10 | 4.125 | ×0.25 |
+
+Mốc trung gian 5★ hay dùng: +5=4.400 · +10=16.500 · +15=39.600 · +20=79.100 · +25=142.600.
+
+**Tune substat**: mở slot tại level bội 5 (`SlotUnlockLevel`); mỗi slot = **10 tuner đúng bậc echo** + credit
+(200/500/1000/2000 theo 2–5★). Số mốc = số substat tối đa: 2★ **không tune được** (0 slot), 3★=3, 4★=4, 5★=5.
+→ **Datamine BÁC giả thuyết proposal F8** ("3★/4★ vẫn 5 mốc, có mốc boost substat cũ"): KHÔNG có mốc boost,
+mỗi mốc là 1 substat MỚI. Engine `remainingPool`/`expectedMarginalPerSlot` đúng cho mọi bậc theo số slot còn lại.
+
+**Shell Credit**: đổ EXP tốn `0.1 × EXP` credit (vd full 5★ = 14.260); tune 5★ = 2.000/lần × 5 = 10.000.
+
+**Hoàn tài nguyên (feed echo đã luyện làm nguyên liệu)**: hoàn **75% EXP** đã đổ + **30% tuner** đã dùng.
+(Task 58/F9 dùng ước lượng "~75%/~30%" — nay có số datamine chính xác, cùng giá trị.)
+
+## 3. Verify chéo (độc lập với datamine)
+
+- **Ống EXP 500/1000/2000/5000** — khớp game8 archives/458113 (Basic/Medium/Advanced/Premium Sealed Tube). ✅
+- **Feed +25 → +22**: game8 nói "using a level 25 Echo results in only 22 levels gained".
+  Toán: 75% × 142.600 = 106.950; cumulative +22 = 101.100 ≤ 106.950 < 113.700 = +23 → đúng **+22**.
+  → xác nhận chéo ĐỒNG THỜI curve + ratio 75%. ✅ (khoá bằng test)
+- **0.1 credit/EXP · 2000 credit/tune (5★) · 75%/30%** — khớp trích dẫn wiki fandom (Echo/Leveling) qua search
+  snippet; trang wiki chặn bot (403/402) nên không quote trực tiếp được. ✅ (datamine là nguồn chính)
+- `PhantomTotalCost`=12 khớp COST_CAP đã dùng từ đầu project. ✅
+
+## 4. Item ID tra cứu (iteminfo.json — tên là key textmap, bậc từ `QualityId`)
+
+| ID | Là gì | Bậc |
+|---|---|---|
+| 36000001–04 | Ống EXP (Sealed Tube) 500/1000/2000/5000 | Q2/Q3/Q4/Q5 |
+| 36000011–14 | Tuner | Q2/Q3/Q4/Q5 |
+| 36000015 | Item "polish" trong phantomrarity (Calabash/Data Bank — không dùng cho app) | Q5 |
+| 36000016 | Transducer (reroll substat, 3.1+) | Q5 |
+
+## 5. Chưa chốt / ngoài phạm vi datamine
+
+- **Cơ chế Transducer reroll (F7)**: cost 1/1/1/2/3 theo slot đã có; nhưng *reroll đổi được LOẠI substat hay
+  chỉ giá trị?* — datamine tĩnh không trả lời. PHẢI verify web/in-game trước khi làm F7 (đúng gate proposal).
+- **Income farm/ngày (Tacet Field mỗi 60 waveplate)**: số live-ops (đổi theo level/patch, không có trong datamine
+  tĩnh). wuwa.uk ghi "1–2 Premium Tuner/run" — KHÔNG tin cậy (mâu thuẫn kinh nghiệm chơi phổ biến ~10–12).
+  → F10 thiết kế income là **tham số user chỉnh được**, không hardcode.
+- `phantombreach.json` (60000xxx + 2400/3600/4800/6000 credit): bảng breach per-phantom (legacy/echo skill) —
+  không liên quan chi phí build, bỏ.
+- `phantomlevelconsume.json` (exp 10/50/100/300, credit ×5): giá trị feed echo CHƯA luyện làm fodder theo bậc —
+  ghi nhận, chưa cần cho F6/F8/F10 (planner dùng ống EXP).
+
+## 6. Regen khi có bản vá
+
+```
+cd app
+npx -y tsx scripts/gen-echo-economy.mts [--branch 3.6]
+npm test  # test khoá sẽ FAIL nếu Kuro đổi bảng — đối chiếu lại doc này trước khi sửa test
+```

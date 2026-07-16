@@ -4,7 +4,7 @@ import { CHARACTERS } from '../data/characters'
 import { DEMO_ECHOES } from '../data/demo'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { GRADE_BANDS, gradeOf, scoreEcho, theoreticalMaxTotal } from './score'
-import { bestOwners, setFarmPriority, setFarmSummary } from './insights'
+import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary } from './insights'
 
 const byId = Object.fromEntries(CHARACTERS.map((c) => [c.id, c])) as Record<string, CharacterProfile>
 const demo = Object.fromEntries(DEMO_ECHOES.map((e) => [e.name ?? e.id, e])) as Record<string, Echo>
@@ -110,5 +110,75 @@ describe('setFarmSummary (top-3-per-char — chống thoái hoá gain tuyệt đ
     const rejuv = rows.find((r) => r.def.id === 'rejuvenating-glow')
     expect(rejuv).toBeTruthy()
     expect(['verina', 'buling', 'shorekeeper', 'baizhi', 'mornye']).toContain(rejuv!.beneficiaries[0].profile.id)
+  })
+})
+
+// ---- F12 (task 61): setBacklog — tồn kho vs nhu cầu ----
+
+describe('setBacklog', () => {
+  const realChars = CHARACTERS.filter((c) => !c.id.startsWith('generic'))
+  const usable = DEMO_ECHOES.filter((e) => !e.trash)
+
+  it('kho rỗng: mọi row là need, owned/goodOwned = 0, target ≤ trần', () => {
+    const rows = setBacklog(SONATA_SETS, realChars, [], 3)
+    expect(rows.length).toBeGreaterThan(0)
+    for (const r of rows) {
+      expect(r.status).toBe('need')
+      expect(r.owned).toBe(0)
+      expect(r.goodOwned).toBe(0)
+      expect(r.demand).toBeGreaterThan(0)
+      expect(r.target).toBeLessThanOrEqual(BACKLOG_MAX_TARGET)
+      expect(r.target).toBeGreaterThan(0)
+    }
+  })
+
+  it('trần target: set phổ dụng demand cao vẫn bị chặn ở BACKLOG_MAX_TARGET (chống 35×2=70)', () => {
+    const rows = setBacklog(SONATA_SETS, realChars, [], 3)
+    const big = rows.find((r) => r.demand * 2 > BACKLOG_MAX_TARGET)
+    expect(big).toBeTruthy()
+    expect(big!.target).toBe(BACKLOG_MAX_TARGET)
+  })
+
+  it('nhóm sort: mọi row need/farm đứng TRƯỚC mọi row enough/surplus', () => {
+    const rows = setBacklog(SONATA_SETS, realChars, usable, 3)
+    const rank = (s: string) => (s === 'enough' || s === 'surplus' ? 1 : 0)
+    for (let i = 1; i < rows.length; i++) expect(rank(rows[i - 1].status)).toBeLessThanOrEqual(rank(rows[i].status))
+  })
+
+  it('farm: havoc-eclipse trên demo có mảnh tốt nhưng chưa đủ target', () => {
+    const rows = setBacklog(SONATA_SETS, realChars, usable, 3)
+    const havoc = rows.find((r) => r.def.id === 'havoc-eclipse')
+    expect(havoc).toBeTruthy()
+    expect(havoc!.owned).toBeGreaterThan(0)
+    expect(havoc!.goodOwned).toBeGreaterThan(0)
+    expect(havoc!.goodOwned).toBeLessThan(havoc!.target)
+    expect(havoc!.status).toBe('farm')
+  })
+
+  it('enough: đủ mảnh tốt (≥ target) → cân nhắc dừng', () => {
+    // clone echo tốt (Havoc Dreadmane, hợp Havoc DPS) đủ nhiều để vượt target của havoc-eclipse
+    const good = DEMO_ECHOES.find((e) => e.name === 'Havoc Dreadmane')!
+    const many = Array.from({ length: BACKLOG_MAX_TARGET }, (_, i) => ({ ...good, id: `enough-${i}` }))
+    const rows = setBacklog(SONATA_SETS, realChars, many, 3)
+    const havoc = rows.find((r) => r.def.id === 'havoc-eclipse')!
+    expect(havoc.goodOwned).toBeGreaterThanOrEqual(havoc.target)
+    expect(havoc.status).toBe('enough')
+  })
+
+  it('surplus: echo thuộc set KHÔNG ai muốn → surplus (demand 0, chỉ có tồn)', () => {
+    const wanted = new Set(setFarmSummary(SONATA_SETS, realChars, 3).map((r) => r.def.id))
+    const unwanted = SONATA_SETS.find((s) => !wanted.has(s.id))
+    expect(unwanted).toBeTruthy() // top-3 không phủ hết 34 set
+    const fake: Echo = { id: 'surp-1', name: 'x', cost: 4, set: unwanted!.id, rarity: 5, level: 25, mainStat: 'critRate', substats: [] }
+    const rows = setBacklog(SONATA_SETS, realChars, [fake], 3)
+    const row = rows.find((r) => r.def.id === unwanted!.id)!
+    expect(row.status).toBe('surplus')
+    expect(row.demand).toBe(0)
+    expect(row.owned).toBe(1)
+    expect(row.target).toBe(0)
+  })
+
+  it('không throw trên toàn bộ set × roster với demo', () => {
+    expect(() => setBacklog(SONATA_SETS, realChars, usable, 3)).not.toThrow()
   })
 })

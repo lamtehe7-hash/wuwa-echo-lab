@@ -17,12 +17,13 @@ import BuildEditor from './components/BuildEditor'
 import BenchPanel from './components/BenchPanel'
 import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
-import { SONATA_BY_ID } from './data/sonata'
+import { SONATA_BY_ID, SONATA_SETS } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
-import { bestOwners } from './engine/insights'
+import { bestOwners, setBacklog } from './engine/insights'
 import { dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import InfoTip from './components/InfoTip'
 import SetFarmPriority from './components/SetFarmPriority'
+import FarmingBacklog from './components/FarmingBacklog'
 import PinnedOverview, { type PinnedRow } from './components/PinnedOverview'
 import type { PinnedOwner } from './components/PinnedByBadge'
 import { useLang, useT } from './i18n'
@@ -269,6 +270,10 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     () => new Set(echoes.map((e) => e.name?.trim().toLowerCase()).filter((n): n is string => !!n)),
     [echoes],
   )
+
+  // F12 (task 61): backlog farm — nhu cầu roster (setFarmSummary) đối chiếu tồn kho thật (usableEchoes).
+  // Chỉ nhân vật roster thật (allProfiles đã merge override). Rẻ (<10ms) → useMemo, không cần worker.
+  const backlogRows = useMemo(() => setBacklog(SONATA_SETS, allProfiles, usableEchoes, 3), [allProfiles, usableEchoes])
 
   const toggleFlag = (id: string, key: 'lock' | 'trash') => {
     setEchoes((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: e[key] ? undefined : true } : e)))
@@ -556,6 +561,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
       {tab === 'roster' && !empty && pinnedRows.length > 0 && <PinnedOverview rows={pinnedRows} onJump={jumpToChar} />}
       {/* F2 (task 58): ưu tiên farm set — KHÔNG cần kho nên hiện cả khi kho rỗng (giá trị cho user mới) */}
       {tab === 'roster' && <SetFarmPriority profiles={allProfiles} />}
+      {/* F12 (task 61): backlog farm — CẦN kho (tồn kho vs nhu cầu) nên chỉ hiện khi !empty + có row */}
+      {tab === 'roster' && !empty && backlogRows.length > 0 && <FarmingBacklog rows={backlogRows} />}
       {tab === 'roster' && empty && emptyState}
       {/* Giữ mounted (chỉ ẩn CSS): RosterPanel giữ danh sách đội + kết quả trong state cục bộ —
           unmount khi chuyển tab sẽ mất sạch. (OcrImport thì NGƯỢC LẠI: cố ý unmount để nhả worker WASM.) */}

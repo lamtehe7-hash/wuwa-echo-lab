@@ -112,3 +112,104 @@ export function setFarmSummary(sets: SonataSet[], profiles: CharacterProfile[], 
     .filter((r) => r.beneficiaries.length > 0)
     .sort((a, b) => b.beneficiaries.length - a.beneficiaries.length || (b.beneficiaries[0]?.gain ?? 0) - (a.beneficiaries[0]?.gain ?? 0))
 }
+
+// F12 (task 61 / backlog proposals-2026-07-16.md): "Farming Backlog Dashboard" — đối chiếu
+// NHU CẦU roster (setFarmSummary ở trên) với TỒN KHO thực tế để trả lời "set nào NÊN DỪNG farm".
+// Khác F2: F2 chỉ có nhu cầu (không cần kho); F12 thêm chiều tồn kho + trạng thái đủ/thiếu/dư.
+
+/** ~số mảnh "tốt" mỗi nhân vật muốn set này thì coi là ĐỦ (dừng farm được). Heuristic minh bạch,
+ * KHÔNG phải build math chính xác (không biết ai thật sự 5pc vs 3-2). Hiệu chỉnh trên demo (task 61)
+ * để phân bố status không thoái hoá — xem insights.test.ts. */
+export const GOOD_PER_DEMANDER = 2
+/** Trần cho `target`: set phổ dụng (ER/ATK%) lọt top-3 của ~35 nhân vật (breadth degeneracy, task 58) →
+ * demand×2 = 70 mảnh là vô nghĩa (thực tế chỉ build 1 set trên vài nhân vật). Trần này giữ con số
+ * actionable + thanh coverage có ý nghĩa. Heuristic, hiệu chỉnh trên demo. */
+export const BACKLOG_MAX_TARGET = 10
+
+export type BacklogStatus = 'need' | 'farm' | 'enough' | 'surplus'
+
+export interface SetBacklogRow {
+  def: SonataSet
+  /** Số nhân vật coi set này là top-`topPerChar` set tốt nhất của họ (breadth nhu cầu) */
+  demand: number
+  /** Tên nhân vật hưởng lợi nhất (beneficiaries[0]) — null khi demand = 0 */
+  topDemander: string | null
+  /** Tổng echo usable thuộc set này trong kho */
+  owned: number
+  /** Echo của set này "tốt" cho ≥1 nhân vật cần set (scoreEcho.fitLevel ≥ 0.6 — main stat không sai hẳn) */
+  goodOwned: number
+  /** Mốc "đủ" gợi ý = demand × GOOD_PER_DEMANDER (0 khi không ai cần) */
+  target: number
+  status: BacklogStatus
+}
+
+const GROUP_RANK: Record<BacklogStatus, number> = { need: 0, farm: 0, enough: 1, surplus: 1 }
+const STATUS_RANK: Record<BacklogStatus, number> = { need: 0, farm: 1, enough: 0, surplus: 1 }
+
+/**
+ * Bảng backlog farm: cho mỗi set có NHU CẦU (>0 nhân vật) HOẶC có TỒN KHO (>0 echo), tính trạng thái:
+ *  - need    : có người muốn nhưng CHƯA có mảnh tốt nào
+ *  - farm    : có mảnh tốt nhưng còn dưới mốc `target`
+ *  - enough  : đủ mảnh tốt (≥ target) → cân nhắc dừng farm
+ *  - surplus : KHÔNG ai trong roster cần nhưng vẫn còn tồn → dọn kho
+ * Profile phải ĐÃ merge override (giống bestOwners/setFarmSummary — hàm thuần, không đọc store).
+ * Trả về đã SORT theo nhóm (farm-trước → dừng-sau) để component chỉ việc chia 2 khối theo status.
+ */
+export function setBacklog(
+  sets: SonataSet[],
+  profiles: CharacterProfile[],
+  echoes: Echo[],
+  topPerChar = 3,
+): SetBacklogRow[] {
+  const farm = setFarmSummary(sets, profiles, topPerChar)
+  const demandBySet = new Map(farm.map((r) => [r.def.id, r]))
+
+  const echoesBySet = new Map<string, Echo[]>()
+  for (const e of echoes) {
+    const arr = echoesBySet.get(e.set)
+    if (arr) arr.push(e)
+    else echoesBySet.set(e.set, [e])
+  }
+
+  const rows: SetBacklogRow[] = []
+  for (const def of sets) {
+    const fr = demandBySet.get(def.id)
+    const demand = fr?.beneficiaries.length ?? 0
+    const owned = echoesBySet.get(def.id)?.length ?? 0
+    if (demand === 0 && owned === 0) continue // không nhu cầu, không tồn kho → bỏ
+
+    const beneficiaries = fr?.beneficiaries.map((b) => b.profile) ?? []
+    let goodOwned = 0
+    if (demand > 0 && owned > 0) {
+      for (const e of echoesBySet.get(def.id)!) {
+        if (beneficiaries.some((p) => scoreEcho(e, p).fitLevel >= 0.6)) goodOwned++
+      }
+    }
+    const target = Math.min(demand * GOOD_PER_DEMANDER, BACKLOG_MAX_TARGET)
+    let status: BacklogStatus
+    if (demand === 0) status = 'surplus'
+    else if (goodOwned === 0) status = 'need'
+    else if (goodOwned < target) status = 'farm'
+    else status = 'enough'
+
+    rows.push({
+      def,
+      demand,
+      topDemander: fr?.beneficiaries[0]?.profile.name ?? null,
+      owned,
+      goodOwned,
+      target,
+      status,
+    })
+  }
+
+  return rows.sort((a, b) => {
+    if (GROUP_RANK[a.status] !== GROUP_RANK[b.status]) return GROUP_RANK[a.status] - GROUP_RANK[b.status]
+    if (GROUP_RANK[a.status] === 0) {
+      // Nhóm "nên farm tiếp": nhiều người muốn trước, hoà thì thiếu nhiều (gap) trước
+      return b.demand - a.demand || b.target - b.goodOwned - (a.target - a.goodOwned)
+    }
+    // Nhóm "dừng/dư": enough trước surplus, hoà thì tồn nhiều trước
+    return STATUS_RANK[a.status] - STATUS_RANK[b.status] || b.owned - a.owned
+  })
+}

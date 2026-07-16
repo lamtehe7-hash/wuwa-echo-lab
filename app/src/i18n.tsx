@@ -361,6 +361,12 @@ const DICT: Record<string, Entry> = {
   'buildcost.expPerDayHint': { vi: 'chưa xác minh, vd ~2500', en: 'unverified, e.g. ~2500' },
   'buildcost.daysEstimate': { vi: '≈ {days} ngày farm (giới hạn bởi {res})', en: '≈ {days} days to farm (bottlenecked by {res})' },
   'buildcost.enterRate': { vi: 'Nhập tốc độ farm (cả 2 ô) để ước tính số ngày.', en: 'Enter both farming rates to estimate days.' },
+  'reroll.title': { vi: '🎲 Đáng Reroll?', en: '🎲 Worth a reroll?' },
+  'reroll.suggestion': { vi: '{oldStat} ({oldValue}) → nhắm {targetStat}', en: '{oldStat} ({oldValue}) → aim for {targetStat}' },
+  'reroll.evLine': { vi: '+{ev} điểm kỳ vọng/Transducer · {p}% khả năng cải thiện', en: '+{ev} expected pts/Transducer · {p}% chance to improve' },
+  'reroll.requirement': { vi: 'Khoá 4 substat còn lại trước · {cost} Transducer/lần', en: 'Lock the other 4 substats first · {cost} Transducer per try' },
+  'reroll.disclaimer': { vi: '⚠ Xác suất substat theo dữ liệu cộng đồng, chưa Kuro xác nhận.', en: '⚠ Substat odds are community-sourced, not confirmed by Kuro.' },
+  'reroll.badgeTip': { vi: 'Có thể đáng Reroll — bấm điểm để xem', en: 'May be worth a reroll — click the score to see' },
   'bench.vsSolver': { vi: 'vs tối ưu', en: 'vs optimal' },
   'bench.vsSolverTip': { vi: 'Chênh lệch so với bộ do "🧩 Tìm bộ 5 tối ưu" đề xuất (kết quả bên dưới).', en: 'Difference vs the set suggested by "🧩 Find best 5-set" (result below).' },
 

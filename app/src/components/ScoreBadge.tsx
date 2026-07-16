@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CharacterProfile, ScoredEcho } from '../types'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SUBSTATS } from '../data/substats'
-import { upgradePotential } from '../engine/economy'
+import { rerollAdvice, upgradePotential } from '../engine/economy'
 import { gradeOf, theoreticalMaxTotal, type Grade } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
 import { formatNum, useLang, useT } from '../i18n'
@@ -41,6 +41,13 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
     () => (open && profile ? upgradePotential(r.echo, profile) : null),
     [open, r.echo, profile],
   )
+  // F7 (task 74): reroll hint tính SỚM (chấm 🎲 hiện ngoài popover) — closed-form rẻ, gate trước:
+  // 5★ full-tune + main không sai hẳn + đáng ≥0.05 điểm/Transducer (ngưỡng epsilon delta của app)
+  const rerollHint = useMemo(() => {
+    if (!profile || r.echo.rarity !== 5 || r.echo.substats.length !== 5 || r.fitLevel < 0.6) return null
+    const adv = rerollAdvice(r.echo, profile)
+    return adv && adv.evPerTransducer > 0.05 ? adv : null
+  }, [r, profile])
   const fmtN = (n: number) => formatNum(lang, n)
 
   const toggle = () => {
@@ -92,6 +99,11 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
           title={t('breakdown.gradeTip')}
           className={`text-[10px] font-bold ${GRADE_CLS[grade]}`}
         >{grade}</span>
+      )}
+      {/* F7: chấm 🎲 báo "có thể đáng reroll" — NGOÀI button (e2e match số thuần), aria-hidden
+          (trang trí — thông tin thật trong popover); title hover-only chấp nhận được (tiền lệ grade) */}
+      {rerollHint && (
+        <span aria-hidden="true" title={t('reroll.badgeTip')} className="text-[10px]">🎲</span>
       )}
       <button
         type="button"
@@ -151,6 +163,25 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
               <span className="block text-slate-400">
                 {t('upgrade.costLine', { exp: fmtN(up.expNeeded), tuners: up.tunersNeeded, credits: fmtN(up.creditsNeeded) })}
               </span>
+            </span>
+          )}
+          {/* F7 (task 74): reroll advisor — LOẠI TRỪ với F8 theo trạng thái (full-tune mới hiện);
+              disclaimer LUÔN hiện — Transducer là currency giới hạn, xác suất là số cộng đồng */}
+          {rerollHint && (
+            <span className="mt-1.5 block border-t border-slate-800 pt-1.5 text-[11px]">
+              <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-500">{t('reroll.title')}</span>
+              <span className="block text-slate-300">
+                {t('reroll.suggestion', {
+                  oldStat: SUBSTATS[rerollHint.stat].label,
+                  oldValue: `${rerollHint.value}${SUBSTATS[rerollHint.stat].isPct ? '%' : ''}`,
+                  targetStat: SUBSTATS[rerollHint.targetStat].label,
+                })}
+              </span>
+              <span className="block text-emerald-400">
+                {t('reroll.evLine', { ev: rerollHint.evPerTransducer.toFixed(1), p: Math.round(rerollHint.pImprove * 100) })}
+              </span>
+              <span className="block text-slate-400">{t('reroll.requirement', { cost: rerollHint.cost })}</span>
+              <span className="block text-amber-400/90">{t('reroll.disclaimer')}</span>
             </span>
           )}
         </span>

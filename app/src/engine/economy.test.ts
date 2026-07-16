@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Echo } from '../types'
-import { recycleRefund, upgradePotential } from './economy'
+import { recycleRefund, rerollAdvice, upgradePotential } from './economy'
 import { scoreEcho, tuneAdvice } from './score'
 import { CHARACTER_BY_ID } from '../data/characters'
 
@@ -146,6 +146,44 @@ describe('upgradePotential — EV/phân phối', () => {
     const top2 = ws[0] + ws[1]
     const theo = scored.raw > 0 ? (scored.raw / scored.score) * 100 : 1
     expect(p.maxFinal).toBeCloseTo(scored.totalScore + (top2 / theo) * 100, 6)
+  })
+})
+
+describe('rerollAdvice (F7/task 74) — mô hình khoá-4 nhắm đích', () => {
+  const fullSubs = (fifth: { stat: string; value: number }) => [
+    { stat: 'critRate', value: 8.7 },
+    { stat: 'critDmg', value: 17.4 },
+    { stat: 'atkPct', value: 9.4 },
+    { stat: 'atk', value: 40 },
+    fifth,
+  ] as Echo['substats']
+
+  it('gate: không phải 5★ / chưa full 5 substat → null', () => {
+    expect(rerollAdvice(echo({ rarity: 4, substats: fullSubs({ stat: 'hp', value: 430 }) }), camellya)).toBeNull()
+    expect(rerollAdvice(echo({ substats: fullSubs({ stat: 'hp', value: 430 }).slice(0, 4) }), camellya)).toBeNull()
+  })
+
+  it('chọn substat CHẾT (w=0) làm ứng viên reroll, EV dương, P cải thiện > 0', () => {
+    const adv = rerollAdvice(echo({ substats: fullSubs({ stat: 'hp', value: 430 }) }), camellya)
+    expect(adv).not.toBeNull()
+    expect(adv!.stat).toBe('hp') // hp trọng số 0 với Camellya — đáng thay nhất
+    expect(adv!.evGain).toBeGreaterThan(0)
+    expect(adv!.pImprove).toBeGreaterThan(0.2) // pool 9 loại có vài loại trọng số dương
+    expect(adv!.pImprove).toBeLessThanOrEqual(1)
+    expect(adv!.cost).toBe(3) // TRANSDUCER_COST_BY_LOCKED[4]
+    expect(adv!.evPerTransducer).toBeCloseTo(adv!.evGain / 3, 10)
+  })
+
+  it('targetStat = loại trọng số cao nhất CHƯA bị khoá (basicAtk cho Camellya khi crit đã có)', () => {
+    const adv = rerollAdvice(echo({ substats: fullSubs({ stat: 'hp', value: 430 }) }), camellya)
+    // pool của slot hp = 13 − {critRate, critDmg, atkPct, atk} → basicAtk là w cao nhất còn lại
+    expect(adv!.targetStat).toBe('basicAtk')
+  })
+
+  it('EV giảm khi substat hiện tại đã tốt: reroll basicAtk max-roll kém hấp dẫn hơn reroll hp chết', () => {
+    const withDead = rerollAdvice(echo({ substats: fullSubs({ stat: 'hp', value: 430 }) }), camellya)!
+    const withGood = rerollAdvice(echo({ substats: fullSubs({ stat: 'basicAtk', value: 11.6 }) }), camellya)!
+    expect(withDead.evGain).toBeGreaterThan(withGood.evGain)
   })
 })
 

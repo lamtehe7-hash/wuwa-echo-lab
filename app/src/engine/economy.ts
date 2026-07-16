@@ -1,9 +1,10 @@
-import type { CharacterProfile, Echo } from '../types'
+import type { CharacterProfile, Echo, SubstatKey } from '../types'
 import {
   CREDIT_PER_EXP,
   ECHO_EXP_CUMULATIVE,
   ECHO_MAX_LEVEL,
   EXP_RETURN_RATIO,
+  TRANSDUCER_COST_BY_LOCKED,
   TUNE_CREDIT,
   TUNER_RETURN_RATIO,
   TUNERS_PER_SLOT,
@@ -141,6 +142,62 @@ export function upgradePotential(
     p10Final: q(0.1), p90Final: q(0.9),
     gainPerTuner,
   }
+}
+
+export interface RerollAdvice {
+  /** Substat ĐÁNG reroll nhất (EV cao nhất) + giá trị hiện tại */
+  stat: SubstatKey
+  value: number
+  /** Loại trọng số cao nhất trong pool redraw — "nhắm tới" (chỉ hiển thị, không đảm bảo) */
+  targetStat: SubstatKey
+  /** Điểm kỳ vọng MỖI LẦN THỬ: E[max(mới − cũ, 0)] — được giữ cũ nếu tệ hơn (cơ chế verified) */
+  evGain: number
+  /** evGain / cost — thước "đáng mấy điểm mỗi Transducer" */
+  evPerTransducer: number
+  /** P(kết quả mới tốt hơn hiện tại) 0..1 */
+  pImprove: number
+  /** Transducer mỗi lần thử (khoá 4 slot còn lại để nhắm đích) */
+  cost: number
+}
+
+/**
+ * F7 (task 74): Transducer reroll advisor — CHỈ mô hình case "khoá 4, nhắm đúng 1 slot"
+ * (case duy nhất chọn đích chính xác; cost = TRANSDUCER_COST_BY_LOCKED[4] = 3/lần).
+ * Cơ chế verify 16/07 (research/echo-economy.md §5): reroll đổi LOẠI substat, chỉ 5★ full-tune,
+ * được GIỮ CŨ nếu kết quả tệ hơn → EV = E[max(mới − cũ, 0)].
+ * GIẢ ĐỊNH (ghi rõ trong doc): pool redraw = 13 loại − 4 loại ĐANG KHOÁ (có thể ra lại loại cũ),
+ * loại ra ĐỀU; giá trị theo PROB8/PROB4 (số cộng đồng — UI phải kèm disclaimer).
+ */
+export function rerollAdvice(echo: Echo, profile: CharacterProfile): RerollAdvice | null {
+  if (echo.rarity !== 5 || echo.substats.length !== 5) return null
+  const theoMax = theoreticalMax(profile)
+  const cost = TRANSDUCER_COST_BY_LOCKED[4]
+  let best: RerollAdvice | null = null
+  for (const target of echo.substats) {
+    const locked = new Set(echo.substats.filter((s) => s !== target).map((s) => s.stat))
+    const pool = SUBSTAT_KEYS.filter((k) => !locked.has(k))
+    const curRaw = (profile.weights[target.stat] ?? 0) * (target.value / maxRoll(target.stat))
+    let evRaw = 0
+    let pImprove = 0
+    for (const k of pool) {
+      const w = profile.weights[k] ?? 0
+      const def = SUBSTATS[k]
+      for (let m = 0; m < def.rolls.length; m++) {
+        const raw = w * (def.rolls[m] / maxRoll(k))
+        if (raw > curRaw + 1e-9) {
+          const pr = def.probs[m] / pool.length
+          evRaw += (raw - curRaw) * pr
+          pImprove += pr
+        }
+      }
+    }
+    const evGain = (evRaw / theoMax) * 100
+    const targetStat = pool.reduce((a, b) => ((profile.weights[b] ?? 0) > (profile.weights[a] ?? 0) ? b : a), pool[0])
+    if (!best || evGain > best.evGain) {
+      best = { stat: target.stat, value: target.value, targetStat, evGain, evPerTransducer: evGain / cost, pImprove, cost }
+    }
+  }
+  return best
 }
 
 /**

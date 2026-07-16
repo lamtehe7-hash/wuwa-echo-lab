@@ -1,4 +1,4 @@
-import type { CharacterProfile, MainStatKey, SubstatKey } from '../types'
+import type { CharacterProfile, Element, MainStatKey, SubstatKey } from '../types'
 import { SUBSTATS } from '../data/substats'
 
 // Đánh giá TỪNG substat cho một nhân vật → 8 mức màu (như tool cộng đồng / ảnh tham chiếu user):
@@ -88,13 +88,23 @@ const MAIN_TO_SUB: Partial<Record<MainStatKey, SubstatKey>> = {
   critRate: 'critRate', critDmg: 'critDmg', energyRegen: 'energyRegen',
 }
 
+/** Main Element DMG% → nguyên tố (fallback 0.6 khi đúng nguyên tố + weight elementDmg ≥ 0.5). */
+const DMG_MAIN_TO_ELEMENT: Partial<Record<MainStatKey, Element>> = {
+  glacioDmg: 'glacio', fusionDmg: 'fusion', electroDmg: 'electro',
+  aeroDmg: 'aero', spectroDmg: 'spectro', havocDmg: 'havoc',
+}
+
 /**
  * Độ hợp MAIN stat 3 mức (1 / 0.6 / 0.25) — bản nhẹ chỉ cần cost + mainStat (score.ts giữ
  * `mainStatFitLevel` nhận Echo đầy đủ cho engine; hàm này để hiển thị trên card/preview).
+ * Fallback 0.6 phủ CẢ elementDmg/healingBonus (review 16/07: bảng cũ chỉ có 6 stat % cơ bản).
  */
 export function mainFitLevel(profile: CharacterProfile, cost: 1 | 3 | 4, mainStat: MainStatKey): number {
   const prefs = profile.mainStatPrefs[String(cost) as '1' | '3' | '4'] ?? []
   if (prefs.includes(mainStat)) return 1
+  const el = DMG_MAIN_TO_ELEMENT[mainStat]
+  if (el) return el === profile.element && (profile.weights.elementDmg ?? 0) >= 0.5 ? 0.6 : 0.25
+  if (mainStat === 'healingBonus') return (profile.weights.healingBonus ?? 0) >= 0.5 ? 0.6 : 0.25
   const related = MAIN_TO_SUB[mainStat]
   if (related && (profile.weights[related] ?? 0) >= 0.5) return 0.6
   return 0.25

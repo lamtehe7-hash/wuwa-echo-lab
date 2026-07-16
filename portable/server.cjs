@@ -44,8 +44,9 @@ const server = http.createServer((req, res) => {
     let rel = path.normalize(urlPath).replace(/^([/\\])+/, '')
     if (rel === '' || rel === '.') rel = 'index.html'
     const file = path.join(ROOT, rel)
-    // Chặn path traversal ra ngoài dist
-    if (!file.startsWith(ROOT)) {
+    // Chặn path traversal ra ngoài dist. PHẢI so với ROOT + separator: startsWith(ROOT) trần
+    // cho lọt thư mục anh em cùng prefix tên (vd dist-evil) — review 16/07.
+    if (file !== ROOT && !file.startsWith(ROOT + path.sep)) {
       res.writeHead(403)
       return res.end('Forbidden')
     }

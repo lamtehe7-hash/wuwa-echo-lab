@@ -62,25 +62,35 @@ bonuses** (Engine v2).
   automatically (substats snapped to valid roll tiers). OCR runs **locally** (tesseract.js, self-hosted
   assets — no CDN calls, no image upload). Supports **Ctrl+V paste** (Win+Shift+S then paste) and
   **drag & drop**.
+- **Community scanner import** — accepts JSON files from popular WuWa scanners (wuwa-ocr / wuwa.build,
+  WuWa Inventory Kamera) as well as the app's own format — the format is auto-detected.
 - **Per-character ranking** — weighted roll-efficiency scoring using each character/archetype's substat
   weights, factoring in main-stat fit (3 levels: correct ✓ / stopgap ～ / wrong ✗). The inventory has
   **search, filters** (cost / set / main stat / verdict), **sorting** (score / RV / level / newest), a
   **table or in-game-style card grid** view, and a click-to-open **per-substat score breakdown**.
 - **Solve the optimal 5-Echo build** — the solver generates valid cost layouts (total ≤ 12), computes
   set bonuses (2/3/5-piece, with the *"same-named Echoes don't double-count"* rule) and discounts
-  excess ER over your target.
+  excess ER over your target. You can **force a sonata set** and check per-character **main-echo
+  recommendations** sourced from guides.
+- **🧰 Manual bench** — drag (or click) Echoes from the inventory into 5 slots to hand-build or tweak a
+  set; it is rescored (score + damage) after every action, exportable as PNG or pinnable as current set.
 - **Remember the "current set" + before/after diff** — pin what a character currently wears; the next
   solve shows the **score delta ▲/▼** vs the remembered set, so you know whether swapping is worth it.
 - **Whole-team assignment** — solve sequentially by character priority, each Echo used by only one
   character (locked so later characters can't steal it).
 - **Bulk inventory management** — lock 🔒 important Echoes (delete-protected), mark as excluded 🗑 (the
   solver skips them), multi-select + bulk delete; every deletion is **undoable** via a toast.
+- **Multiple vaults** — separate inventories for main / alt accounts, switchable from the header; each
+  vault keeps its own weight overrides and "current sets".
 - **Tuning advice** — for Echoes with the right main stat but unfinished substats, an expected-value
   estimate tells you whether to keep pouring tuners in or stop.
 - **Custom weights** — override the substat weights / ER target per character (with role presets: Crit
   DPS / Sub-DPS / Buffer / Healer… for quick apply), saved per browser.
-- **Relative damage estimate** — a *relative* damage figure for a build (multiplicative crit
-  1 + CR×CD and the %DMG bracket per the WuWa formula) to compare options.
+- **Damage with real stats** — declare a **weapon (109-weapon DB)** + the character's **base stats**
+  (39 characters, datamine-verified) + buffs → Damage mode optimizes with real crit (multiplicative
+  1 + CR×CD, %DMG bracket per the WuWa formula) and shows a **final-stat breakdown by source**
+  (Base | Weapon | Forte | Echo | Buff). Without a weapon/base it falls back to relative comparison.
+- **PNG build card export** — export the 5-Echo build (score, set bonuses, damage) as a shareable image.
 - **Export / Import JSON** — back up or move your inventory between devices as a JSON file.
 - **Bilingual Vietnamese / English** — a VI ⇄ EN toggle in the top corner.
 

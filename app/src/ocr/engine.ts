@@ -12,6 +12,16 @@ export interface OcrProgress {
 let workerPromise: Promise<Worker> | null = null
 let currentOnProgress: ((p: OcrProgress) => void) | null = null
 
+/** Hàng đợi job tuần tự: worker + progress callback là state module dùng chung — recognize chạy
+ *  chồng sẽ giẫm callback của nhau; terminate xếp SAU job đang chạy nên không giết worker giữa
+ *  chừng (unmount giữa lúc nhận diện — review 16/07). */
+let jobChain: Promise<unknown> = Promise.resolve()
+function enqueue<T>(job: () => Promise<T>): Promise<T> {
+  const run = jobChain.then(job, job)
+  jobChain = run.then(() => undefined, () => undefined)
+  return run
+}
+
 /** Giới hạn bộ ký tự UI echo (nhãn EN + số + % + dấu câu) — bớt misread ký tự lạ (|, ·, unicode) */
 const CHAR_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,%+-:/() '
 
@@ -43,15 +53,17 @@ async function getWorker(): Promise<Worker> {
 }
 
 /** OCR 1 ảnh (file hoặc canvas đã tiền xử lý) -> text thô. Worker tái sử dụng (khởi tạo lười). */
-export async function recognizeImage(image: File | Blob | HTMLCanvasElement, onProgress?: (p: OcrProgress) => void): Promise<string> {
-  const worker = await getWorker()
-  currentOnProgress = onProgress ?? null
-  try {
-    const { data } = await worker.recognize(image)
-    return data.text ?? ''
-  } finally {
-    currentOnProgress = null
-  }
+export function recognizeImage(image: File | Blob | HTMLCanvasElement, onProgress?: (p: OcrProgress) => void): Promise<string> {
+  return enqueue(async () => {
+    const worker = await getWorker()
+    currentOnProgress = onProgress ?? null
+    try {
+      const { data } = await worker.recognize(image)
+      return data.text ?? ''
+    } finally {
+      currentOnProgress = null
+    }
+  })
 }
 
 export interface OcrWord {
@@ -60,37 +72,42 @@ export interface OcrWord {
 }
 
 /** OCR kèm bbox từng từ (toạ độ pixel của ảnh đưa vào) — dùng định vị icon set cạnh "+25" */
-export async function recognizeImageWithBoxes(
+export function recognizeImageWithBoxes(
   image: File | Blob | HTMLCanvasElement,
   onProgress?: (p: OcrProgress) => void,
 ): Promise<{ text: string; words: OcrWord[] }> {
-  const worker = await getWorker()
-  currentOnProgress = onProgress ?? null
-  try {
-    const { data } = await worker.recognize(image, {}, { text: true, blocks: true })
-    const words: OcrWord[] = []
-    for (const block of data.blocks ?? []) {
-      for (const paragraph of block.paragraphs) {
-        for (const line of paragraph.lines) {
-          for (const w of line.words) words.push({ text: w.text, bbox: w.bbox })
+  return enqueue(async () => {
+    const worker = await getWorker()
+    currentOnProgress = onProgress ?? null
+    try {
+      const { data } = await worker.recognize(image, {}, { text: true, blocks: true })
+      const words: OcrWord[] = []
+      for (const block of data.blocks ?? []) {
+        for (const paragraph of block.paragraphs) {
+          for (const line of paragraph.lines) {
+            for (const w of line.words) words.push({ text: w.text, bbox: w.bbox })
+          }
         }
       }
+      return { text: data.text ?? '', words }
+    } finally {
+      currentOnProgress = null
     }
-    return { text: data.text ?? '', words }
-  } finally {
-    currentOnProgress = null
-  }
+  })
 }
 
-/** Giải phóng worker (gọi khi đóng panel OCR để nhả bộ nhớ, tuỳ chọn) */
-export async function terminateOcrEngine(): Promise<void> {
-  if (!workerPromise) return
-  const p = workerPromise
-  workerPromise = null // reset TRƯỚC await — promise rejected vẫn phải xoá được cache
-  try {
-    const w = await p
-    await w.terminate()
-  } catch {
-    // worker chưa từng khởi tạo thành công — không có gì để terminate
-  }
+/** Giải phóng worker (gọi khi đóng panel OCR để nhả bộ nhớ, tuỳ chọn).
+ *  Xếp hàng sau job đang chạy — không giết worker giữa lúc nhận diện. */
+export function terminateOcrEngine(): Promise<void> {
+  return enqueue(async () => {
+    if (!workerPromise) return
+    const p = workerPromise
+    workerPromise = null // reset TRƯỚC await — promise rejected vẫn phải xoá được cache
+    try {
+      const w = await p
+      await w.terminate()
+    } catch {
+      // worker chưa từng khởi tạo thành công — không có gì để terminate
+    }
+  })
 }

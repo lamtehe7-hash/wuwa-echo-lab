@@ -58,25 +58,34 @@ solver tìm bộ tốt nhất — có xét cả **giá trị main stat thật** 
   **tên Echo, sonata set (từ icon), cost, level, main stat và substat** (snap về mốc roll hợp lệ).
   OCR chạy **ngay trên máy** (tesseract.js, tài nguyên tự chứa — không gọi CDN, không upload ảnh đi
   đâu). Hỗ trợ **dán Ctrl+V** (Win+Shift+S xong dán thẳng) và **kéo-thả** ảnh.
+- **Import từ scanner cộng đồng** — nhận file JSON của các scanner WuWa phổ biến (wuwa-ocr /
+  wuwa.build, WuWa Inventory Kamera) lẫn format của chính app — tự nhận dạng format.
 - **Xếp hạng Echo theo nhân vật** — chấm điểm weighted roll-efficiency theo bộ trọng số substat của
   từng nhân vật/archetype, có xét độ phù hợp main stat (3 mức: đúng ✓ / tạm dùng ～ / sai ✗). Kho có
   **tìm kiếm, lọc** (cost / set / main stat / tư vấn), **sắp xếp** (điểm / RV / level / mới thêm), xem
   dạng **bảng hoặc lưới card** kiểu in-game; bấm điểm để xem **breakdown đóng góp từng substat**.
 - **Tìm bộ 5 Echo tối ưu cho 1 nhân vật** — solver tự sinh layout cost hợp lệ (tổng ≤ 12), tính cả
   set bonus (2/3/5 mảnh, có luật *"trùng tên Echo không đếm 2 lần"*) và chiết khấu ER thừa so với
-  mục tiêu.
+  mục tiêu. Có thể **ép theo 1 sonata set** và xem **gợi ý main echo** theo guide cho từng nhân vật.
+- **🧰 Bàn thử bộ thủ công** — kéo-thả (hoặc bấm) Echo từ kho vào 5 ô để tự ghép/chỉnh bộ theo ý;
+  tool chấm lại điểm + damage ngay sau mỗi thao tác, xuất PNG hoặc đặt làm bộ hiện tại.
 - **Ghi nhớ "bộ hiện tại" + so sánh trước–sau** — đặt bộ đang đeo của từng nhân vật; lần tối ưu sau
   hiển thị **chênh lệch điểm ▲/▼** so với bộ đã ghi nhớ, để biết có nên đổi hay không.
 - **Gán Echo cho cả đội hình** — giải tuần tự theo thứ tự ưu tiên nhân vật, mỗi Echo chỉ 1 người
   dùng (khoá không cho nhân vật sau giành mất).
 - **Quản kho hàng loạt** — khoá 🔒 echo quan trọng (chặn xoá), đánh dấu loại 🗑 (solver bỏ qua), chọn
   nhiều + xoá hàng loạt; mọi thao tác xoá đều **hoàn tác** được qua toast.
+- **Nhiều kho (vault)** — tách kho cho main / alt account, chuyển nhanh trên header; mỗi kho có
+  trọng số override + "bộ hiện tại" riêng.
 - **Tư vấn tune tiếp** — với Echo main stat đúng nhưng substat còn dở, ước lượng kỳ vọng (EV) để
   quyết định có nên đổ tuner tiếp hay bỏ.
 - **Chỉnh trọng số theo ý riêng** — ghi đè bộ trọng số substat / mục tiêu ER cho từng nhân vật (có
   preset role: Crit DPS / Sub-DPS / Buffer / Healer… để áp nhanh), lưu riêng theo trình duyệt.
-- **Đánh giá damage tương đối** — ước lượng chỉ số damage *tương đối* của một bộ (bắt crit dạng tích
-  1 + CR×CD và bracket %DMG đúng công thức WuWa) để so sánh phương án.
+- **Đánh giá damage với chỉ số thật** — khai báo **vũ khí (DB 109 vũ khí)** + **base stat nhân vật**
+  (39 nhân vật, đối chiếu datamine) + buff → mode Damage tối ưu theo crit thật (tích 1 + CR×CD,
+  bracket %DMG đúng công thức WuWa) và bảng **breakdown chỉ số cuối theo nguồn**
+  (Base | Vũ khí | Forte | Echo | Buff). Thiếu vũ khí/base thì tự rơi về so sánh tương đối.
+- **Xuất build card PNG** — xuất bộ 5 (kèm điểm, set bonus, damage) thành 1 ảnh để chia sẻ.
 - **Export / Import JSON** — sao lưu hoặc chuyển kho Echo giữa các thiết bị bằng file JSON.
 - **Song ngữ Việt / English** — nút chuyển VI ⇄ EN ở góc trên.
 

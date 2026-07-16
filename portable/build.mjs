@@ -22,8 +22,11 @@ mkdirSync(build, { recursive: true })
 
 console.log('Đóng gói exe (pkg tải base binary Node lần đầu, có thể hơi lâu)…')
 const exe = join(build, 'WuWaEchoOptimizer.exe')
+// PIN version pkg (review 16/07): npx -y không pin = mỗi lần build kéo bản mới nhất của tool
+// đóng gói bên thứ 3 không lockfile — build không tái lập + rủi ro supply chain. Nâng có chủ ý.
+const PKG_VERSION = '6.21.0'
 // shell:true (cần cho npx.cmd trên Windows) nối arg bằng dấu cách → path có dấu cách phải tự quote
-const r = spawnSync('npx', ['-y', '@yao-pkg/pkg', '.', '--output', `"${exe}"`], {
+const r = spawnSync('npx', ['-y', `@yao-pkg/pkg@${PKG_VERSION}`, '.', '--output', `"${exe}"`], {
   cwd: here, stdio: 'inherit', shell: true,
 })
 if (r.status !== 0) process.exit(r.status ?? 1)

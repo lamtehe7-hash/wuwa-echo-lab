@@ -34,6 +34,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Gate trước deploy (review 16/07): CI từng build+deploy mù, 165+ test chỉ chạy tay local
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
 

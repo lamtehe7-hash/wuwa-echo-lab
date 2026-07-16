@@ -58,7 +58,8 @@ export const WEAPON_PASSIVES: Record<string, WeaponPassive> = {
   },
   'blazing-brilliance': {
     passiveFlat: { atkPct: 12 },
-    buffs: [{ id: 'bb-skill', label: 'Searing Feather (max): +40% Resonance Skill DMG', stats: { skillDmg: 40 }, defaultOn: true }],
+    // 4%/stack × 14 stack = 56 (review 16/07: từng model 40, lệch text)
+    buffs: [{ id: 'bb-skill', label: 'Searing Feather (14 stack ×4%): +56% Resonance Skill DMG', stats: { skillDmg: 56 }, defaultOn: true }],
   },
   'stringmaster': {
     passiveFlat: { elementDmg: 12 }, // "Increases the DMG Bonus by 12%"

@@ -241,18 +241,33 @@ export function solveBest5(
       nameKey: `${e.set}::${e.name?.trim().toLowerCase() || e.id}`,
     })
   }
-  // Cắt top-K theo value, nhưng GIỮ THÊM tối đa 5 ứng viên/preferred set mỗi pool —
-  // để không vuột 5pc chỉ vì vài mảnh set nằm ngoài top-K điểm cá nhân.
+  // Cắt top-K theo value, nhưng GIỮ THÊM ứng viên theo TỪNG set có mặt trong pool — KHÔNG
+  // chỉ preferredSets (review 16/07: bản cũ chỉ cứu preferred → set khác có bonus dương mà
+  // mảnh rank ngoài top-K bị vứt TRƯỚC khi DFS chạy = mất nghiệm tối ưu với kho >10 echo/cost).
+  // Cap = số mảnh tối đa nhóm cost đó có thể dùng trong 1 layout (cost-4 ≤3, cost-3 ≤4,
+  // cost-1 ≤5); set có bonus = 0 với profile này thì khỏi giữ thêm (không thể cải thiện nghiệm).
+  const GROUP_MAX: Record<number, number> = { 1: 5, 3: 4, 4: 3 }
+  const setWorthCache = new Map<string, boolean>()
+  const setWorthExtra = (setId: string): boolean => {
+    let w = setWorthCache.get(setId)
+    if (w === undefined) {
+      const def = SONATA_BY_ID[setId]
+      w = !!def && setTierScore(def, 5, profile, theoMax) > 0
+      setWorthCache.set(setId, w)
+    }
+    return w
+  }
   for (const k of [1, 3, 4]) {
     const arr = pools[k].sort((a, b) => b.value - a.value)
     const kept = new Set(arr.slice(0, TOP_K))
-    for (const setId of profile.preferredSets) {
-      let have = 0
-      for (const c of arr) {
-        if (c.scored.echo.set !== setId || have >= 5) continue
-        kept.add(c)
-        have++
-      }
+    const perSet: Record<string, number> = {}
+    for (const c of arr) {
+      const setId = c.scored.echo.set
+      const cap = profile.preferredSets.includes(setId) ? 5 : setWorthExtra(setId) ? GROUP_MAX[k] : 0
+      const have = perSet[setId] ?? 0
+      if (have >= cap) continue
+      kept.add(c)
+      perSet[setId] = have + 1
     }
     pools[k] = arr.filter((c) => kept.has(c))
   }

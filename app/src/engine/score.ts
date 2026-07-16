@@ -28,8 +28,9 @@ export function theoreticalMax(profile: CharacterProfile): number {
 
 // ---- Quy đổi main stat / set bonus stat về đơn vị "roll chuẩn có trọng số" ----
 
-/** Ref cho stat KHÔNG có substat tương ứng (Element DMG%, Healing Bonus%): 1 "roll chuẩn %" */
-export const REF_PCT_ROLL = 11.6
+/** Ref cho stat KHÔNG có substat tương ứng (Element DMG%, Healing Bonus%): 1 "roll chuẩn %"
+ *  = max roll của substat % 8-mốc (PCT8) — derive từ data thay vì hardcode (review 16/07). */
+export const REF_PCT_ROLL = maxRoll('atkPct')
 
 const DMG_KEY_TO_ELEMENT: Partial<Record<BonusStatKey, Element>> = {
   glacioDmg: 'glacio', fusionDmg: 'fusion', electroDmg: 'electro',
@@ -162,9 +163,13 @@ export function tuneAdvice(echo: Echo, profile: CharacterProfile): TuneAdvice {
   }
 }
 
+/** Main ER max +25 (cost-3) — derive từ MAINSTATS, không hardcode 32.0 (review 16/07:
+ *  bản sao lệch nguồn với mainStatRaw/damage.ts nếu datamine chỉnh số). */
+const ER_MAIN_MAX = MAINSTATS[3].find((d) => d.key === 'energyRegen')?.max ?? 32.0
+
 /** Tổng ER% substat + main stat của 1 echo (cho ngân sách ER của solver) */
 export function echoER(echo: Echo, mainStatValue?: number): number {
   const sub = echo.substats.find((s) => s.stat === 'energyRegen')?.value ?? 0
-  const main = echo.mainStat === 'energyRegen' ? (mainStatValue ?? 32.0) : 0
+  const main = echo.mainStat === 'energyRegen' ? (mainStatValue ?? ER_MAIN_MAX) : 0
   return sub + main
 }

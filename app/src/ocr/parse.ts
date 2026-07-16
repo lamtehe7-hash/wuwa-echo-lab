@@ -1,6 +1,6 @@
 import type { EchoCost, LocMessage, MainStatKey, SubstatKey } from '../types'
 import { ECHOES, type EchoInfo } from '../data/echoes'
-import { MAINSTATS } from '../data/mainstats'
+import { FIXED_SECONDARY, MAINSTATS } from '../data/mainstats'
 import { SONATA_SETS } from '../data/sonata'
 import { SUBSTATS } from '../data/substats'
 
@@ -331,6 +331,26 @@ export function parseEchoText(text: string): EchoDraft {
   const candidates: Candidate[] = []
   let unmatchedNumericLines = 0
 
+  // Dòng stat CỐ ĐỊNH của panel (cost-1: HP, cost-3/4: ATK — flat, KHÔNG phải roll) scale theo
+  // level y hệt main stat: max × (0.2 + 0.032·L). Review 16/07: echo CHƯA max thì giá trị này tụt
+  // xuống VÙNG ROLL SUBSTAT (cost-1 HP L0–3, cost-3 ATK L0–16, cost-4 ATK L0–8) → cutoff
+  // maxRoll×1.2 không bắt được, dòng cố định bị đọc thành substat thật và đè mất sub thật.
+  // Nhận diện bằng GIÁ TRỊ KỲ VỌNG theo level (±8%), tiêu thụ đúng 1 dòng (dòng ĐẦU khớp —
+  // panel đặt nó TRÊN danh sách substat nên dòng khớp đầu tiên chính là nó).
+  const FIXED_FAMILY: Partial<Record<EchoCost, Family>> = { 1: 'hp', 3: 'atk', 4: 'atk' }
+  let fixedConsumed = false
+  const isFixedPanelLine = (family: Family, value: number, isPercent: boolean): boolean => {
+    if (isPercent || fixedConsumed || cost === undefined) return false
+    if (FIXED_FAMILY[cost] !== family) return false
+    const factor = level !== undefined ? 0.2 + 0.032 * Math.min(level, 25) : 1
+    const expected = FIXED_SECONDARY[cost].max * factor
+    if (expected > 0 && Math.abs(value - expected) / expected <= 0.08) {
+      fixedConsumed = true
+      return true
+    }
+    return false
+  }
+
   lines.forEach((line, lineIndex) => {
     const extracted = extractTrailingValue(line)
     if (!extracted) return
@@ -353,6 +373,8 @@ export function parseEchoText(text: string): EchoDraft {
     }
     // AMBIGUOUS_FAMILIES
     if (family === 'hp' || family === 'atk' || family === 'def') {
+      // Dòng cố định panel (theo giá trị kỳ vọng level) → bỏ, KHÔNG cho vào pool substat
+      if (isFixedPanelLine(family, extracted.value, extracted.isPercent)) return
       const pair = FLAT_OR_PCT_KEY[family]!
       const key = extracted.isPercent ? pair.pct : pair.flat
       const maxRoll = SUBSTATS[key].rolls[SUBSTATS[key].rolls.length - 1]

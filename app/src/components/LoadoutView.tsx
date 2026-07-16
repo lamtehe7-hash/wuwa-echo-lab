@@ -115,7 +115,7 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
           type="button"
           className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
           title={t('loadout.exportTip')}
-          onClick={() => void exportLoadoutCard(result, profile)}
+          onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet)}
         >{t('loadout.exportPng')}</button>
         {onPin && (
           <button

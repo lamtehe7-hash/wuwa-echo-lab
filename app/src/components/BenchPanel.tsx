@@ -236,7 +236,7 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
               type="button"
               className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
               title={t('loadout.exportTip')}
-              onClick={() => void exportLoadoutCard(result, profile)}
+              onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet)}
             >{t('loadout.exportPng')}</button>
             <button
               type="button"

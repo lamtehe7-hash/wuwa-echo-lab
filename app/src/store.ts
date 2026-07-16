@@ -17,6 +17,33 @@ interface PersistShape {
   echoes: Echo[]
 }
 
+// ---- Báo lỗi persist ra UI (review 16/07): setItem fail mà chỉ console.error = mất dữ liệu
+// im lặng khi reload (quota đầy / storage bị chặn). App đăng ký listener → toast cảnh báo,
+// báo tối đa 1 lần/phiên để không spam theo mỗi thao tác. ----
+let persistErrorListener: ((storeKey: string) => void) | null = null
+let persistErrorNotified = false
+export function onPersistError(fn: ((storeKey: string) => void) | null): void {
+  persistErrorListener = fn
+}
+function reportPersistError(storeKey: string, err: unknown): void {
+  console.error(`${storeKey} failed:`, err)
+  if (persistErrorNotified) return
+  persistErrorNotified = true
+  persistErrorListener?.(storeKey)
+}
+
+/** Parse JSON localStorage về object thuần; "null"/mảng/scalar hỏng → fallback {} (review 16/07:
+ *  loadOverrides/useEquipped thiếu guard non-object → literal "null" làm crash render mỗi reload). */
+function loadRecord<T>(key: string): Record<string, T> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? '{}')
+    if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, T>
+  } catch {
+    // rơi xuống {}
+  }
+  return {}
+}
+
 export function loadEchoes(vaultId: string): Echo[] {
   try {
     const raw = localStorage.getItem(echoesKeyOf(vaultId))
@@ -32,8 +59,8 @@ export function saveEchoes(vaultId: string, echoes: Echo[]) {
   try {
     localStorage.setItem(echoesKeyOf(vaultId), JSON.stringify({ version: 1, echoes } satisfies PersistShape))
   } catch (err) {
-    // Quota đầy / storage bị chặn: đừng crash app (chỉ mất persist lần này)
-    console.error('saveEchoes failed:', err)
+    // Quota đầy / storage bị chặn: đừng crash app (chỉ mất persist lần này) — nhưng BÁO user
+    reportPersistError('saveEchoes', err)
   }
 }
 
@@ -66,6 +93,30 @@ function loadVaults(): VaultsState {
   } catch {
     // rơi xuống khởi tạo mặc định
   }
+  // Registry hỏng/mất nhưng dữ liệu kho namespaced CÒN trong storage → dựng lại danh sách vault
+  // từ các key hiện có thay vì bỏ rơi (orphan) dữ liệu của các kho khác (review 16/07).
+  const recovered: Vault[] = []
+  try {
+    const prefix = echoesKeyOf('')
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k || !k.startsWith(prefix)) continue
+      const id = k.slice(prefix.length)
+      if (id) recovered.push({ id, name: id === 'main' ? 'Kho chính' : `Kho (${id})` })
+    }
+  } catch {
+    // storage chặn → bỏ qua recovery
+  }
+  if (recovered.length > 0) {
+    recovered.sort((a, b) => (a.id === 'main' ? -1 : b.id === 'main' ? 1 : a.id.localeCompare(b.id)))
+    const state: VaultsState = { vaults: recovered, activeId: recovered[0].id }
+    try {
+      localStorage.setItem(VAULTS_KEY, JSON.stringify(state))
+    } catch {
+      // vẫn chạy in-memory
+    }
+    return state
+  }
   // Lần đầu: tạo vault 'main' + DI TRÚ dữ liệu cũ (chưa namespace) sang nó (không mất kho hiện có).
   const state: VaultsState = { vaults: [{ id: 'main', name: 'Kho chính' }], activeId: 'main' }
   try {
@@ -91,7 +142,7 @@ export function useVaults() {
     try {
       localStorage.setItem(VAULTS_KEY, JSON.stringify(state))
     } catch (err) {
-      console.error('saveVaults failed:', err)
+      reportPersistError('saveVaults', err)
     }
   }, [state])
   const setActiveId = (id: string) => setState((s) => (s.vaults.some((v) => v.id === id) ? { ...s, activeId: id } : s))
@@ -210,11 +261,7 @@ export interface ProfileOverride {
 }
 
 function loadOverrides(vaultId: string): Record<string, ProfileOverride> {
-  try {
-    return JSON.parse(localStorage.getItem(overrideKeyOf(vaultId)) ?? '{}')
-  } catch {
-    return {}
-  }
+  return loadRecord<ProfileOverride>(overrideKeyOf(vaultId))
 }
 
 export function useOverrides(vaultId: string) {
@@ -223,7 +270,7 @@ export function useOverrides(vaultId: string) {
     try {
       localStorage.setItem(overrideKeyOf(vaultId), JSON.stringify(overrides))
     } catch (err) {
-      console.error('saveOverrides failed:', err)
+      reportPersistError('saveOverrides', err)
     }
   }, [overrides, vaultId])
   return { overrides, setOverrides }
@@ -233,18 +280,12 @@ export function useOverrides(vaultId: string) {
 
 /** Hook map charId → danh sách echo id của bộ hiện tại (persist localStorage theo vault) */
 export function useEquipped(vaultId: string) {
-  const [equipped, setEquipped] = useState<Record<string, string[]>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(equippedKeyOf(vaultId)) ?? '{}')
-    } catch {
-      return {}
-    }
-  })
+  const [equipped, setEquipped] = useState<Record<string, string[]>>(() => loadRecord<string[]>(equippedKeyOf(vaultId)))
   useEffect(() => {
     try {
       localStorage.setItem(equippedKeyOf(vaultId), JSON.stringify(equipped))
     } catch (err) {
-      console.error('saveEquipped failed:', err)
+      reportPersistError('saveEquipped', err)
     }
   }, [equipped, vaultId])
   return { equipped, setEquipped }

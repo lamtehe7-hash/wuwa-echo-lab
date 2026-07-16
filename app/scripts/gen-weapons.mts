@@ -50,7 +50,8 @@ for (const tr of table.match(/<tr[\s\S]*?<\/tr>/g) ?? []) {
   const name = strip(cells[0])
   const typeKey = TYPE[strip(cells[1]).toLowerCase()]
   const rarity = Number(strip(cells[2]).replace(/[^0-9]/g, ''))
-  const baseAtk = Number(strip(cells[3]).replace(/[^0-9]/g, ''))
+  // GIỮ dấu chấm thập phân — "412.5" từng bị băm thành 4125 (bug unflickering-valor, review 16/07)
+  const baseAtk = Number(strip(cells[3]).replace(/[^0-9.]/g, ''))
   const subRaw = strip(cells[4]) // "ATK +36.4%" | "Crit Rate +24.3%"
   const subM = subRaw.match(/^(.*?)\s*\+?\s*([\d.]+)\s*%?$/)
   if (!name || !typeKey || !rarity || !baseAtk || !subM) { if (name) unknown.add(`${name}: ${subRaw}`); continue }
@@ -61,9 +62,14 @@ for (const tr of table.match(/<tr[\s\S]*?<\/tr>/g) ?? []) {
 
 rows.sort((a, b) => (b.rarity - a.rarity) || a.name.localeCompare(b.name))
 if (rows.length < 80) throw new Error(`chỉ parse ${rows.length} vũ khí — cấu trúc trang đổi?`)
+// Plausibility guard (review 16/07): baseAtk L90 hợp lệ ~[250, 800], secondary % ~(0, 100].
+// Fail LOUD thay vì ship số rác (vd 4125 do rơi dấu chấm).
+const implausible = rows.filter((r) => r.baseAtk < 250 || r.baseAtk > 800 || r.secondaryValue <= 0 || r.secondaryValue > 100)
+if (implausible.length)
+  throw new Error(`giá trị bất thường (parse hỏng?): ${implausible.map((r) => `${r.name} atk=${r.baseAtk} sec=${r.secondaryValue}`).join(' | ')}`)
 const dupe = rows.map((r) => r.id).filter((id, i, a) => a.indexOf(id) !== i)
 if (dupe.length) console.warn('⚠ id trùng:', [...new Set(dupe)].join(', '))
-if (unknown.size) console.warn('⚠ bỏ qua (substat lạ):', [...unknown].slice(0, 10).join(' | '))
+if (unknown.size) console.warn(`⚠ BỎ ${unknown.size} row (substat lạ/thiếu cột):`, [...unknown].slice(0, 10).join(' | '), unknown.size > 10 ? `… (+${unknown.size - 10})` : '')
 
 const ts = `import type { WeaponSecondaryKey, WeaponType } from '../types'
 

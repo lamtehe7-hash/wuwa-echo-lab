@@ -88,14 +88,26 @@ describe('mergeDrafts: gộp bản đọc nhiều frame về 1 echo', () => {
     expect(merged).toHaveLength(2)
   })
 
-  it('subset 1 dòng + TÊN echo khớp → gộp (cùng echo 1 lần dừng, dưới ngưỡng 3 nhưng tên là bằng chứng)', () => {
-    const one = SUBS5.slice(0, 1) // 1 sub ⊂ SUBS5
+  it('subset 2 dòng + TÊN echo khớp → gộp (dưới ngưỡng 3 nhưng tên + 2 roll trùng là đủ bằng chứng)', () => {
+    const two = SUBS5.slice(0, 2) // 2 sub ⊂ SUBS5
     const merged = mergeDrafts([
       draft({ name: 'Impermanence Heron', substats: SUBS5 }),
-      draft({ name: 'impermanence heron', substats: one }), // tên khớp (không phân biệt hoa/thường)
+      draft({ name: 'impermanence heron', substats: two }), // tên khớp (không phân biệt hoa/thường)
     ])
     expect(merged).toHaveLength(1)
     expect(merged[0].draft.substats).toHaveLength(5)
+  })
+
+  it('subset 1 dòng dù TÊN khớp → KHÔNG gộp (2 bản copy cùng tên khác roll rất dễ trùng 1 dòng — review 16/07)', () => {
+    // Người chơi giữ 2 copy "Impermanence Heron" roll khác nhau; frame copy B chỉ đọc được 1 dòng
+    // trùng ngẫu nhiên với copy A → bug cũ nuốt copy B, mất hẳn 1 echo khi import video.
+    const one = SUBS5.slice(0, 1)
+    const merged = mergeDrafts([
+      draft({ name: 'Impermanence Heron', substats: SUBS5 }),
+      draft({ name: 'Impermanence Heron', substats: one }),
+    ])
+    expect(merged).toHaveLength(2)
+    expect(merged.some((m) => m.draft.substats.length === 1)).toBe(true) // bản 1-sub giữ riêng, không bị nuốt
   })
 
   it('subset 1 dòng nhưng TÊN khác → KHÔNG gộp (giữ ngưỡng an toàn khi thiếu bằng chứng)', () => {

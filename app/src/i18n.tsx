@@ -22,6 +22,8 @@ const DICT: Record<string, Entry> = {
   'toast.imported': { vi: 'Đã nhập {n} echo từ file', en: 'Imported {n} echoes from file' },
   'toast.importedDropped': { vi: 'Đã nhập {n} echo · bỏ {m} mục không hợp lệ', en: 'Imported {n} echoes · skipped {m} invalid entries' },
   'toast.savedBatch': { vi: 'Đã lưu {n} echo vào kho', en: 'Saved {n} echoes to inventory' },
+  'toast.undoExpired': { vi: 'Hoàn tác không còn hiệu lực — kho đã bị thay thế toàn bộ', en: 'Undo no longer valid — inventory was replaced' },
+  'app.persistError': { vi: 'Không lưu được vào bộ nhớ trình duyệt (đầy hoặc bị chặn) — thay đổi sẽ MẤT khi tải lại trang. Hãy Xuất JSON để sao lưu.', en: 'Could not save to browser storage (full or blocked) — changes will be LOST on reload. Use Export JSON to back up.' },
 
   // ── Tabs (điều hướng chính) ──
   'tabs.inventory': { vi: 'Kho Echo', en: 'Inventory' },

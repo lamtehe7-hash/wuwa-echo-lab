@@ -176,8 +176,21 @@ function toEchoShape(r: RawEcho): Record<string, unknown> | null {
   }
 }
 
+/** Trần chống file rác/hostile (review 16/07): text 20MB + 5000 mục — file scanner thật < 1MB,
+ *  kho thật < 3000 echo; không cap thì một file chế tác đủ lớn treo tab khi parse/score. */
+const MAX_TEXT_BYTES = 20 * 1024 * 1024
+const MAX_ENTRIES = 5000
+
 export function parseScannerEchoes(text: string): ScannerImportResult {
   const warnings: string[] = []
+  if (text.length > MAX_TEXT_BYTES) {
+    return { echoes: [], dropped: 0, format: 'unknown', warnings: ['File quá lớn (>20MB) — không phải file scanner hợp lệ'] }
+  }
+  const capArr = <T,>(arr: T[]): T[] => {
+    if (arr.length <= MAX_ENTRIES) return arr
+    warnings.push(`File có ${arr.length} mục — chỉ nhập ${MAX_ENTRIES} mục đầu`)
+    return arr.slice(0, MAX_ENTRIES)
+  }
   let data: unknown
   try {
     data = JSON.parse(text)
@@ -195,7 +208,7 @@ export function parseScannerEchoes(text: string): ScannerImportResult {
   if (Array.isArray(data) && first) {
     if ('mainStatLabel' in first || (Array.isArray(first.substats) && first.substats[0] && 'subStat' in (first.substats[0] as object))) {
       format = 'parsed-echo'
-      raws = fromParsedEcho(data as Record<string, unknown>[], warnings)
+      raws = fromParsedEcho(capArr(data as Record<string, unknown>[]), warnings)
     } else if ('mainStat' in first && Array.isArray(first.substats)) {
       format = 'app' // mảng Echo trần của app
     } else {
@@ -203,7 +216,7 @@ export function parseScannerEchoes(text: string): ScannerImportResult {
       const inner = first ? Object.values(first)[0] : undefined
       if (inner && typeof inner === 'object' && 'stats' in (inner as object)) {
         format = 'kamera'
-        raws = fromKamera(data as Record<string, unknown>[], warnings)
+        raws = fromKamera(capArr(data as Record<string, unknown>[]), warnings)
       }
     }
   } else if (appArr && first && 'mainStat' in first) {
@@ -213,7 +226,7 @@ export function parseScannerEchoes(text: string): ScannerImportResult {
   // Format app: sanitize thẳng (đã đúng shape)
   if (format === 'app') {
     const seen = new Set<string>()
-    const src = appArr as unknown[]
+    const src = capArr(appArr as unknown[])
     const echoes = src.map((r) => sanitizeEcho(r, seen)).filter((e): e is Echo => e !== null)
     return { echoes, dropped: src.length - echoes.length, format, warnings }
   }

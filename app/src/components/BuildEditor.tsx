@@ -71,7 +71,7 @@ export default function BuildEditor({ profile, override, activeSet, onChange }: 
               value={build.manualBase?.[k] ?? ''}
               placeholder={r.scaling === k ? String(Math.round(r.charBaseStat)) : '—'}
               className="rounded border border-slate-700 bg-slate-800 px-1 py-0.5 text-right"
-              onChange={(e) => setManualBase(k, e.target.value === '' ? undefined : Number(e.target.value))}
+              onChange={(e) => setManualBase(k, e.target.value === '' ? undefined : Math.max(0, Number(e.target.value)))}
             />
           </label>
         ))}

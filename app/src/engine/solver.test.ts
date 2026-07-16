@@ -416,3 +416,58 @@ describe('solveBest5 — forcedSet: ép chỉ ghép echo thuộc 1 set', () => {
     expect(r.total).toBeGreaterThan(0)
   })
 })
+
+describe('solveBest5 — REGRESSION pool top-K: không vứt mảnh set NGOÀI preferredSets (review 16/07)', () => {
+  // Bug đã fix: pool mỗi cost cắt top-10 theo value, chỉ "cứu" thêm ứng viên cho preferredSets.
+  // Set khác có bonus dương (vd 2pc Lingering Tunes ATK+10%) mà mảnh rank #11+ bị loại TRƯỚC
+  // khi DFS chạy → mất nghiệm tối ưu thật với kho >10 echo/cost (kho farm endgame là chuyện thường).
+  const noPref: CharacterProfile = {
+    ...CHARACTER_BY_ID['camellya'], id: 'no-pref', preferredSets: [], erTarget: undefined,
+  }
+  // 10 set "solo" khác nhau, mốc thấp nhất ≥ 2 mảnh → 1 mảnh lẻ không có bonus
+  const soloSets = SONATA_SETS.filter((s) => Math.min(...s.pieces) >= 2 && s.id !== 'lingering-tunes')
+    .slice(0, 10).map((s) => s.id)
+
+  it('2 mảnh lingering-tunes rank #11/#12 theo value vẫn phải được xét (khớp brute-force, bộ chứa 2pc LT)', () => {
+    const echoes: Echo[] = [
+      ...soloSets.map((set, i): Echo => ({
+        id: `solo${i}`, name: `Solo${i}`, cost: 1, set, rarity: 5, level: 25,
+        mainStat: 'atkPct', substats: [{ stat: 'critRate', value: 8.1 }],
+      })),
+      ...[0, 1].map((i): Echo => ({
+        id: `lt${i}`, name: `LT${i}`, cost: 1, set: 'lingering-tunes', rarity: 5, level: 25,
+        mainStat: 'atkPct', substats: [{ stat: 'critRate', value: 7.5 }],
+      })),
+    ]
+    const r = solveBest5(echoes, noPref)!
+    expect(r.total).toBeCloseTo(referenceBest(echoes, noPref), 5)
+    expect(r.setCounts['lingering-tunes']).toBe(2)
+  })
+
+  // Fuzz pool > TOP_K, có cả set 3-mảnh-only (dream-of-the-lost) + 1-mảnh (shadow-of-shattered-dreams)
+  // — lấp khoảng trống regression cũ (kho ≤11 echo chưa từng chạm nhánh cắt pool / partition 3pc).
+  const POOL_SETS = ['lingering-tunes', 'dream-of-the-lost', 'shadow-of-shattered-dreams', 'moonlit-clouds']
+  const prefDream: CharacterProfile = {
+    ...CHARACTER_BY_ID['camellya'], id: 'pref-dream', preferredSets: ['dream-of-the-lost'], erTarget: undefined,
+  }
+  for (const seed of [3, 11, 77]) {
+    it(`fuzz pool>TOP_K: 14-18 echo cost-1 (set 3-mảnh + 1-mảnh), seed=${seed}`, () => {
+      const rng = mulberry32(seed)
+      const n = 14 + Math.floor(rng() * 5) // 14..18 — pool cost-1 chắc chắn > TOP_K=10
+      const echoes = Array.from({ length: n }, (_, i): Echo => {
+        const mainStat = pick(rng, MAINSTATS[1]).key
+        const nSub = Math.floor(rng() * 6)
+        const stats: SubstatKey[] = shuffle(rng, [...SUBSTAT_KEYS]).slice(0, nSub)
+        return {
+          id: `p${i}`, name: `P${i}`, cost: 1, set: pick(rng, POOL_SETS), rarity: 5, level: 25,
+          mainStat, substats: stats.map((stat) => ({ stat, value: pick(rng, SUBSTATS[stat].rolls) })),
+        }
+      })
+      for (const p of [noPref, prefDream, CHARACTER_BY_ID['camellya']]) {
+        const r = solveBest5(echoes, p)
+        expect(r).not.toBeNull()
+        expect(r!.total).toBeCloseTo(referenceBest(echoes, p), 5)
+      }
+    })
+  }
+})

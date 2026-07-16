@@ -222,4 +222,37 @@ Crit. Rate 10.5%
     expect(d.substats).toContainEqual({ stat: 'critRate', value: 10.5 }) // substat maxed còn nguyên
     expect(d.mainStat).not.toBe('critRate') // không bị cướp vai main (ở +5 cutoff clamp lên 11.025 > 10.5)
   })
+
+  // ---- Dòng stat CỐ ĐỊNH panel trên echo CHƯA MAX (review 16/07) ----
+  // Dòng cố định (cost-1 HP / cost-3-4 ATK, flat) scale theo level như main stat: max×(0.2+0.032·L).
+  // Ở level thấp nó tụt vào VÙNG ROLL SUBSTAT → cutoff maxRoll×1.2 không bắt được; bug cũ: dòng cố định
+  // thành substat thật, substat thật bị vứt như "duplicate". Nay nhận diện theo GIÁ TRỊ KỲ VỌNG (±8%).
+  it('echo +2 cost-1: dòng cố định "QQ HP 602" bị bỏ, substat thật "+ HP 470" giữ nguyên (không dupSubs)', () => {
+    // 602 = 2280×(0.2+0.032×2). Bug cũ: 602 < 580×1.2=696 → thành sub hp (snap 580), "+ HP 470" bị vứt.
+    const d = parseEchoText(`Zzz Fake Echo +2
+COST 1
+QQ HP 602
++ HP 470
++ Crit. Rate 6.3%`)
+    expect(d.level).toBe(2)
+    expect(d.cost).toBe(1)
+    expect(d.substats).toContainEqual({ stat: 'hp', value: 470 })
+    expect(d.substats.filter((s) => s.stat === 'hp')).toHaveLength(1) // đúng 1 sub hp — dòng cố định không lọt
+    expect(d.warnings.some((w) => w.key === 'ocrParse.dupSubs')).toBe(false)
+  })
+
+  it('echo +10 cost-3: dòng cố định "X ATK 52" bị bỏ (tiêu thụ 1 lần), substat flat ATK thật vẫn giữ', () => {
+    // 52 = 100×(0.2+0.032×10); dòng cố định đứng TRÊN danh sách sub nên bị tiêu thụ trước,
+    // "+ ATK 50" phía dưới vẫn là substat thật.
+    const d = parseEchoText(`Zzz Fake Echo +10
+COST 3
+(3 Havoc DMG Bonus 15.6%
+X ATK 52
++ ATK 50
++ Crit. DMG 17.4%`)
+    expect(d.level).toBe(10)
+    expect(d.cost).toBe(3)
+    expect(d.substats).toContainEqual({ stat: 'atk', value: 50 })
+    expect(d.substats.filter((s) => s.stat === 'atk')).toHaveLength(1)
+  })
 })

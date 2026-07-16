@@ -246,7 +246,9 @@ export function resolveContext(profile: CharacterProfile, ctx?: BuildContext, ac
     : scaling === 'def' ? (manual?.def ?? cb?.baseDef ?? DEFAULT_BASELINE.baseDef)
     : (manual?.atk ?? cb?.baseAtk ?? DEFAULT_BASELINE.baseAtk)
   const weaponBaseAtk = weapon?.baseAtk ?? 0
-  const hasRealBase = !!(weapon || manual?.atk || manual?.hp || manual?.def || cb)
+  // != null thay vì truthy: base nhập tay = 0 vẫn là base thật, không bị vứt (review 16/07)
+  const hasManual = manual != null && (manual.atk != null || manual.hp != null || manual.def != null)
+  const hasRealBase = !!(weapon || hasManual || cb)
   // Nếu KHÔNG có base thật (không DB/không vũ khí/không nhập tay) → giữ giả định cũ để statFactor không tụt.
   const baseStat = hasRealBase
     ? charBaseStat + (scaling === 'atk' ? weaponBaseAtk : 0)

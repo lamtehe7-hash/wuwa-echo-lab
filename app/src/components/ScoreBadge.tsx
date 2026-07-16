@@ -43,10 +43,12 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
     window.addEventListener('pointerdown', onDown)
     window.addEventListener('keydown', onKey)
     window.addEventListener('scroll', close, { capture: true, passive: true })
+    window.addEventListener('resize', close) // toạ độ fixed tính lúc mở — resize làm lệch, đóng luôn (review 16/07)
     return () => {
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('scroll', close, { capture: true })
+      window.removeEventListener('resize', close)
     }
   }, [open])
 

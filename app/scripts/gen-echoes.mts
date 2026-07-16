@@ -50,7 +50,9 @@ for (const tr of html.split('<tr>').slice(1)) {
   if (cells.length < 3) continue
   const c1 = cells[1]
   const nameM = c1.match(/data-src="([^"]+)"[^>]*>([^<]+)<\/a>/)
-  const classM = c1.match(/archives\/45(?:4002|4022|4023|4024)">(\w+)<\/a>/)
+  // Match theo TÊN class (không phải archive ID hardcode — review 16/07: game8 renumber 1 ID là
+  // mất nguyên 1 class mà vẫn qua ngưỡng tổng; guard per-class bên dưới chốt thêm 1 lớp)
+  const classM = c1.match(/archives\/\d+">(Common|Elite|Overlord|Calamity)<\/a>/)
   if (!nameM || !classM) continue
   const cost = CLASS_TO_COST[classM[1]]
   if (!cost) continue
@@ -69,7 +71,17 @@ for (const tr of html.split('<tr>').slice(1)) {
 
 rows.sort((a, b) => a.name.localeCompare(b.name))
 if (rows.length < 100) throw new Error(`chỉ parse được ${rows.length} echo — cấu trúc trang đổi?`)
-if (unknownSets.size) console.warn('⚠ Set không khớp SONATA_SETS:', [...unknownSets].join(' | '))
+// Fail LOUD thay vì ship data thiếu (review 16/07): set lạ = sonata.ts chưa có set mới → bổ sung
+// sonata.ts trước rồi chạy lại; echo 0 set là vô dụng trong app; mất non nửa 1 class = parse hỏng.
+if (unknownSets.size)
+  throw new Error(`set game8 không khớp SONATA_SETS (thêm vào data/sonata.ts trước rồi chạy lại): ${[...unknownSets].join(' | ')}`)
+const noSet = rows.filter((r) => r.sets.length === 0)
+if (noSet.length) throw new Error(`echo không match được set nào: ${noSet.map((r) => r.name).join(', ')}`)
+const CLASS_MIN: Record<string, number> = { Common: 60, Elite: 35, Overlord: 20, Calamity: 4 }
+for (const [cls, min] of Object.entries(CLASS_MIN)) {
+  const n = rows.filter((r) => r.echoClass === cls).length
+  if (n < min) throw new Error(`class ${cls} chỉ parse được ${n} echo (< ${min}) — cấu trúc trang đổi?`)
+}
 
 const ts = `import type { EchoCost } from '../types'
 

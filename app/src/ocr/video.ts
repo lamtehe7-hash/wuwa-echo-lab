@@ -85,11 +85,13 @@ export function mergeDrafts(drafts: EchoDraft[]): MergedDraft[] {
       if (levelConflict) continue
       const mainOk = !d.mainStat || !c.draft.mainStat || d.mainStat === c.draft.mainStat
       const equal = subs.size === c.subs.size && isSubset(subs, c.subs)
-      // Tên echo khớp = tín hiệu CÙNG-INSTANCE mạnh (1 lần dừng trên 1 echo) → cho phép gộp
-      // subset dưới ngưỡng MIN_SUBSET_SUBS (vd bản đọc 5-sub vs bản 1-sub của cùng echo), vẫn
-      // an toàn vì guard level đã chặn khác-level và tên khớp hiếm trùng giữa 2 echo thật cùng level.
+      // Tên echo khớp → hạ ngưỡng subset xuống 2 (thay vì MIN_SUBSET_SUBS=3). KHÔNG hạ xuống 1:
+      // người chơi giữ NHIỀU bản copy cùng tên với roll khác nhau là chuyện thường, mà roll lấy từ
+      // tập mốc rời rạc nhỏ nên 2 bản copy thật rất dễ trùng đúng 1 dòng (stat,value) — bản đọc
+      // thiếu 1 dòng của copy B sẽ bị nuốt vào copy A, MẤT HẲN 1 echo khi import video (review
+      // 16/07). Trùng ≥2 dòng roll mới đủ làm bằng chứng cùng-instance.
       const nameMatch = !!(d.name && c.draft.name && d.name.trim().toLowerCase() === c.draft.name.trim().toLowerCase())
-      const minSub = nameMatch ? 1 : MIN_SUBSET_SUBS
+      const minSub = nameMatch ? 2 : MIN_SUBSET_SUBS
       const asSubset = !equal && subs.size >= minSub && isSubset(subs, c.subs)
       const asSuperset = !equal && c.subs.size >= minSub && isSubset(c.subs, subs)
       if ((equal && (mainOk || subs.size >= MIN_SUBS_MAIN_CONFLICT)) || ((asSubset || asSuperset) && mainOk)) {

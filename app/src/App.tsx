@@ -21,7 +21,7 @@ import { SONATA_BY_ID } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
 import { scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import { useLang, useT } from './i18n'
-import { exportJson, importJson, mergeProfile, newId, useEchoInventory, useEquipped, useOverrides, useVaults } from './store'
+import { exportJson, importJson, mergeProfile, newId, onPersistError, useEchoInventory, useEquipped, useOverrides, useVaults } from './store'
 import ScannerImport from './components/ScannerImport'
 import VaultBar from './components/VaultBar'
 import type { Echo, LoadoutResult } from './types'
@@ -110,6 +110,33 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // Functional update để lưu HÀNG LOẠT từ OCR không mất echo (closure stale khi gọi liên tiếp)
   const addEcho = (echo: Echo) => setEchoes((prev) => [...prev, echo])
 
+  // localStorage.setItem fail (quota/chặn) → cảnh báo user 1 lần (đừng chỉ console.error —
+  // mất sạch thay đổi khi reload mà không ai biết; review 16/07). Gợi ý Xuất JSON để sao lưu.
+  useEffect(() => {
+    onPersistError(() => push(t('app.persistError'), { kind: 'error' }))
+    return () => onPersistError(null)
+  }, [push, t])
+
+  // Hoàn tác xoá an toàn (review 16/07): closure undo cũ không được hồi sinh echo vào kho đã bị
+  // THAY THẾ toàn bộ (import/demo) — generation bump vô hiệu nó; và bỏ qua id đã tồn tại
+  // (xoá → re-import → hoàn tác từng tạo 2 echo trùng id làm hỏng các thao tác per-id sau đó).
+  const inventoryGen = useRef(0)
+  const replaceInventory = (next: Echo[]) => {
+    inventoryGen.current++
+    setEchoes(next)
+  }
+  const restoreEchoes = (removed: Echo[], gen: number) => {
+    if (inventoryGen.current !== gen) {
+      push(t('toast.undoExpired'), { kind: 'error' })
+      return
+    }
+    setEchoes((prev) => {
+      const ids = new Set(prev.map((e) => e.id))
+      const back = removed.filter((e) => !ids.has(e.id))
+      return back.length > 0 ? [...prev, ...back] : prev
+    })
+  }
+
   const resolve = (id: string) => mergeProfile(CHARACTER_BY_ID[id], overrides[id])
   // useMemo giữ identity profile giữa các render — memo chấm điểm trong RankingTable mới có tác dụng
   const profile = useMemo(() => mergeProfile(CHARACTER_BY_ID[charId], overrides[charId]), [charId, overrides])
@@ -168,9 +195,10 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     const removed = echoes.filter((e) => idSet.has(e.id) && !e.lock)
     if (removed.length === 0) return
     const removedIds = new Set(removed.map((e) => e.id))
+    const gen = inventoryGen.current
     setEchoes((prev) => prev.filter((e) => !removedIds.has(e.id)))
     push(t('toast.deletedMany', { n: removed.length }), {
-      action: { label: t('common.undo'), fn: () => setEchoes((prev) => [...prev, ...removed]) },
+      action: { label: t('common.undo'), fn: () => restoreEchoes(removed, gen) },
     })
   }
 
@@ -178,9 +206,10 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const deleteEcho = (id: string) => {
     const echo = echoes.find((e) => e.id === id)
     if (!echo || echo.lock) return // nút xoá đã disable khi khoá — guard thêm cho chắc
+    const gen = inventoryGen.current
     setEchoes((prev) => prev.filter((e) => e.id !== id))
     push(t('toast.deleted', { name: echo.name || SONATA_BY_ID[echo.set]?.name || echo.set }), {
-      action: { label: t('common.undo'), fn: () => setEchoes((prev) => [...prev, echo]) },
+      action: { label: t('common.undo'), fn: () => restoreEchoes([echo], gen) },
     })
   }
 
@@ -196,7 +225,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     <EmptyState
       onOcr={() => setTab('import')}
       onImportJson={() => fileRef.current?.click()}
-      onDemo={() => setEchoes(DEMO_ECHOES)}
+      onDemo={() => replaceInventory(DEMO_ECHOES)}
     />
   )
 
@@ -229,7 +258,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               .then(({ echoes: imported, dropped }) => {
                 // Import THAY THẾ kho — hỏi trước khi ghi đè dữ liệu đang có
                 if (echoes.length > 0 && !window.confirm(t('app.importConfirmReplace', { n: echoes.length }))) return
-                setEchoes(imported)
+                replaceInventory(imported)
                 push(dropped > 0
                   ? t('toast.importedDropped', { n: imported.length, m: dropped })
                   : t('toast.imported', { n: imported.length }))
@@ -433,7 +462,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             <button className="rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800" onClick={() => exportJson(echoes)}>{t('common.exportJson')}</button>
             <button className="rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800" onClick={() => fileRef.current?.click()}>{t('common.importJson')}</button>
             {empty && (
-              <button className="rounded border border-dashed border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800" onClick={() => setEchoes(DEMO_ECHOES)}>{t('empty.demoTitle')}</button>
+              <button className="rounded border border-dashed border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800" onClick={() => replaceInventory(DEMO_ECHOES)}>{t('empty.demoTitle')}</button>
             )}
             <span className="ml-auto text-xs text-slate-500">{invCount}</span>
           </div>
@@ -442,7 +471,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             onImport={(imported, mode) => {
               if (mode === 'replace') {
                 if (echoes.length > 0 && !window.confirm(t('app.importConfirmReplace', { n: echoes.length }))) return
-                setEchoes(imported)
+                replaceInventory(imported)
               } else {
                 // Thêm: regenerate id nếu trùng echo đang có (tránh đè)
                 setEchoes((prev) => {

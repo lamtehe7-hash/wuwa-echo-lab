@@ -5,7 +5,7 @@
 // src/data/iconAssets.ts map URL game8 -> 'icons/<hash>.png'. Icon là ASSET COMMIT vào repo
 // (chạy 1 lần, commit; KHÔNG cho vào prebuild). Chạy lại khi echoes.ts/setIcons.ts đổi URL:
 //   node scripts/vendor-icons.mjs
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { readFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -38,7 +38,8 @@ async function fetchOne(url, attempt = 1) {
   const hash = hashOf(url)
   if (!hash) { failed.push(url + ' (không parse được hash)'); return }
   const dest = join(OUT, hash)
-  if (existsSync(dest)) { skipped++; return }
+  // File đã có nhưng quá nhỏ (0-byte/hỏng từ lần chạy đứt) → tải lại thay vì skip (review 16/07)
+  if (existsSync(dest) && statSync(dest).size >= 200) { skipped++; return }
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://game8.co/' } })
     if (!res.ok) throw new Error('HTTP ' + res.status)

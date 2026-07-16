@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CharacterProfile, Echo, MainStatKey, SubstatKey } from '../types'
-import { PREF_MAIN_BONUS, SET_PREF_BONUS, scoreLoadout, setTierScore, solveBest5 } from './solver'
+import { PREF_MAIN_BONUS, SET_PREF_BONUS, canAnchorMore, scoreLoadout, setTierScore, solveBest5 } from './solver'
 import { echoER, scoreEcho, theoreticalMax } from './score'
 import { loadoutDamageMultiplier, nonEchoER } from './damage'
 import { CHARACTERS, CHARACTER_BY_ID } from '../data/characters'
@@ -180,6 +180,80 @@ describe('solveBest5 vs brute-force — REGRESSION prune bound với set 1-mản
       expect(result!.total).toBeCloseTo(referenceBest(echoes, erBuffer), 5)
     })
   }
+})
+
+// F14 (task 64): brute-force optimum RÀNG BUỘC chứa echo ghim (pinned) — mọi combo phải gồm pinned.
+function referenceBestPinned(echoes: Echo[], profile: CharacterProfile, pinnedId: string): number {
+  const pinned = echoes.find((e) => e.id === pinnedId)!
+  const rest = echoes.filter((e) => e.id !== pinnedId)
+  let best = -Infinity
+  for (let k = 0; k <= 4; k++) {
+    for (const combo of combinations(rest, k)) {
+      const full = [pinned, ...combo]
+      if (full.reduce((s, e) => s + e.cost, 0) > COST_CAP) continue
+      const total = referenceTotal(full, profile)
+      if (total > best) best = total
+    }
+  }
+  return best
+}
+
+describe('solveBest5 — pinned (F14): ép echo ghim + khớp brute-force ràng buộc', () => {
+  const profiles = [CHARACTER_BY_ID['camellya'], CHARACTER_BY_ID['yinlin'], CHARACTER_BY_ID['shorekeeper']]
+
+  for (const seed of [1, 42, 12345, 7, 99]) {
+    it(`pinned 1 echo: bộ CHỨA pinned + total khớp brute-force, seed=${seed}`, () => {
+      const rng = mulberry32(seed)
+      const n = 6 + Math.floor(rng() * 5)
+      const echoes = Array.from({ length: n }, (_, i) => randomEcho(rng, i))
+      for (const profile of profiles) {
+        const pinnedId = pick(rng, echoes).id
+        const result = solveBest5(echoes, profile, undefined, 'score', undefined, [pinnedId])
+        expect(result).not.toBeNull()
+        expect(result!.echoes.some((se) => se.echo.id === pinnedId)).toBe(true)
+        expect(result!.total).toBeCloseTo(referenceBestPinned(echoes, profile, pinnedId), 5)
+        expect(result!.totalCost).toBeLessThanOrEqual(12)
+      }
+    })
+  }
+
+  it('pinned overrides forcedSet: echo ghim khác set vẫn có trong bộ', () => {
+    const cam = CHARACTER_BY_ID['camellya']
+    // ghim 1 echo cost-1 set 'moonlit-clouds' nhưng ép forcedSet 'havoc-eclipse'
+    const pinnedEcho: Echo = { id: 'pin1', name: 'Pin1', cost: 1, set: 'moonlit-clouds', rarity: 5, level: 25, mainStat: 'atkPct', substats: [{ stat: 'critRate', value: 8 }] }
+    const result = solveBest5([...DEMO_ECHOES, pinnedEcho], cam, 'havoc-eclipse', 'score', undefined, ['pin1'])
+    expect(result).not.toBeNull()
+    expect(result!.echoes.some((se) => se.echo.id === 'pin1')).toBe(true)
+  })
+
+  it('pinned rỗng ⇒ Y HỆT không truyền pinned', () => {
+    for (const profile of profiles) {
+      const a = solveBest5(DEMO_ECHOES, profile)
+      const b = solveBest5(DEMO_ECHOES, profile, undefined, 'score', undefined, [])
+      expect(b?.total).toBeCloseTo(a?.total ?? NaN, 6)
+    }
+  })
+})
+
+describe('canAnchorMore (F14): chặn neo bất khả thi', () => {
+  const mk = (id: string, cost: 1 | 3 | 4): Echo => ({ id, name: id, cost, set: 'havoc-eclipse', rarity: 5, level: 25, mainStat: 'critRate', substats: [] })
+  it('ok khi trong giới hạn', () => {
+    expect(canAnchorMore([mk('a', 4), mk('b', 3)], mk('c', 1)).ok).toBe(true)
+    expect(canAnchorMore([], mk('a', 4)).ok).toBe(true)
+  })
+  it('chặn khi > 5 echo (5 cost-1 rồi neo thêm)', () => {
+    const five = [mk('a', 1), mk('b', 1), mk('c', 1), mk('d', 1), mk('e', 1)]
+    expect(canAnchorMore(five, mk('f', 1))).toEqual({ ok: false, reason: 'count' })
+  })
+  it('chặn khi vượt cost cap 12', () => {
+    expect(canAnchorMore([mk('a', 4), mk('b', 4), mk('c', 3)], mk('d', 3))).toEqual({ ok: false, reason: 'cost' }) // 11+3=14
+    expect(canAnchorMore([mk('a', 4), mk('b', 3), mk('c', 3)], mk('d', 3))).toEqual({ ok: false, reason: 'cost' }) // 10+3=13
+  })
+  it('cost = đúng 12 vẫn OK (không >)', () => {
+    expect(canAnchorMore([mk('a', 4), mk('b', 4)], mk('c', 4)).ok).toBe(true) // 8+4=12
+  })
+  // Ghi chú: trần nhóm (ANCHOR_GROUP_MAX) là guard PHÒNG THỦ trùng GROUP_MAX solver — thực tế
+  // luôn bị count/cost chặn trước (cost-4 cap 3 = cost 12; cost-3 cap 4 = cost 12; cost-1 cap 5 = count 5).
 })
 
 describe('solveBest5 — luật trùng tên (nameKey) khi đếm mảnh set', () => {

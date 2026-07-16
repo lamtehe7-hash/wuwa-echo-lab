@@ -229,29 +229,61 @@ export function dominantSet(counts: Record<string, number>): string | undefined 
   return best
 }
 
+// F14 (task 64): trần số echo neo (pinned) theo nhóm cost trong 1 bộ — trùng GROUP_MAX của solver
+// (cost-4 ≤3, cost-3 ≤4, cost-1 ≤5). Dùng ở UI để CHẶN neo tạo tổ hợp bất khả thi ngay từ đầu.
+export const ANCHOR_GROUP_MAX: Record<number, number> = { 1: 5, 3: 4, 4: 3 }
+export interface AnchorCheck { ok: boolean; reason?: 'count' | 'cost' | 'group'; cap?: number }
+
+/** Neo thêm `candidate` vào tập đã neo `pinnedEchoes` có khả thi không (≤5 slot, ≤cost cap, ≤trần nhóm). */
+export function canAnchorMore(pinnedEchoes: Echo[], candidate: Echo): AnchorCheck {
+  if (pinnedEchoes.length + 1 > 5) return { ok: false, reason: 'count' }
+  const cost = pinnedEchoes.reduce((s, e) => s + e.cost, 0) + candidate.cost
+  if (cost > COST_CAP) return { ok: false, reason: 'cost' }
+  const cap = ANCHOR_GROUP_MAX[candidate.cost] ?? 5
+  const sameCost = pinnedEchoes.filter((e) => e.cost === candidate.cost).length + 1
+  if (sameCost > cap) return { ok: false, reason: 'group', cap }
+  return { ok: true }
+}
+
 export function solveBest5(
   echoes: Echo[],
   profile: CharacterProfile,
   forcedSet?: string,
   objective: SolveObjective = 'score',
   ctx?: BuildContext,
+  pinned?: string[],
 ): LoadoutResult | null {
   const src = forcedSet ? echoes.filter((e) => e.set === forcedSet) : echoes
   const theoMax = theoreticalMax(profile)
   const maxSetBonus = maxPossibleSetBonus(profile, theoMax)
   // ER thật (task 55): vũ khí/passive/forte gánh bớt erTarget → echo chỉ cần gánh phần còn lại
   const erExtra = nonEchoER(profile, ctx)
-  // Pool theo cost: điểm = substat + GIÁ TRỊ main stat + ưu tiên main đúng meta, cắt top-K
-  const pools: Record<number, Candidate[]> = { 1: [], 3: [], 4: [] }
-  for (const e of src) {
+
+  const mkCand = (e: Echo): Candidate => {
     const scored = scoreEcho(e, profile)
     const prefs = profile.mainStatPrefs[String(e.cost) as '1' | '3' | '4'] ?? []
-    pools[e.cost]?.push({
+    return {
       scored,
       value: scored.totalScore + (prefs.includes(e.mainStat) ? PREF_MAIN_BONUS : 0),
       er: echoER(e),
       nameKey: `${e.set}::${e.name?.trim().toLowerCase() || e.id}`,
-    })
+    }
+  }
+
+  // F14 (task 64): echo GHIM cho nhân vật này — ép vào bộ VÔ ĐIỀU KIỆN (lấy từ TOÀN kho, kể cả set
+  // khác forcedSet: pin tường minh > ép set). DFS chỉ tối ưu các slot CÒN LẠI. Bộ = pinned + DFS chọn.
+  const pinnedIds = new Set(pinned ?? [])
+  const pinnedCandidates: Candidate[] = pinnedIds.size ? echoes.filter((e) => pinnedIds.has(e.id)).map(mkCand) : []
+  const pinnedByCost: Record<number, number> = {}
+  for (const c of pinnedCandidates) pinnedByCost[c.scored.echo.cost] = (pinnedByCost[c.scored.echo.cost] ?? 0) + 1
+  const pinnedValue = pinnedCandidates.reduce((s, c) => s + c.value, 0)
+
+  // Pool theo cost: điểm = substat + GIÁ TRỊ main stat + ưu tiên main đúng meta, cắt top-K.
+  // LOẠI echo đã ghim khỏi pool (đã ép vào bộ, không để DFS chọn lại → trùng slot).
+  const pools: Record<number, Candidate[]> = { 1: [], 3: [], 4: [] }
+  for (const e of src) {
+    if (pinnedIds.has(e.id)) continue
+    pools[e.cost]?.push(mkCand(e))
   }
   // Cắt top-K theo value, nhưng GIỮ THÊM ứng viên theo TỪNG set có mặt trong pool — KHÔNG
   // chỉ preferredSets (review 16/07: bản cũ chỉ cứu preferred → set khác có bonus dương mà
@@ -302,11 +334,19 @@ export function solveBest5(
   for (const layout of ALL_LAYOUTS) {
     const need: Record<number, number> = {}
     for (const c of layout) need[c] = (need[c] ?? 0) + 1
-    if (Object.entries(need).some(([c, n]) => (pools[Number(c)]?.length ?? 0) < n)) continue
+    // Layout phải có ĐỦ slot cho mọi echo ghim theo cost, KHÔNG thì bỏ layout
+    if (Object.entries(pinnedByCost).some(([c, pn]) => (need[Number(c)] ?? 0) < pn)) continue
+    // Nhu cầu CÒN LẠI (trừ pinned) — pool đã-loại-pinned phải đủ
+    const remainNeed: Record<number, number> = {}
+    for (const [c, nn] of Object.entries(need)) {
+      const r = nn - (pinnedByCost[Number(c)] ?? 0)
+      if (r > 0) remainNeed[Number(c)] = r
+    }
+    if (Object.entries(remainNeed).some(([c, n]) => (pools[Number(c)]?.length ?? 0) < n)) continue
 
     // DFS theo nhóm cost, trong cùng nhóm ép chỉ số tăng dần để tránh trùng hoán vị
-    const groups = Object.entries(need).map(([c, n]) => ({ cost: Number(c), n }))
-    const chosen: Candidate[] = []
+    const groups = Object.entries(remainNeed).map(([c, n]) => ({ cost: Number(c), n }))
+    const chosen: Candidate[] = [...pinnedCandidates] // pinned ở đầu, DFS chỉ push/pop phần bổ sung
 
     const bestRemaining = (gi: number, taken: number): number => {
       // Chặn trên lạc quan: tổng value tốt nhất còn lại + bonus set tối đa
@@ -355,7 +395,7 @@ export function solveBest5(
         chosen.pop()
       }
     }
-    dfs(0, 0, 0, 0)
+    dfs(0, 0, 0, pinnedValue) // sumValue khởi tạo = giá trị pinned → prune bound tự gồm pinned (admissible)
   }
 
   if (topN.length === 0) return null

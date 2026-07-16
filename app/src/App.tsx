@@ -20,7 +20,7 @@ import { DEMO_ECHOES } from './data/demo'
 import { SONATA_BY_ID, SONATA_SETS } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
 import { bestOwners, setBacklog } from './engine/insights'
-import { dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
+import { canAnchorMore, dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import InfoTip from './components/InfoTip'
 import SetFarmPriority from './components/SetFarmPriority'
 import FarmingBacklog from './components/FarmingBacklog'
@@ -29,7 +29,7 @@ import TriagePanel from './components/TriagePanel'
 import PinnedOverview, { type PinnedRow } from './components/PinnedOverview'
 import type { PinnedOwner } from './components/PinnedByBadge'
 import { useLang, useT } from './i18n'
-import { exportJson, importJson, mergeProfile, newId, onPersistError, useEchoInventory, useEquipped, useOverrides, useVaults } from './store'
+import { exportJson, importJson, mergeProfile, newId, onPersistError, useEchoInventory, useEquipped, useOverrides, usePinned, useVaults } from './store'
 import ScannerImport from './components/ScannerImport'
 import VaultBar from './components/VaultBar'
 import type { Echo, LoadoutResult } from './types'
@@ -83,6 +83,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const { echoes, setEchoes } = useEchoInventory(vaultId)
   const { overrides, setOverrides } = useOverrides(vaultId)
   const { equipped, setEquipped } = useEquipped(vaultId)
+  const { pinned, setPinned } = usePinned(vaultId) // F14: echo ghim per-char (ép vào bộ solve)
   const initial = useRef(parseHash()).current
   const [tab, setTab] = useState<Tab>(initial.tab)
   const [charId, setCharId] = useState(
@@ -244,10 +245,40 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const activeSet = (solved && !stale && loadout ? dominantSet(loadout.setCounts) : undefined) ?? assumedSet
 
   const solve = () => {
-    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective, buildCtx))
+    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective, buildCtx, pinned[charId]))
     setSolved(true)
     setStale(false)
     setSolveTick((n) => n + 1) // báo hiệu MainEchoHint thu gọn sau mỗi lần "Tìm bộ 5 tối ưu"
+  }
+
+  // F14: echo NEO cho nhân vật đang chọn (ép vào bộ solve lần sau). Neo/bỏ neo → kết quả cũ (Giải lại).
+  const echoById = useMemo(() => new Map(echoes.map((e) => [e.id, e])), [echoes])
+  const anchoredIds = useMemo(() => new Set(pinned[charId] ?? []), [pinned, charId])
+  const anchoredEchoes = useMemo(
+    () => [...anchoredIds].map((id) => echoById.get(id)).filter((e): e is Echo => !!e),
+    [anchoredIds, echoById],
+  )
+  const anchoredCost = anchoredEchoes.reduce((s, e) => s + e.cost, 0)
+  const toggleAnchor = (echoId: string) => {
+    setPinned((prev) => {
+      const cur = prev[charId] ?? []
+      const next = cur.includes(echoId) ? cur.filter((id) => id !== echoId) : [...cur, echoId]
+      return { ...prev, [charId]: next }
+    })
+    if (solved) setStale(true)
+  }
+  const clearAnchors = () => {
+    setPinned((prev) => ({ ...prev, [charId]: [] }))
+    if (solved) setStale(true)
+  }
+  // Lý do (đã dịch) không cho neo thêm echo này — null = cho neo (dùng chặn nút ⚓ ở LoadoutView/Bench)
+  const anchorBlock = (echo: Echo): string | null => {
+    if (anchoredIds.has(echo.id)) return null // đã neo → luôn cho bỏ neo
+    const chk = canAnchorMore(anchoredEchoes, echo)
+    if (chk.ok) return null
+    if (chk.reason === 'count') return t('anchor.capCount')
+    if (chk.reason === 'cost') return t('anchor.capCost')
+    return t('anchor.capGroup', { cap: chk.cap ?? 0, c: echo.cost })
   }
 
   // Mở/đóng panel công cụ (U1: bấm segment đang mở = đóng). Bench prefill 1 LẦN khi MỞ + ô còn
@@ -541,6 +572,14 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             >{t('app.findBest5')}</button>
           </div>
 
+          {/* F14: dòng tóm tắt echo đã neo (DƯỚI hàng CTA, không chung hàng vì U8 đã chật) */}
+          {anchoredIds.size > 0 && (
+            <p className="text-xs text-amber-400">
+              ⚓ {t('anchor.summary', { n: anchoredIds.size, cost: anchoredCost })}
+              <button className="ml-2 text-slate-500 underline hover:text-rose-400" onClick={clearAnchors}>{t('anchor.clearAll')}</button>
+            </p>
+          )}
+
           <MainEchoHint charId={charId} ownedNames={ownedEchoNames} hasSelectedSet={!!forcedSet} solveTick={solveTick} />
 
           <SubstatLegend />
@@ -579,6 +618,9 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               onChange={setBenchSlots}
               ctx={buildCtx}
               pinnedBy={pinnedBy}
+              anchoredIds={anchoredIds}
+              anchorBlock={anchorBlock}
+              onToggleAnchor={toggleAnchor}
               compareTotal={equippedInfo?.result?.total ?? null}
               onPin={(ids) => {
                 setEquipped((prev) => ({ ...prev, [charId]: ids }))
@@ -613,16 +655,24 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
 
           {solved && (
             <Stale stale={stale} onResolve={solve}>
-              <LoadoutView
-                result={loadout}
-                profile={profile}
-                ctx={buildCtx}
-                compareTotal={equippedInfo?.result?.total ?? null}
-                onPin={loadout ? () => {
-                  setEquipped((prev) => ({ ...prev, [charId]: loadout.echoes.map((s) => s.echo.id) }))
-                  push(t('toast.pinned', { name: profile.name }))
-                } : undefined}
-              />
+              {/* F14 lưới an toàn: solve trả null KHI có echo neo = tổ hợp neo bất khả thi (không phải kho thiếu) */}
+              {loadout === null && anchoredIds.size > 0 ? (
+                <p className="p-3 text-sm text-amber-400">⚓ {t('anchor.infeasible')}</p>
+              ) : (
+                <LoadoutView
+                  result={loadout}
+                  profile={profile}
+                  ctx={buildCtx}
+                  compareTotal={equippedInfo?.result?.total ?? null}
+                  anchoredIds={anchoredIds}
+                  anchorBlock={anchorBlock}
+                  onToggleAnchor={toggleAnchor}
+                  onPin={loadout ? () => {
+                    setEquipped((prev) => ({ ...prev, [charId]: loadout.echoes.map((s) => s.echo.id) }))
+                    push(t('toast.pinned', { name: profile.name }))
+                  } : undefined}
+                />
+              )}
             </Stale>
           )}
 
@@ -641,7 +691,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
       {/* Giữ mounted (chỉ ẩn CSS): RosterPanel giữ danh sách đội + kết quả trong state cục bộ —
           unmount khi chuyển tab sẽ mất sạch. (OcrImport thì NGƯỢC LẠI: cố ý unmount để nhả worker WASM.) */}
       <div className={tab === 'roster' && !empty ? '' : 'hidden'}>
-        <RosterPanel echoes={usableEchoes} overrides={overrides} resolve={resolve} />
+        <RosterPanel echoes={usableEchoes} overrides={overrides} resolve={resolve} pinned={pinned} />
       </div>
 
       {tab === 'import' && (

@@ -72,6 +72,29 @@ describe('solveRoster — kho cạn', () => {
   })
 })
 
+describe('solveRoster — pinned (F14): reserve echo cho người ghim', () => {
+  const scarce: Echo = {
+    id: 'scarce', name: 'Scarce', cost: 4, set: 'havoc-eclipse', rarity: 5, level: 25,
+    mainStat: 'critRate', substats: [{ stat: 'critDmg', value: 21.0 }],
+  }
+
+  it('echo ghim cho người SAU (roccia) KHÔNG bị người trước (camellya) cướp', () => {
+    // không pin: người đứng trước lấy
+    const noPin = solveRoster([scarce], [camellya, roccia])
+    expect(noPin[0].result?.echoes[0]?.echo.id).toBe('scarce')
+    expect(noPin[1].result).toBeNull()
+    // pin cho roccia (đứng sau) → camellya bị reserve mất, roccia nhận
+    const pinned = solveRoster([scarce], [camellya, roccia], undefined, { roccia: ['scarce'] })
+    expect(pinned[0].result).toBeNull()
+    expect(pinned[1].result?.echoes[0]?.echo.id).toBe('scarce')
+  })
+
+  it('echo ghim cho CHÍNH người đang giải được ép vào bộ', () => {
+    const pinned = solveRoster([scarce], [camellya, roccia], undefined, { camellya: ['scarce'] })
+    expect(pinned[0].result?.echoes.some((s) => s.echo.id === 'scarce')).toBe(true)
+  })
+})
+
 describe('solveRoster — forcedSets: mỗi nhân vật ép set riêng', () => {
   const mk = (id: string, set: string, cost: 1 | 3 | 4): Echo => ({
     id, name: id, cost, set, rarity: 5, level: 25, mainStat: 'critRate',

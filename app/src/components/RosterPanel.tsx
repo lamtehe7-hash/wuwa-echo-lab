@@ -18,9 +18,11 @@ interface Props {
   overrides: Record<string, ProfileOverride>
   /** Trả về profile đã merge override */
   resolve: (id: string) => CharacterProfile
+  /** F14: echo ghim theo charId — solveRoster ép vào bộ + reserve khỏi người khác */
+  pinned?: Record<string, string[]>
 }
 
-export default function RosterPanel({ echoes, overrides, resolve }: Props) {
+export default function RosterPanel({ echoes, overrides, resolve, pinned }: Props) {
   const t = useT()
   const [ids, setIds] = useState<string[]>([])
   const [forced, setForced] = useState<Record<string, string>>({}) // charId → set id ép (rỗng = tự động)
@@ -32,11 +34,11 @@ export default function RosterPanel({ echoes, overrides, resolve }: Props) {
   // state cục bộ khác của panel (ids/results/forced đều không lưu) + tránh e2e phụ thuộc browser cũ.
   const [openMap, setOpenMap] = useState<Record<string, boolean>>({})
 
-  // Kho echo đổi HOẶC user chỉnh trọng số/erTarget → kết quả gán đội cũ: giữ hiển thị + banner giải lại
-  useEffect(() => setStale(true), [echoes, overrides])
+  // Kho echo đổi HOẶC user chỉnh trọng số/erTarget/ghim → kết quả gán đội cũ: giữ hiển thị + banner giải lại
+  useEffect(() => setStale(true), [echoes, overrides, pinned])
 
   const assign = () => {
-    setResults(solveRoster(echoes, ids.map(resolve), forced))
+    setResults(solveRoster(echoes, ids.map(resolve), forced, pinned))
     setStale(false)
   }
 

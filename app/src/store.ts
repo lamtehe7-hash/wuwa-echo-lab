@@ -7,6 +7,7 @@ import { MAX_SUBSTATS, SUBSTATS } from './data/substats'
 const echoesKeyOf = (v: string) => `wuwa-echo-optimizer:v1:${v}`
 const overrideKeyOf = (v: string) => `wuwa-echo-optimizer:overrides:v1:${v}`
 const equippedKeyOf = (v: string) => `wuwa-echo-optimizer:equipped:v1:${v}`
+const pinnedKeyOf = (v: string) => `wuwa-echo-optimizer:pinned:v1:${v}`
 // Key CŨ (chưa namespace) — di trú sang vault mặc định lần đầu chạy bản multi-vault.
 const OLD_ECHOES_KEY = 'wuwa-echo-optimizer:v1'
 const OLD_OVERRIDE_KEY = 'wuwa-echo-optimizer:overrides:v1'
@@ -160,6 +161,7 @@ export function useVaults() {
         localStorage.removeItem(echoesKeyOf(id))
         localStorage.removeItem(overrideKeyOf(id))
         localStorage.removeItem(equippedKeyOf(id))
+        localStorage.removeItem(pinnedKeyOf(id))
       } catch {
         // bỏ qua
       }
@@ -289,6 +291,21 @@ export function useEquipped(vaultId: string) {
     }
   }, [equipped, vaultId])
   return { equipped, setEquipped }
+}
+
+// ---- Echo GHIM theo nhân vật (F14, task 64): ép vào bộ solve — persist theo vault ----
+
+/** Hook map charId → danh sách echo id GHIM (luôn có trong bộ solve của nhân vật đó) */
+export function usePinned(vaultId: string) {
+  const [pinned, setPinned] = useState<Record<string, string[]>>(() => loadRecord<string[]>(pinnedKeyOf(vaultId)))
+  useEffect(() => {
+    try {
+      localStorage.setItem(pinnedKeyOf(vaultId), JSON.stringify(pinned))
+    } catch (err) {
+      reportPersistError('savePinned', err)
+    }
+  }, [pinned, vaultId])
+  return { pinned, setPinned }
 }
 
 /** Preset + override → profile dùng thực tế (erTarget null = đã xoá gate, KHÔNG rơi về preset) */

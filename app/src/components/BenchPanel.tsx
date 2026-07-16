@@ -6,6 +6,7 @@ import { loadoutDamage } from '../engine/damage'
 import { dominantSet, scoreLoadout, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useT, useTMessage } from '../i18n'
+import AnchorToggle from './AnchorToggle'
 import EchoCard from './EchoCard'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import StatBreakdown from './StatBreakdown'
@@ -32,9 +33,13 @@ interface Props {
   onPin: (ids: string[]) => void
   /** U7 (task 60): echo id → nhân vật đang ghim echo đó (badge "Đang dùng bởi X" ở kho) */
   pinnedBy?: Map<string, PinnedOwner[]>
+  /** F14: echo đã neo (⚓) cho nhân vật này + lý do chặn + toggle — nút ⚓ ở góc card kho */
+  anchoredIds?: Set<string>
+  anchorBlock?: (echo: Echo) => string | null
+  onToggleAnchor?: (id: string) => void
 }
 
-export default function BenchPanel({ echoes, profile, slots, onChange, ctx, compareTotal, onPin, pinnedBy }: Props) {
+export default function BenchPanel({ echoes, profile, slots, onChange, ctx, compareTotal, onPin, pinnedBy, anchoredIds, anchorBlock, onToggleAnchor }: Props) {
   const t = useT()
   const tm = useTMessage()
   const [hover, setHover] = useState<number | null>(null)
@@ -327,26 +332,37 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
           ) : (
             <div className="grid max-h-96 gap-2 overflow-y-auto p-0.5 sm:grid-cols-2 md:grid-cols-3 lg:max-h-none lg:grid-cols-2 lg:overflow-visible">
               {stash.map((e) => (
-                <button
-                  key={e.id}
-                  type="button"
-                  draggable
-                  // Kéo chuột = luồng desktop cũ; xoá chọn để 2 cơ chế không chồng trạng thái
-                  onDragStart={(ev) => { ev.dataTransfer.setData('text/plain', e.id); setSelectedId(null) }}
-                  onClick={() => setSelectedId((cur) => (cur === e.id ? null : e.id))}
-                  title={selectedId === e.id ? t('bench.deselectTip', { name: nameOf(e) }) : t('bench.addTip', { name: nameOf(e) })}
-                  aria-pressed={selectedId === e.id}
-                  className={`block cursor-grab rounded-lg text-left transition-opacity hover:opacity-80 active:cursor-grabbing ${
-                    selectedId === e.id ? 'ring-2 ring-sky-400' : ''
-                  }`}
-                >
-                  <EchoCard
-                    echo={e}
-                    compact
-                    profile={profile}
-                    footer={<PinnedByBadge owners={(pinnedBy?.get(e.id) ?? []).filter((o) => o.id !== profile.id)} variant="chip" />}
-                  />
-                </button>
+                <div key={e.id} className="relative">
+                  <button
+                    type="button"
+                    draggable
+                    // Kéo chuột = luồng desktop cũ; xoá chọn để 2 cơ chế không chồng trạng thái
+                    onDragStart={(ev) => { ev.dataTransfer.setData('text/plain', e.id); setSelectedId(null) }}
+                    onClick={() => setSelectedId((cur) => (cur === e.id ? null : e.id))}
+                    title={selectedId === e.id ? t('bench.deselectTip', { name: nameOf(e) }) : t('bench.addTip', { name: nameOf(e) })}
+                    aria-pressed={selectedId === e.id}
+                    className={`block w-full cursor-grab rounded-lg text-left transition-opacity hover:opacity-80 active:cursor-grabbing ${
+                      selectedId === e.id ? 'ring-2 ring-sky-400' : ''
+                    }`}
+                  >
+                    <EchoCard
+                      echo={e}
+                      compact
+                      profile={profile}
+                      footer={<PinnedByBadge owners={(pinnedBy?.get(e.id) ?? []).filter((o) => o.id !== profile.id)} variant="chip" />}
+                    />
+                  </button>
+                  {/* ⚓ neo — SIBLING của nút select (không lồng button trong button); absolute góc phải trên */}
+                  {onToggleAnchor && (
+                    <span className="absolute right-1 top-1 rounded bg-slate-900/80 px-1">
+                      <AnchorToggle
+                        anchored={anchoredIds?.has(e.id) ?? false}
+                        blockReason={anchorBlock?.(e)}
+                        onToggle={() => onToggleAnchor(e.id)}
+                      />
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
           )}

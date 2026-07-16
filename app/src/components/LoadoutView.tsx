@@ -1,16 +1,17 @@
-import type { BuildContext, CharacterProfile, LoadoutResult } from '../types'
+import type { BuildContext, CharacterProfile, Echo, LoadoutResult } from '../types'
 import { mainEchoesFor } from '../data/mainEchoes'
 import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
 import { dominantSet, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useLang, useT, useTMessage } from '../i18n'
+import AnchorToggle from './AnchorToggle'
 import EchoCard from './EchoCard'
 import StatBreakdown from './StatBreakdown'
 
 // Hiển thị bộ 5 tối ưu do solver trả về
 
-export default function LoadoutView({ result, profile, compareTotal = null, onPin, ctx }: {
+export default function LoadoutView({ result, profile, compareTotal = null, onPin, ctx, anchoredIds, anchorBlock, onToggleAnchor }: {
   result: LoadoutResult | null
   profile: CharacterProfile
   /** Điểm của "bộ hiện tại" đã ghi nhớ — hiện delta ▲/▼ cạnh tổng điểm (C1, pattern GO) */
@@ -19,6 +20,10 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
   onPin?: () => void
   /** Build context (vũ khí+base+buff) → damage + breakdown chỉ số thật */
   ctx?: BuildContext
+  /** F14: echo đã neo (⚓) + lý do chặn neo + toggle — hiện nút ⚓ trên mỗi card */
+  anchoredIds?: Set<string>
+  anchorBlock?: (echo: Echo) => string | null
+  onToggleAnchor?: (id: string) => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -93,10 +98,19 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
             compact
             profile={profile}
             footer={
-              <span
-                className={`rounded px-1 py-0.5 font-mono text-[10px] font-semibold ${s.mainStatFit ? 'bg-emerald-900/60 text-emerald-300' : 'bg-rose-950/60 text-rose-300'}`}
-                title={`substat ${s.score.toFixed(1)} + main ${s.mainScore.toFixed(1)}`}
-              >{s.totalScore.toFixed(1)}</span>
+              <>
+                <span
+                  className={`rounded px-1 py-0.5 font-mono text-[10px] font-semibold ${s.mainStatFit ? 'bg-emerald-900/60 text-emerald-300' : 'bg-rose-950/60 text-rose-300'}`}
+                  title={`substat ${s.score.toFixed(1)} + main ${s.mainScore.toFixed(1)}`}
+                >{s.totalScore.toFixed(1)}</span>
+                {onToggleAnchor && (
+                  <AnchorToggle
+                    anchored={anchoredIds?.has(s.echo.id) ?? false}
+                    blockReason={anchorBlock?.(s.echo)}
+                    onToggle={() => onToggleAnchor(s.echo.id)}
+                  />
+                )}
+              </>
             }
           />
         ))}

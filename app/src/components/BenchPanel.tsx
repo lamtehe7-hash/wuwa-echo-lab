@@ -109,7 +109,9 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
 
   return (
     <div className="space-y-3 rounded-lg border border-sky-900/50 bg-sky-950/20 p-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      {/* min-h-7 = line-height của span điểm text-lg — giữ hàng header không cao lên khi điểm
+          xuất hiện (mọi thứ dưới nó, gồm slot + kho, phải đứng yên giữa các lần thả) */}
+      <div className="flex min-h-7 flex-wrap items-baseline justify-between gap-2">
         <div className="text-sm font-semibold text-sky-300">🧰 {t('bench.title')}</div>
         {result && (
           <div className="flex items-baseline gap-2">
@@ -146,154 +148,169 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
         <p className="text-xs text-slate-500">{t('bench.hint')}</p>
       )}
 
-      {setBd.length > 0 && (
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500" title={t('loadout.setBonusTip')}>
-          {setBd.map((e) => (
-            <span key={e.setId}>
-              {SONATA_BY_ID[e.setId]?.name ?? e.setId} ×{e.n}: <span className="font-mono text-slate-400">+{e.statScore.toFixed(1)}</span>
-              {e.prefBonus > 0 && <span className="text-amber-400"> ⭐+{e.prefBonus}</span>}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Cảnh báo MỀM (không chặn): tổng cost > 12, ô main không phải cost-4, + note engine */}
-      {overCost && <p className="text-xs text-amber-400">⚠ {t('bench.costWarn', { c: totalCost })}</p>}
-      {mainEcho && mainEcho.cost !== 4 && <p className="text-xs text-amber-400">⚠ {t('bench.mainCostWarn', { c: mainEcho.cost })}</p>}
-      {result?.note.map((n, i) => <p key={i} className="text-xs text-amber-400">⚠ {tm(n)}</p>)}
-
-      {/* 5 ô slot (ô 0 = main, badge 👑) — drop target + hành động */}
-      <div className="grid items-start gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-        {resolved.map((e, i) => {
-          const isMain = i === 0
-          return (
-            <div
-              key={i}
-              className={`relative rounded-lg ${hover === i ? 'ring-2 ring-emerald-400' : ''}`}
-              onDragOver={(ev) => { ev.preventDefault(); if (hover !== i) setHover(i) }}
-              onDragLeave={() => setHover((h) => (h === i ? null : h))}
-              onDrop={(ev) => {
-                ev.preventDefault()
-                setHover(null)
-                const id = ev.dataTransfer.getData('text/plain')
-                if (id) place(id, i)
-              }}
-            >
-              {isMain && (
-                <span
-                  className="absolute -left-2 -top-2 z-10 flex items-center gap-0.5 rounded-full border border-amber-500/60 bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300 shadow"
-                  title={t('bench.mainTip')}
-                >
-                  👑 {t('bench.mainBadge')}
-                </span>
-              )}
-              {e ? (
-                <div>
-                  <EchoCard echo={e} compact profile={profile} />
-                  <div className="mt-0.5 flex items-center justify-between px-0.5 text-xs">
-                    {!isMain ? (
-                      <button className="text-slate-500 hover:text-amber-300" title={t('bench.mainTip')} onClick={() => setAsMain(i)}>
-                        👑 {t('bench.setMain')}
-                      </button>
-                    ) : (
-                      <span />
-                    )}
-                    <button
-                      className="text-slate-600 hover:text-rose-400"
-                      title={t('bench.remove')}
-                      aria-label={t('bench.remove')}
-                      onClick={() => clearSlot(i)}
-                    >✕</button>
-                  </div>
-                </div>
-              ) : (
+      {/* Tách 2 cột ở lg+ (fix kho bị đẩy tụt mỗi lần thả echo): trái = slot + mọi block chiều cao
+          biến thiên (cảnh báo/set-bonus/breakdown/nút — nằm HẾT dưới slot-grid), phải = kho sticky
+          rail 340px (khớp rail tab Kho). Nguồn kéo lẫn đích thả đứng yên giữa các lần thả;
+          phía trên grid này chỉ còn header + dòng cost/hint (luôn 1 dòng). <lg xếp dọc như cũ. */}
+      <div className="grid gap-3 lg:grid-cols-[1fr_340px] lg:items-start">
+        <div className="min-w-0 space-y-3">
+          {/* 5 ô slot (ô 0 = main, badge 👑) — drop target + hành động.
+              Không lên 5 cột: max-w-6xl trừ rail 340px chỉ còn ~146px/thẻ nếu chia 5 */}
+          <div className="grid items-start gap-2 sm:grid-cols-2 md:grid-cols-3">
+            {resolved.map((e, i) => {
+              const isMain = i === 0
+              return (
                 <div
-                  className={`flex min-h-[128px] items-center justify-center rounded-lg border-2 border-dashed p-2 text-center text-xs ${
-                    isMain ? 'border-amber-700/50 text-amber-500/80' : 'border-slate-700 text-slate-500'
-                  }`}
+                  key={i}
+                  className={`relative rounded-lg ${hover === i ? 'ring-2 ring-emerald-400' : ''}`}
+                  onDragOver={(ev) => { ev.preventDefault(); if (hover !== i) setHover(i) }}
+                  onDragLeave={() => setHover((h) => (h === i ? null : h))}
+                  onDrop={(ev) => {
+                    ev.preventDefault()
+                    setHover(null)
+                    const id = ev.dataTransfer.getData('text/plain')
+                    if (id) place(id, i)
+                  }}
                 >
-                  {isMain ? t('bench.emptyMain') : t('bench.emptySlot')}
+                  {isMain && (
+                    <span
+                      className="absolute -left-2 -top-2 z-10 flex items-center gap-0.5 rounded-full border border-amber-500/60 bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300 shadow"
+                      title={t('bench.mainTip')}
+                    >
+                      👑 {t('bench.mainBadge')}
+                    </span>
+                  )}
+                  {e ? (
+                    <div>
+                      <EchoCard echo={e} compact profile={profile} />
+                      <div className="mt-0.5 flex items-center justify-between px-0.5 text-xs">
+                        {!isMain ? (
+                          <button className="text-slate-500 hover:text-amber-300" title={t('bench.mainTip')} onClick={() => setAsMain(i)}>
+                            👑 {t('bench.setMain')}
+                          </button>
+                        ) : (
+                          <span />
+                        )}
+                        <button
+                          className="text-slate-600 hover:text-rose-400"
+                          title={t('bench.remove')}
+                          aria-label={t('bench.remove')}
+                          onClick={() => clearSlot(i)}
+                        >✕</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={`flex min-h-[128px] items-center justify-center rounded-lg border-2 border-dashed p-2 text-center text-xs ${
+                        isMain ? 'border-amber-700/50 text-amber-500/80' : 'border-slate-700 text-slate-500'
+                      }`}
+                    >
+                      {isMain ? t('bench.emptyMain') : t('bench.emptySlot')}
+                    </div>
+                  )}
                 </div>
-              )}
+              )
+            })}
+          </div>
+
+          {/* Cảnh báo MỀM (không chặn): tổng cost > 12, ô main không phải cost-4, + note engine —
+              đặt DƯỚI slot-grid để đích thả không xô khi cảnh báo xuất hiện/biến mất */}
+          {overCost && <p className="text-xs text-amber-400">⚠ {t('bench.costWarn', { c: totalCost })}</p>}
+          {mainEcho && mainEcho.cost !== 4 && <p className="text-xs text-amber-400">⚠ {t('bench.mainCostWarn', { c: mainEcho.cost })}</p>}
+          {result?.note.map((n, i) => <p key={i} className="text-xs text-amber-400">⚠ {tm(n)}</p>)}
+
+          {setBd.length > 0 && (
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500" title={t('loadout.setBonusTip')}>
+              {setBd.map((e) => (
+                <span key={e.setId}>
+                  {SONATA_BY_ID[e.setId]?.name ?? e.setId} ×{e.n}: <span className="font-mono text-slate-400">+{e.statScore.toFixed(1)}</span>
+                  {e.prefBonus > 0 && <span className="text-amber-400"> ⭐+{e.prefBonus}</span>}
+                </span>
+              ))}
             </div>
-          )
-        })}
-      </div>
+          )}
 
-      {result && <StatBreakdown echoes={filled} profile={profile} ctx={ctx} activeSet={activeSet} defaultOpen={false} />}
+          {result && <StatBreakdown echoes={filled} profile={profile} ctx={ctx} activeSet={activeSet} defaultOpen={false} />}
 
-      <div className="flex flex-wrap gap-2">
-        {result && (
-          <>
-            <button
-              type="button"
-              className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
-              title={t('loadout.exportTip')}
-              onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet)}
-            >{t('loadout.exportPng')}</button>
-            <button
-              type="button"
-              className="rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
-              onClick={() => onPin(filled.map((x) => x.id))}
-            >{t('equip.pin')}</button>
-          </>
-        )}
-        {slots.some((s) => s) && (
-          <button
-            type="button"
-            className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
-            onClick={() => onChange([...EMPTY])}
-          >{t('bench.clear')}</button>
-        )}
-      </div>
-
-      {/* Kho echo có filter — card là <button draggable> (kéo desktop / bấm touch+bàn phím) */}
-      <div className="space-y-1.5 rounded-lg border border-slate-800 bg-slate-900/40 p-2">
-        <div className="text-xs font-semibold text-slate-300">{t('bench.stashTitle')}</div>
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('inv.search')}
-            aria-label={t('inv.search')}
-            className="min-w-36 flex-1 rounded border border-slate-700 bg-slate-800 px-2 py-1"
-          />
-          <select className={selCls} value={setF} onChange={(e) => setSetF(e.target.value)} aria-label={t('inv.allSets')}>
-            <option value="">{t('inv.allSets')}</option>
-            {setOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          <select className={selCls} value={mainF} onChange={(e) => setMainF(e.target.value as '' | MainStatKey)} aria-label={t('inv.allMains')}>
-            <option value="">{t('inv.allMains')}</option>
-            {mainOptions.map((k) => <option key={k} value={k}>{MAINSTAT_LABELS[k]}</option>)}
-          </select>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          {[null, 4, 3, 1].map((c) => (
-            <button key={String(c)} type="button" className={chip(costF === c)} onClick={() => setCostF(c)}>
-              {c === null ? t('app.all') : t('app.costFilter', { c })}
-            </button>
-          ))}
-          <span className="ml-auto text-slate-500">{t('inv.count', { shown: stash.length, total: echoes.length })}</span>
-        </div>
-        {stash.length === 0 ? (
-          <p className="p-3 text-center text-xs text-slate-500">{t('bench.stashEmpty')}</p>
-        ) : (
-          <div className="grid max-h-96 gap-2 overflow-y-auto p-0.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {stash.map((e) => (
+          <div className="flex flex-wrap gap-2">
+            {result && (
+              <>
+                <button
+                  type="button"
+                  className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+                  title={t('loadout.exportTip')}
+                  onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet)}
+                >{t('loadout.exportPng')}</button>
+                <button
+                  type="button"
+                  className="rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
+                  onClick={() => onPin(filled.map((x) => x.id))}
+                >{t('equip.pin')}</button>
+              </>
+            )}
+            {slots.some((s) => s) && (
               <button
-                key={e.id}
                 type="button"
-                draggable
-                onDragStart={(ev) => ev.dataTransfer.setData('text/plain', e.id)}
-                onClick={() => addFirstEmpty(e.id)}
-                title={t('bench.addTip', { name: e.name || SONATA_BY_ID[e.set]?.name || e.set })}
-                className="block cursor-grab text-left transition-opacity hover:opacity-80 active:cursor-grabbing"
-              >
-                <EchoCard echo={e} compact profile={profile} />
+                className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
+                onClick={() => onChange([...EMPTY])}
+              >{t('bench.clear')}</button>
+            )}
+          </div>
+        </div>
+
+        {/* Kho echo có filter — card là <button draggable> (kéo desktop / bấm touch+bàn phím).
+            lg+: rail sticky tự cuộn — tắt scroll-box nội bộ max-h-96 để khỏi 2 thanh cuộn lồng nhau */}
+        <div
+          role="region"
+          aria-labelledby="bench-stash-heading"
+          className="space-y-1.5 rounded-lg border border-slate-800 bg-slate-900/40 p-2 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
+        >
+          <div id="bench-stash-heading" className="text-xs font-semibold text-slate-300">{t('bench.stashTitle')}</div>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t('inv.search')}
+              aria-label={t('inv.search')}
+              className="min-w-36 flex-1 rounded border border-slate-700 bg-slate-800 px-2 py-1"
+            />
+            <select className={selCls} value={setF} onChange={(e) => setSetF(e.target.value)} aria-label={t('inv.allSets')}>
+              <option value="">{t('inv.allSets')}</option>
+              {setOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <select className={selCls} value={mainF} onChange={(e) => setMainF(e.target.value as '' | MainStatKey)} aria-label={t('inv.allMains')}>
+              <option value="">{t('inv.allMains')}</option>
+              {mainOptions.map((k) => <option key={k} value={k}>{MAINSTAT_LABELS[k]}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            {[null, 4, 3, 1].map((c) => (
+              <button key={String(c)} type="button" className={chip(costF === c)} onClick={() => setCostF(c)}>
+                {c === null ? t('app.all') : t('app.costFilter', { c })}
               </button>
             ))}
+            <span className="ml-auto text-slate-500">{t('inv.count', { shown: stash.length, total: echoes.length })}</span>
           </div>
-        )}
+          {stash.length === 0 ? (
+            <p className="p-3 text-center text-xs text-slate-500">{t('bench.stashEmpty')}</p>
+          ) : (
+            <div className="grid max-h-96 gap-2 overflow-y-auto p-0.5 sm:grid-cols-2 md:grid-cols-3 lg:max-h-none lg:grid-cols-2 lg:overflow-visible">
+              {stash.map((e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  draggable
+                  onDragStart={(ev) => ev.dataTransfer.setData('text/plain', e.id)}
+                  onClick={() => addFirstEmpty(e.id)}
+                  title={t('bench.addTip', { name: e.name || SONATA_BY_ID[e.set]?.name || e.set })}
+                  className="block cursor-grab text-left transition-opacity hover:opacity-80 active:cursor-grabbing"
+                >
+                  <EchoCard echo={e} compact profile={profile} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

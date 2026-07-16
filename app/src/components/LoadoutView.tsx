@@ -6,6 +6,7 @@ import { dominantSet, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useLang, useT, useTMessage } from '../i18n'
 import AnchorToggle from './AnchorToggle'
+import BuildCostEstimator from './BuildCostEstimator'
 import EchoCard from './EchoCard'
 import StatBreakdown from './StatBreakdown'
 
@@ -82,6 +83,8 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
         )}
       </div>
       <StatBreakdown echoes={echoList} profile={profile} ctx={ctx} activeSet={activeSet} defaultOpen={!!ctx} />
+      {/* F10 (task 73): chi phí hoàn thiện bộ — <details> đóng, tự ẩn khi bộ đã full (return null) */}
+      <BuildCostEstimator echoes={echoList} profile={profile} />
       {recs.length > 0 && (
         usedRec ? (
           <div className="text-xs text-emerald-400" title={lang === 'vi' ? usedRec.reasonVi : usedRec.reason}>{t('mainEcho.inLoadout')}</div>

@@ -1,0 +1,92 @@
+import { useMemo, useState } from 'react'
+import type { CharacterProfile, Echo } from '../types'
+import { upgradePotential } from '../engine/economy'
+import { formatNum, useLang, useT } from '../i18n'
+
+// F10 (task 73, spec designer 16/07): "Chi phí hoàn thiện bộ" — <details> đóng trong LoadoutView
+// (sau StatBreakdown): tổng EXP/Tuner/Credit còn thiếu của 5 echo trong bộ + ước tính SỐ NGÀY farm.
+// Income/ngày là THAM SỐ user nhập (persist localStorage) — datamine KHÔNG có số income live-ops,
+// repo không đoán số → cả 2 input ĐỂ TRỐNG mặc định, chỉ ước tính khi user điền đủ.
+// Tuner và EXP đến từ nguồn farm khác nhau → KHÔNG gộp 1 số, lấy max + ghi rõ nút thắt.
+
+const LS_TUNER = 'wuwa-income-tuner'
+const LS_EXP = 'wuwa-income-exp'
+
+interface Props {
+  echoes: Echo[]
+  profile: CharacterProfile
+}
+
+export default function BuildCostEstimator({ echoes, profile }: Props) {
+  const t = useT()
+  const { lang } = useLang()
+  const [tunerRate, setTunerRate] = useState(() => localStorage.getItem(LS_TUNER) ?? '')
+  const [expRate, setExpRate] = useState(() => localStorage.getItem(LS_EXP) ?? '')
+
+  const need = useMemo(() => {
+    let exp = 0
+    let tuners = 0
+    let credits = 0
+    for (const e of echoes) {
+      const p = upgradePotential(e, profile, { trials: 0 })
+      exp += p.expNeeded
+      tuners += p.tunersNeeded
+      credits += p.creditsNeeded
+    }
+    return { exp, tuners, credits }
+  }, [echoes, profile])
+
+  if (need.exp === 0 && need.tuners === 0) return null // bộ đã full — ẩn hẳn
+
+  const tunerN = Math.max(0, Number(tunerRate) || 0)
+  const expN = Math.max(0, Number(expRate) || 0)
+  const days = tunerN > 0 && expN > 0
+    ? Math.ceil(Math.max(need.tuners / tunerN, need.exp / expN))
+    : null
+  const bottleneck = days !== null && need.tuners / tunerN >= need.exp / expN ? 'Tuner' : 'EXP'
+  const fmtN = (n: number) => formatNum(lang, n)
+
+  const save = (key: string, v: string, set: (s: string) => void) => {
+    set(v)
+    try { localStorage.setItem(key, v) } catch { /* private mode — bỏ qua */ }
+  }
+  const inputCls = 'w-20 rounded border border-slate-700 bg-slate-800 px-2 py-1'
+
+  return (
+    <details className="rounded border border-slate-800 bg-slate-900/40 px-2.5 py-1.5 text-xs">
+      <summary className="cursor-pointer text-slate-300">
+        💰 {t('buildcost.title')}
+        <span className="ml-2 text-[10px] text-slate-500">{t('buildcost.teaser', { tuners: need.tuners, exp: fmtN(need.exp) })}</span>
+      </summary>
+      <div className="mt-1.5 space-y-1.5">
+        <p className="text-slate-400">
+          {t('buildcost.needed', { exp: fmtN(need.exp), tuners: need.tuners, credits: fmtN(need.credits) })}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-400">
+          <label className="flex items-center gap-1.5">
+            {t('buildcost.tunerPerDayLabel')}
+            <input
+              type="number" min={0} value={tunerRate} aria-label={t('buildcost.tunerPerDayLabel')}
+              onChange={(e) => save(LS_TUNER, e.target.value, setTunerRate)}
+              className={inputCls}
+            />
+          </label>
+          <label className="flex items-center gap-1.5">
+            {t('buildcost.expPerDayLabel')}
+            <input
+              type="number" min={0} value={expRate} aria-label={t('buildcost.expPerDayLabel')}
+              placeholder={t('buildcost.expPerDayHint')}
+              onChange={(e) => save(LS_EXP, e.target.value, setExpRate)}
+              className={`${inputCls} w-40`}
+            />
+          </label>
+        </div>
+        {days !== null ? (
+          <p className="font-semibold text-sky-300">{t('buildcost.daysEstimate', { days, res: bottleneck })}</p>
+        ) : (
+          <p className="text-slate-500">{t('buildcost.enterRate')}</p>
+        )}
+      </div>
+    </details>
+  )
+}

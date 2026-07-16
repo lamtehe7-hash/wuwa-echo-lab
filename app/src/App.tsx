@@ -19,7 +19,10 @@ import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
 import { SONATA_BY_ID } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
+import { bestOwners } from './engine/insights'
 import { dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
+import InfoTip from './components/InfoTip'
+import SetFarmPriority from './components/SetFarmPriority'
 import { useLang, useT } from './i18n'
 import { exportJson, importJson, mergeProfile, newId, onPersistError, useEchoInventory, useEquipped, useOverrides, useVaults } from './store'
 import ScannerImport from './components/ScannerImport'
@@ -86,9 +89,19 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const [stale, setStale] = useState(false)
   const [forcedSet, setForcedSet] = useState('') // '' = tự động; set id = ép solver theo set đó
   const [objective, setObjective] = useState<SolveObjective>('score') // 'damage' = re-rank top-N theo damage model
-  const [showWeights, setShowWeights] = useState(false)
-  const [showBuild, setShowBuild] = useState(false)
-  const [showBench, setShowBench] = useState(false)
+  // U1 (task 58): 1 panel công cụ mở tại một thời điểm (trước là 3 state độc lập → mở chồng 3 khối).
+  // Editor ghi thẳng vào overrides mỗi lần đổi nên đóng panel không mất dữ liệu.
+  const [activeTool, setActiveTool] = useState<'weights' | 'build' | 'bench' | null>(null)
+  // U9: pill "Mới" trên Bench/Damage — tắt vĩnh viễn sau lần đầu user bấm (pattern VIEW_KEY RankingTable)
+  const [newBench, setNewBench] = useState(() => {
+    try { return localStorage.getItem('wuwa-seen:bench') !== '1' } catch { return false }
+  })
+  const [newDamage, setNewDamage] = useState(() => {
+    try { return localStorage.getItem('wuwa-seen:damage') !== '1' } catch { return false }
+  })
+  const markSeen = (key: 'bench' | 'damage') => {
+    try { localStorage.setItem(`wuwa-seen:${key}`, '1') } catch { /* storage bị chặn — pill hiện lại lần sau, vô hại */ }
+  }
   const [benchSlots, setBenchSlots] = useState<(string | null)[]>(EMPTY_BENCH)
   const [editingEcho, setEditingEcho] = useState<Echo | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -141,6 +154,32 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // useMemo giữ identity profile giữa các render — memo chấm điểm trong RankingTable mới có tác dụng
   const profile = useMemo(() => mergeProfile(CHARACTER_BY_ID[charId], overrides[charId]), [charId, overrides])
 
+  // F1/F2 (task 58): roster profile THẬT (bỏ preset generic) đã merge override — input cross-roster
+  const allProfiles = useMemo(
+    () => CHARACTERS.filter((c) => !c.id.startsWith('generic')).map((c) => mergeProfile(c, overrides[c.id])),
+    [overrides],
+  )
+  // Memo RIÊNG khỏi rows của bảng (không phụ thuộc search/filter/sort — gõ search không tính lại 39×N)
+  const bestOwnersByEcho = useMemo(
+    () => new Map(echoes.map((e) => [e.id, bestOwners(e, allProfiles, 3)])),
+    [echoes, allProfiles],
+  )
+
+  // Đổi nhân vật đang tối ưu (CharacterPicker + bấm tên trong Best Owner): kết quả cũ thuộc
+  // nhân vật khác → bỏ hẳn (khác stale); set đề cử khác nhau → bỏ ràng buộc set; reset bàn thử.
+  const switchChar = (id: string) => {
+    setCharId(id)
+    setSolved(false)
+    setLoadout(null)
+    setStale(false)
+    setForcedSet('')
+    setBenchSlots(EMPTY_BENCH)
+  }
+  const jumpToChar = (id: string) => {
+    switchChar(id)
+    setTab('optimize')
+  }
+
   // Build context (vũ khí+base+buff) cho damage model + ngân sách ER thật của solver (task 55)
   const buildCtx = overrides[charId]?.build
 
@@ -171,14 +210,21 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     setSolveTick((n) => n + 1) // báo hiệu MainEchoHint thu gọn sau mỗi lần "Tìm bộ 5 tối ưu"
   }
 
-  // Mở/đóng bàn thử. Prefill 1 LẦN khi MỞ + ô còn trống + đã có bộ solver (nạp bộ đó để tinh chỉnh);
-  // chưa solve thì mở ra 5 ô trống. Không watch `loadout` bằng effect để không đè chỉnh tay.
-  const toggleBench = () => {
-    if (!showBench && benchSlots.every((s) => s === null) && loadout) {
-      setBenchSlots(toBenchSlots(loadout.echoes.map((s) => s.echo)))
+  // Mở/đóng panel công cụ (U1: bấm segment đang mở = đóng). Bench prefill 1 LẦN khi MỞ + ô còn
+  // trống + đã có bộ solver; chưa solve thì 5 ô trống. Không watch `loadout` bằng effect kẻo đè chỉnh tay.
+  const toggleTool = (tool: 'weights' | 'build' | 'bench') => {
+    if (tool === 'bench') {
+      if (activeTool !== 'bench' && benchSlots.every((s) => s === null) && loadout) {
+        setBenchSlots(toBenchSlots(loadout.echoes.map((s) => s.echo)))
+      }
+      if (newBench) { setNewBench(false); markSeen('bench') }
     }
-    setShowBench((v) => !v)
+    setActiveTool((cur) => (cur === tool ? null : tool))
   }
+
+  // U1: chấm amber "đã tuỳ chỉnh" trên segment — hiện cả khi panel đóng (trước đây đóng là mất dấu)
+  const weightsCustomized = !!overrides[charId] && (overrides[charId].weights !== undefined || overrides[charId].erTarget !== undefined)
+  const buildCustomized = !!overrides[charId]?.build
 
   // Echo bị đánh dấu "loại" (trash) không vào solver — vẫn hiện mờ trong kho.
   // useMemo giữ identity để effect stale của RosterPanel không bắn mỗi render.
@@ -245,9 +291,11 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             target="_blank"
             rel="noopener noreferrer"
             title={t('app.githubTip')}
+            aria-label={t('app.githubTip')}
             className="flex items-center gap-1 rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
           >
-            <GithubMark /> GitHub
+            {/* <640px: ẩn chữ, giữ icon (aria-label giữ tên truy cập) — header chật trên điện thoại */}
+            <GithubMark /> <span className="hidden sm:inline">GitHub</span>
           </a>
           <button className="rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}>{lang === 'vi' ? 'EN' : 'VI'}</button>
         </div>
@@ -298,6 +346,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             <RankingTable
               echoes={echoes}
               profile={profile}
+              bestOwners={bestOwnersByEcho}
+              onJumpToChar={jumpToChar}
               onDelete={deleteEcho}
               onDeleteMany={deleteMany}
               onToggleFlag={toggleFlag}
@@ -309,21 +359,14 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
 
       {tab === 'optimize' && (empty ? emptyState : (
         <div className="space-y-3">
+          {/* U8: toolbar tách 2 hàng cố định — hàng 1 = ngữ cảnh (nhân vật/set/objective),
+              hàng 2 = công cụ (segmented U1) + CTA. <640px CTA w-full tự xuống dòng riêng. */}
           <div className="flex flex-wrap items-center gap-2">
             <label className="text-sm text-slate-400">{t('app.character')}</label>
             <CharacterPicker
               value={charId}
               overrides={overrides}
-              onChange={(id) => {
-                // Đổi nhân vật → kết quả cũ thuộc nhân vật khác, bỏ hẳn (khác với stale);
-                // set đề cử khác nhau nên bỏ luôn ràng buộc set đã ép
-                setCharId(id)
-                setSolved(false)
-                setLoadout(null)
-                setStale(false)
-                setForcedSet('')
-                setBenchSlots(EMPTY_BENCH) // bộ bàn thử thuộc nhân vật cũ — reset để dựng lại cho nhân vật mới
-              }}
+              onChange={switchChar}
             />
             <label className="ml-1 text-sm text-slate-400">{t('setpick.label')}</label>
             <SetPicker
@@ -331,31 +374,55 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               preferred={profile.preferredSets}
               onChange={(v) => { setForcedSet(v); if (solved) setStale(true) }}
             />
-            <span className="ml-1 inline-flex overflow-hidden rounded border border-slate-700 text-xs" title={t('app.objectiveTip')}>
+            <span className="ml-1 inline-flex overflow-hidden rounded border border-slate-700 text-xs">
               {(['score', 'damage'] as const).map((o) => (
                 <button
                   key={o}
                   className={`px-2 py-1 ${objective === o ? 'bg-sky-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
-                  onClick={() => { setObjective(o); if (solved) setStale(true) }}
-                >{t(o === 'score' ? 'app.objScore' : 'app.objDamage')}</button>
+                  onClick={() => {
+                    setObjective(o)
+                    if (solved) setStale(true)
+                    if (o === 'damage' && newDamage) { setNewDamage(false); markSeen('damage') }
+                  }}
+                >
+                  {t(o === 'score' ? 'app.objScore' : 'app.objDamage')}
+                  {o === 'damage' && newDamage && (
+                    <span aria-hidden="true" className="ml-1 rounded-full bg-emerald-600 px-1 text-[9px] font-bold leading-tight text-white">{t('common.newBadge')}</span>
+                  )}
+                </button>
+              ))}
+            </span>
+            {/* U4: giải thích Điểm/Damage qua popover bấm được (title= cũ là hover-only, mobile không xem được) */}
+            <InfoTip label={t('app.infoLabel')}>
+              <span className="block"><b>{t('app.objScore')}</b>: {t('app.objectiveScoreDesc')}</span>
+              <span className="block"><b>{t('app.objDamage')}</b>: {t('app.objectiveDamageDesc')}</span>
+            </InfoTip>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* U1: segmented — sky = panel đang mở; chấm amber = "đã tuỳ chỉnh" (kể cả khi đóng) */}
+            <span className="inline-flex overflow-hidden rounded border border-slate-700 text-xs">
+              {([
+                { k: 'weights' as const, label: t('app.weights'), title: undefined, dot: weightsCustomized },
+                { k: 'build' as const, label: `⚔ ${t('app.build')}`, title: t('build.tip'), dot: buildCustomized },
+                { k: 'bench' as const, label: `🧰 ${t('app.bench')}`, title: t('app.benchTip'), dot: false },
+              ]).map(({ k, label, title, dot }) => (
+                <button
+                  key={k}
+                  className={`relative px-2 py-1 ${activeTool === k ? 'bg-sky-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+                  onClick={() => toggleTool(k)}
+                  title={title}
+                  aria-pressed={activeTool === k}
+                >
+                  {label}
+                  {k === 'bench' && newBench && (
+                    <span aria-hidden="true" className="ml-1 rounded-full bg-emerald-600 px-1 text-[9px] font-bold leading-tight text-white">{t('common.newBadge')}</span>
+                  )}
+                  {dot && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" title={t('app.toolCustomizedTip')} />}
+                </button>
               ))}
             </span>
             <button
-              className={`rounded px-2 py-1 text-xs ${showWeights ? 'bg-amber-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-              onClick={() => setShowWeights(!showWeights)}
-            >{t('app.weights')}</button>
-            <button
-              className={`rounded px-2 py-1 text-xs ${showBuild ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'} ${buildCtx ? 'ring-1 ring-sky-600' : ''}`}
-              onClick={() => setShowBuild(!showBuild)}
-              title={t('build.tip')}
-            >⚔ {t('app.build')}</button>
-            <button
-              className={`rounded px-2 py-1 text-xs ${showBench ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-              onClick={toggleBench}
-              title={t('app.benchTip')}
-            >🧰 {t('app.bench')}</button>
-            <button
-              className="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600"
+              className="w-full rounded bg-emerald-700 px-3 py-1 text-sm font-semibold hover:bg-emerald-600 sm:ml-auto sm:w-auto"
               onClick={solve}
             >{t('app.findBest5')}</button>
           </div>
@@ -364,38 +431,33 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
 
           <SubstatLegend />
 
-          {(showWeights || showBuild) && (
-            <div className="grid gap-2 md:grid-cols-2">
-              {showWeights && (
-                <WeightEditor
-                  base={CHARACTER_BY_ID[charId]}
-                  merged={profile}
-                  override={overrides[charId]}
-                  onChange={(ov) => {
-                    const next = { ...overrides }
-                    if (ov === undefined) delete next[charId]
-                    else next[charId] = ov
-                    setOverrides(next) // kết quả solve tự chuyển "cũ" qua effect [overrides]
-                  }}
-                />
-              )}
-              {showBuild && (
-                <BuildEditor
-                  profile={profile}
-                  override={overrides[charId]}
-                  activeSet={activeSet}
-                  onChange={(ov) => {
-                    const next = { ...overrides }
-                    if (ov === undefined) delete next[charId]
-                    else next[charId] = ov
-                    setOverrides(next)
-                  }}
-                />
-              )}
-            </div>
+          {activeTool === 'weights' && (
+            <WeightEditor
+              base={CHARACTER_BY_ID[charId]}
+              merged={profile}
+              override={overrides[charId]}
+              onChange={(ov) => {
+                const next = { ...overrides }
+                if (ov === undefined) delete next[charId]
+                else next[charId] = ov
+                setOverrides(next) // kết quả solve tự chuyển "cũ" qua effect [overrides]
+              }}
+            />
           )}
-
-          {showBench && (
+          {activeTool === 'build' && (
+            <BuildEditor
+              profile={profile}
+              override={overrides[charId]}
+              activeSet={activeSet}
+              onChange={(ov) => {
+                const next = { ...overrides }
+                if (ov === undefined) delete next[charId]
+                else next[charId] = ov
+                setOverrides(next)
+              }}
+            />
+          )}
+          {activeTool === 'bench' && (
             <BenchPanel
               echoes={echoes}
               profile={profile}
@@ -453,6 +515,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
         </div>
       ))}
 
+      {/* F2 (task 58): ưu tiên farm set — KHÔNG cần kho nên hiện cả khi kho rỗng (giá trị cho user mới) */}
+      {tab === 'roster' && <SetFarmPriority profiles={allProfiles} />}
       {tab === 'roster' && empty && emptyState}
       {/* Giữ mounted (chỉ ẩn CSS): RosterPanel giữ danh sách đội + kết quả trong state cục bộ —
           unmount khi chuyển tab sẽ mất sạch. (OcrImport thì NGƯỢC LẠI: cố ý unmount để nhả worker WASM.) */}

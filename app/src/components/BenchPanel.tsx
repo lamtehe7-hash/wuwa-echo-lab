@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import type { BuildContext, CharacterProfile, Echo, MainStatKey } from '../types'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
@@ -6,7 +6,6 @@ import { loadoutDamage } from '../engine/damage'
 import { dominantSet, scoreLoadout, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useT, useTMessage } from '../i18n'
-import { useToast } from './Toast'
 import EchoCard from './EchoCard'
 import StatBreakdown from './StatBreakdown'
 
@@ -35,8 +34,10 @@ interface Props {
 export default function BenchPanel({ echoes, profile, slots, onChange, ctx, compareTotal, onPin }: Props) {
   const t = useT()
   const tm = useTMessage()
-  const push = useToast()
   const [hover, setHover] = useState<number | null>(null)
+  // U2 (task 58): chạm chọn-rồi-đặt — HTML5 DnD không chạy trên trình duyệt cảm ứng.
+  // Bấm card kho = chọn (ring sky) → bấm ô bất kỳ (kể cả đã có echo) = đặt/THAY THẾ vào ô đó.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const [costF, setCostF] = useState<number | null>(null)
   const [setF, setSetF] = useState('')
@@ -76,12 +77,15 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
     ;[next[0], next[i]] = [next[i], next[0]] // hoán đổi ô i vào ô main
     onChange(next)
   }
-  const addFirstEmpty = (id: string) => {
-    if (slots.includes(id)) return
-    const i = slots.findIndex((s) => s === null)
-    if (i < 0) { push(t('bench.full')); return }
-    place(id, i)
+  // U2: đặt echo đang chọn vào ô i (thay thế nếu ô đã có — cùng invariant với drop)
+  const placeSelected = (i: number) => {
+    if (!selectedId) return
+    place(selectedId, i)
+    setSelectedId(null)
   }
+  const selEcho = selectedId ? byId.get(selectedId) : undefined
+  const selName = selEcho ? selEcho.name || SONATA_BY_ID[selEcho.set]?.name || selEcho.set : ''
+  const nameOf = (e: Echo) => e.name || SONATA_BY_ID[e.set]?.name || e.set
 
   // ── Kho-picker: option lọc lấy từ echo THẬT trong kho (như RankingTable) ──
   const setOptions = useMemo(() => {
@@ -162,7 +166,8 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
               return (
                 <div
                   key={i}
-                  className={`relative rounded-lg ${hover === i ? 'ring-2 ring-emerald-400' : ''}`}
+                  // Đang chọn từ kho → ring sky mờ trên CẢ 5 ô báo "bấm đây để đặt" (đậm khi dragover)
+                  className={`relative rounded-lg ${hover === i ? 'ring-2 ring-emerald-400' : selectedId ? 'ring-1 ring-sky-500/40' : ''}`}
                   onDragOver={(ev) => { ev.preventDefault(); if (hover !== i) setHover(i) }}
                   onDragLeave={() => setHover((h) => (h === i ? null : h))}
                   onDrop={(ev) => {
@@ -171,6 +176,19 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                     const id = ev.dataTransfer.getData('text/plain')
                     if (id) place(id, i)
                   }}
+                  // Ô ĐÃ có echo không thể là <button> (chứa 2 button con 👑/✕ — button lồng button
+                  // là HTML lỗi) → role=button chỉ khi đang chọn; Enter/Space = đặt như click
+                  {...(selectedId && e
+                    ? {
+                        role: 'button' as const,
+                        tabIndex: 0,
+                        title: t('bench.slotPlaceTip', { name: selName }),
+                        onClick: () => placeSelected(i),
+                        onKeyDown: (ev: ReactKeyboardEvent) => {
+                          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); placeSelected(i) }
+                        },
+                      }
+                    : {})}
                 >
                   {isMain && (
                     <span
@@ -184,8 +202,9 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                     <div>
                       <EchoCard echo={e} compact profile={profile} />
                       <div className="mt-0.5 flex items-center justify-between px-0.5 text-xs">
+                        {/* stopPropagation: wrapper có onClick "đặt echo đang chọn" (U2) — bấm 👑/✕ không được kích hoạt nó */}
                         {!isMain ? (
-                          <button className="text-slate-500 hover:text-amber-300" title={t('bench.mainTip')} onClick={() => setAsMain(i)}>
+                          <button className="text-slate-500 hover:text-amber-300" title={t('bench.mainTip')} onClick={(ev) => { ev.stopPropagation(); setAsMain(i) }}>
                             👑 {t('bench.setMain')}
                           </button>
                         ) : (
@@ -195,18 +214,22 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                           className="text-slate-600 hover:text-rose-400"
                           title={t('bench.remove')}
                           aria-label={t('bench.remove')}
-                          onClick={() => clearSlot(i)}
+                          onClick={(ev) => { ev.stopPropagation(); clearSlot(i) }}
                         >✕</button>
                       </div>
                     </div>
                   ) : (
-                    <div
-                      className={`flex min-h-[128px] items-center justify-center rounded-lg border-2 border-dashed p-2 text-center text-xs ${
+                    // Ô trống = <button> thật (không chứa nút con): bấm/Enter đặt echo đang chọn (U2)
+                    <button
+                      type="button"
+                      onClick={() => placeSelected(i)}
+                      title={selectedId ? t('bench.slotPlaceTip', { name: selName }) : undefined}
+                      className={`flex min-h-[128px] w-full items-center justify-center rounded-lg border-2 border-dashed p-2 text-center text-xs ${
                         isMain ? 'border-amber-700/50 text-amber-500/80' : 'border-slate-700 text-slate-500'
                       }`}
                     >
                       {isMain ? t('bench.emptyMain') : t('bench.emptySlot')}
-                    </div>
+                    </button>
                   )}
                 </div>
               )
@@ -266,6 +289,11 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
           className="space-y-1.5 rounded-lg border border-slate-800 bg-slate-900/40 p-2 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
         >
           <div id="bench-stash-heading" className="text-xs font-semibold text-slate-300">{t('bench.stashTitle')}</div>
+          {selEcho && (
+            <p role="status" className="rounded bg-sky-950/40 px-2 py-1 text-xs text-sky-300">
+              {t('bench.selectedTip', { name: selName })}
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <input
               value={q}
@@ -300,10 +328,14 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                   key={e.id}
                   type="button"
                   draggable
-                  onDragStart={(ev) => ev.dataTransfer.setData('text/plain', e.id)}
-                  onClick={() => addFirstEmpty(e.id)}
-                  title={t('bench.addTip', { name: e.name || SONATA_BY_ID[e.set]?.name || e.set })}
-                  className="block cursor-grab text-left transition-opacity hover:opacity-80 active:cursor-grabbing"
+                  // Kéo chuột = luồng desktop cũ; xoá chọn để 2 cơ chế không chồng trạng thái
+                  onDragStart={(ev) => { ev.dataTransfer.setData('text/plain', e.id); setSelectedId(null) }}
+                  onClick={() => setSelectedId((cur) => (cur === e.id ? null : e.id))}
+                  title={selectedId === e.id ? t('bench.deselectTip', { name: nameOf(e) }) : t('bench.addTip', { name: nameOf(e) })}
+                  aria-pressed={selectedId === e.id}
+                  className={`block cursor-grab rounded-lg text-left transition-opacity hover:opacity-80 active:cursor-grabbing ${
+                    selectedId === e.id ? 'ring-2 ring-sky-400' : ''
+                  }`}
                 >
                   <EchoCard echo={e} compact profile={profile} />
                 </button>

@@ -16,6 +16,7 @@ const DICT: Record<string, Entry> = {
   'common.importJson': { vi: 'Import JSON', en: 'Import JSON' },
   'common.undo': { vi: 'Hoàn tác', en: 'Undo' },
   'common.close': { vi: 'Đóng', en: 'Close' },
+  'common.newBadge': { vi: 'Mới', en: 'New' },
 
   // ── Toast (Toast.tsx + nơi gọi useToast) ──
   'toast.deleted': { vi: 'Đã xoá {name}', en: 'Deleted {name}' },
@@ -59,10 +60,15 @@ const DICT: Record<string, Entry> = {
   'breakdown.title': { vi: 'Điểm chi tiết', en: 'Score breakdown' },
   'breakdown.tip': { vi: 'Bấm xem đóng góp từng substat', en: 'Click for per-substat contribution' },
   'breakdown.formula': { vi: 'substat {sub} + main {main} = {total}', en: 'substat {sub} + main {main} = {total}' },
+  // Task 58/F17: hạng chữ S–D (totalScore / theoreticalMaxTotal)
+  'breakdown.gradeTip': { vi: 'Hạng tổng thể (điểm / điểm tối đa lý thuyết)', en: 'Overall grade (score / theoretical max)' },
+  'breakdown.gradeLine': { vi: 'Hạng {grade}: {pct}% điểm tối đa lý thuyết', en: 'Grade {grade}: {pct}% of theoretical max' },
 
   // ── CharacterPicker ──
   'picker.overridden': { vi: 'Đã chỉnh trọng số riêng', en: 'Custom weights applied' },
   'picker.hint': { vi: '＊ = đã chỉnh trọng số riêng · badge: DPS / Sub / Buff / Heal', en: '＊ = custom weights · badges: DPS / Sub / Buff / Heal' },
+  'picker.search': { vi: 'Tìm nhân vật…', en: 'Search character…' },
+  'picker.noResults': { vi: 'Không tìm thấy nhân vật nào', en: 'No character found' },
 
   // ── SetPicker (ép solver theo 1 set echo) ──
   'setpick.label': { vi: 'Set echo:', en: 'Echo set:' },
@@ -93,6 +99,8 @@ const DICT: Record<string, Entry> = {
   'inv.selectAll': { vi: 'Chọn tất cả đang hiện (trừ echo khoá)', en: 'Select all visible (except locked)' },
   'inv.selectRow': { vi: 'Chọn echo này', en: 'Select this echo' },
   'inv.deleteSelected': { vi: '🗑 Xoá {n} đã chọn', en: '🗑 Delete {n} selected' },
+  // Task 58/F9: nhắc cơ chế hoàn tài nguyên in-game trước khi xoá hàng loạt (% theo wiki, không có số tuyệt đối)
+  'inv.refundHint': { vi: '💡 Xoá trong game: echo đã luyện hoàn ~30% Tuner đã đổ; cho ăn (feed) hoàn ~75% EXP — không mất hẳn.', en: '💡 In-game: recycling a leveled echo refunds ~30% of its Tuner cost; feeding it refunds ~75% of its EXP — not a total loss.' },
   'toast.deletedMany': { vi: 'Đã xoá {n} echo', en: 'Deleted {n} echoes' },
   'inv.emptyFiltered': { vi: 'Không có echo nào khớp bộ lọc.', en: 'No echoes match the filters.' },
 
@@ -129,6 +137,12 @@ const DICT: Record<string, Entry> = {
   'app.build': { vi: 'chỉ số nền', en: 'base stats' },
   'app.objScore': { vi: 'Điểm', en: 'Score' },
   'app.objDamage': { vi: 'Damage', en: 'Damage' },
+  // Task 58/U4: giải thích objective qua InfoTip bấm được (thay title= hover-only)
+  'app.objectiveScoreDesc': { vi: '"Điểm" = điểm weighted-linear (mặc định).', en: '"Score" = weighted-linear score (default).' },
+  'app.objectiveDamageDesc': { vi: '"Damage" = giữ top-16 bộ theo điểm rồi chọn bộ có chỉ số damage TƯƠNG ĐỐI cao nhất (crit tích × bracket %DMG) — hợp DPS; healer/buffer nên để "Điểm".', en: '"Damage" = keep top-16 by score then pick the highest RELATIVE damage index (crit product × %DMG bracket) — best for DPS; keep "Score" for healers/buffers.' },
+  'app.infoLabel': { vi: 'Xem giải thích', en: 'View explanation' },
+  // Task 58/U1: chấm amber "đã tuỳ chỉnh" trên segment công cụ
+  'app.toolCustomizedTip': { vi: 'Đã tuỳ chỉnh', en: 'Customized' },
   'app.objectiveTip': { vi: 'Mục tiêu tối ưu. "Điểm" = điểm weighted-linear (mặc định). "Damage" = giữ top-16 bộ theo điểm rồi chọn bộ có chỉ số damage TƯƠNG ĐỐI cao nhất (crit tích × bracket %DMG) — hợp DPS; healer/buffer nên để "Điểm".', en: 'Optimization objective. "Score" = weighted-linear score (default). "Damage" = keep top-16 by score then pick the highest RELATIVE damage index (crit product × %DMG bracket) — best for DPS; keep "Score" for healers/buffers.' },
   'app.all': { vi: 'Tất cả', en: 'All' },
   'app.costFilter': { vi: 'Cost {c}', en: 'Cost {c}' },
@@ -162,6 +176,16 @@ const DICT: Record<string, Entry> = {
   'ranking.colSubstat': { vi: 'Substat', en: 'Substat' },
   'ranking.colScore': { vi: 'Điểm', en: 'Score' },
   'ranking.colAdvice': { vi: 'Tư vấn', en: 'Advice' },
+  // Task 58/F1: best owner cross-roster
+  'ranking.colBestOwner': { vi: 'Hợp ai nhất', en: 'Best for' },
+  'ranking.bestOwnerNone': { vi: 'Không hợp ai', en: 'No good fit' },
+  'ranking.bestOwnerTip': { vi: 'Echo này chấm cao nhất cho các nhân vật sau (fit ≥ 60%). Bấm tên để mở Tối ưu cho nhân vật đó.', en: 'This echo scores highest for these characters (fit ≥ 60%). Click a name to open Optimize for them.' },
+  'ranking.bestOwnerMore': { vi: '+{n} nữa', en: '+{n} more' },
+  'card.bestOwnerTip': { vi: 'Hợp nhất: {name}', en: 'Best for: {name}' },
+  // Task 58/F2: ưu tiên farm set (tab Đội hình)
+  'farm.title': { vi: 'Ưu tiên farm set', en: 'Set farming priority' },
+  'farm.subtitle': { vi: 'Set nào nên farm tiếp cho cả đội hình — không cần có sẵn trong kho.', en: 'Which sets are worth farming next for your whole roster — no inventory needed.' },
+  'farm.row': { vi: 'Hợp {n} nhân vật · tốt nhất: {name}', en: 'Good for {n} characters · best: {name}' },
   'ranking.expected': { vi: 'kỳ vọng {n}', en: 'expected {n}' },
   'ranking.delete': { vi: 'xóa', en: 'delete' },
   'ranking.edit': { vi: 'sửa', en: 'edit' },
@@ -234,15 +258,18 @@ const DICT: Record<string, Entry> = {
   'app.bench': { vi: 'Bàn thử bộ', en: 'Manual bench' },
   'app.benchTip': { vi: 'Mở kho có filter để kéo-thả (hoặc bấm) echo vào 5 ô, thử/thay bộ thủ công — tự chấm điểm lại mỗi lần đổi.', en: 'Open a filtered inventory to drag (or click) echoes into 5 slots and hand-tune a set — rescored on every change.' },
   'bench.title': { vi: 'Bàn thử bộ — kéo-thả thủ công', en: 'Manual bench — drag & drop' },
-  'bench.hint': { vi: 'Kéo (hoặc bấm) echo từ kho bên dưới vào 5 ô. Ô 👑 ngoài cùng bên trái là main echo.', en: 'Drag (or click) echoes from the inventory below into the 5 slots. The leftmost 👑 slot is the main echo.' },
+  'bench.hint': { vi: 'Kéo echo vào 5 ô — hoặc bấm chọn 1 echo trong kho rồi bấm ô muốn đặt. Ô 👑 ngoài cùng bên trái là main echo.', en: 'Drag echoes into the 5 slots — or tap an echo in the stash, then tap the slot to place it. The leftmost 👑 slot is the main echo.' },
   'bench.mainBadge': { vi: 'Main', en: 'Main' },
   'bench.mainTip': { vi: 'Ô main echo (slot đầu) — echo ở đây kích hoạt Echo Skill. Thường là echo cost 4.', en: 'Main-echo slot (first slot) — the echo here triggers its Echo Skill. Usually a cost-4 echo.' },
-  'bench.emptyMain': { vi: '👑 Ô main — kéo echo vào', en: '👑 Main slot — drop an echo' },
-  'bench.emptySlot': { vi: 'Kéo echo vào ô này', en: 'Drop an echo here' },
+  'bench.emptyMain': { vi: '👑 Ô main — kéo/bấm đặt echo vào', en: '👑 Main slot — drop or tap-place an echo' },
+  'bench.emptySlot': { vi: 'Kéo/bấm đặt echo vào ô này', en: 'Drop or tap-place an echo here' },
   'bench.setMain': { vi: 'Đặt làm main', en: 'Set as main' },
   'bench.remove': { vi: 'Bỏ khỏi ô', en: 'Remove from slot' },
-  'bench.addTip': { vi: 'Thêm {name} vào bàn thử (ô trống đầu tiên)', en: 'Add {name} to the bench (first empty slot)' },
-  'bench.full': { vi: 'Bộ đã đủ 5 ô — bỏ 1 ô trước khi thêm.', en: 'All 5 slots are full — remove one before adding.' },
+  'bench.addTip': { vi: 'Bấm để chọn {name}, rồi bấm 1 ô để đặt vào', en: 'Tap to select {name}, then tap a slot to place it' },
+  // Task 58/U2: chạm chọn-rồi-đặt (HTML5 drag-drop không chạy trên trình duyệt cảm ứng)
+  'bench.selectedTip': { vi: 'Đã chọn {name} — bấm 1 ô để đặt vào.', en: '{name} selected — tap a slot to place it.' },
+  'bench.deselectTip': { vi: 'Bấm để bỏ chọn {name}', en: 'Tap to deselect {name}' },
+  'bench.slotPlaceTip': { vi: 'Đặt {name} vào ô này', en: 'Place {name} in this slot' },
   'bench.cost': { vi: 'cost {c}/12', en: 'cost {c}/12' },
   'bench.costWarn': { vi: 'Tổng cost {c} > 12 — vượt giới hạn Data Bank trong game.', en: 'Total cost {c} > 12 — exceeds the in-game Data Bank limit.' },
   'bench.mainCostWarn': { vi: 'Ô main đang là echo cost {c} — main echo thường là cost 4.', en: 'Main slot holds a cost-{c} echo — the main echo is usually cost 4.' },

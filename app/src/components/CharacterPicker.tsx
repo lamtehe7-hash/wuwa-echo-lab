@@ -23,8 +23,16 @@ interface Props {
 export default function CharacterPicker({ value, onChange, overrides }: Props) {
   const t = useT()
   const [open, setOpen] = useState(false)
+  const [q, setQ] = useState('') // U10: lọc nhanh theo tên — roster 39 người và còn tăng theo bản game
   const rootRef = useRef<HTMLDivElement>(null)
   const current = CHARACTER_BY_ID[value]
+  const ql = q.trim().toLowerCase()
+  const matches = (name: string) => !ql || name.toLowerCase().includes(ql)
+
+  // Đóng popover → xoá search để lần mở sau thấy đủ danh sách
+  useEffect(() => {
+    if (!open) setQ('')
+  }, [open])
 
   // Đóng khi bấm ra ngoài / Escape
   useEffect(() => {
@@ -61,8 +69,19 @@ export default function CharacterPicker({ value, onChange, overrides }: Props) {
           role="listbox"
           className="absolute left-0 top-full z-20 mt-1 max-h-[26rem] w-[min(92vw,560px)] space-y-2.5 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl shadow-black/50"
         >
+          <input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t('picker.search')}
+            aria-label={t('picker.search')}
+            className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+          />
+          {ql && !CHARACTERS.some((c) => matches(c.name)) && (
+            <p className="text-xs text-slate-500">{t('picker.noResults')}</p>
+          )}
           {ELEMENT_ORDER.map((el) => {
-            const group = CHARACTERS.filter((c) => c.element === el)
+            const group = CHARACTERS.filter((c) => c.element === el && matches(c.name))
             if (group.length === 0) return null
             return (
               <div key={el}>

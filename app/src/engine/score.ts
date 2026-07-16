@@ -163,6 +163,43 @@ export function tuneAdvice(echo: Echo, profile: CharacterProfile): TuneAdvice {
   }
 }
 
+// ---- Hạng chữ S–D (task 58 / F17) ----
+
+/**
+ * Max lý thuyết của TỔNG điểm (substat 100 + main stat TỐT NHẤT khả dĩ của cost) —
+ * mốc quy chiếu cho grade. Khác mainStatRaw: duyệt MỌI main stat của cost thay vì
+ * main hiện có trên echo (totalScore có thể vượt 100 vì mainScore cộng thêm không cap).
+ */
+export function theoreticalMaxTotal(profile: CharacterProfile, cost: Echo['cost']): number {
+  const theoMax = theoreticalMax(profile)
+  let best = 0
+  for (const d of MAINSTATS[cost]) {
+    const raw = weightFor(profile, d.key) * (d.max / refScale(d.key))
+    if (raw > best) best = raw
+  }
+  return 100 + (best / theoMax) * 100
+}
+
+export type Grade = 'S' | 'A' | 'B' | 'C' | 'D'
+
+/** Ngưỡng % (totalScore / theoreticalMaxTotal) — QUYẾT ĐỊNH SẢN PHẨM, chỉnh tự do.
+ *  Hiệu chỉnh 16/07 trên demo data (Camellya/Xuanling/Verina): gần-BiS 81–96% /
+ *  tốt-dở-dang 47–60% / xoàng-full-tune ~41% / rác <20%. */
+export const GRADE_BANDS: ReadonlyArray<readonly [number, Grade]> = [
+  [80, 'S'],
+  [60, 'A'],
+  [40, 'B'],
+  [20, 'C'],
+  [0, 'D'],
+]
+
+/** Hạng chữ của 1 echo đã chấm điểm (dùng totalScore từ scoreEcho) */
+export function gradeOf(totalScore: number, profile: CharacterProfile, cost: Echo['cost']): Grade {
+  const pct = (totalScore / theoreticalMaxTotal(profile, cost)) * 100
+  for (const [min, g] of GRADE_BANDS) if (pct >= min) return g
+  return 'D'
+}
+
 /** Main ER max +25 (cost-3) — derive từ MAINSTATS, không hardcode 32.0 (review 16/07:
  *  bản sao lệch nguồn với mainStatRaw/damage.ts nếu datamine chỉnh số). */
 const ER_MAIN_MAX = MAINSTATS[3].find((d) => d.key === 'energyRegen')?.max ?? 32.0

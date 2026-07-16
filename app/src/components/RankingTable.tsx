@@ -5,9 +5,11 @@ import { iconUrl } from '../data/iconAssets'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { SUBSTATS, maxRoll } from '../data/substats'
+import type { OwnerFit } from '../engine/insights'
 import { rankEchoes, tuneAdvice } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
 import { useT, useTMessage } from '../i18n'
+import BestOwnerBadge from './BestOwnerBadge'
 import EchoCard from './EchoCard'
 import ScoreBadge from './ScoreBadge'
 import SubstatLegend from './SubstatLegend'
@@ -19,6 +21,10 @@ import SubstatLegend from './SubstatLegend'
 interface Props {
   echoes: Echo[]
   profile: CharacterProfile
+  /** F1 (task 58): top-3 nhân vật hợp nhất per echo (App memo riêng — không phụ thuộc filter bảng) */
+  bestOwners?: Map<string, OwnerFit[]>
+  /** Bấm tên nhân vật trong Best Owner → mở tab Tối ưu cho nhân vật đó */
+  onJumpToChar?: (id: string) => void
   onDelete: (id: string) => void
   /** Xoá hàng loạt (App bỏ qua echo khoá + toast hoàn tác cả cụm) */
   onDeleteMany: (ids: string[]) => void
@@ -48,7 +54,7 @@ function rvOf(e: Echo): number {
   return e.substats.reduce((s, x) => s + x.value / maxRoll(x.stat), 0) / e.substats.length
 }
 
-export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
+export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
   const t = useT()
   const tm = useTMessage()
   const [q, setQ] = useState('')
@@ -185,16 +191,23 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
           <span className="ml-auto text-slate-500">{t('inv.count', { shown: rows.length, total: echoes.length })}</span>
         </div>
         {view === 'table' && selCount > 0 && (
-          <div className="flex items-center gap-2 rounded border border-rose-900/60 bg-rose-950/20 px-2 py-1.5">
-            <span className="text-rose-300">{t('inv.count', { shown: selCount, total: rows.length })}</span>
-            <button
-              type="button"
-              className="rounded bg-rose-800 px-2 py-1 font-semibold text-white hover:bg-rose-700"
-              onClick={() => {
-                onDeleteMany(selectableIds.filter((id) => selected.has(id)))
-                setSelected(new Set())
-              }}
-            >{t('inv.deleteSelected', { n: selCount })}</button>
+          <div className="space-y-1 rounded border border-rose-900/60 bg-rose-950/20 px-2 py-1.5">
+            {/* F9 (task 58): nhắc cơ chế hoàn tài nguyên TRƯỚC khi bấm xoá (toast là quá muộn để cân nhắc) —
+                chỉ hiện khi có echo đã luyện (level>0) trong lựa chọn */}
+            {rows.some((x) => selected.has(x.r.echo.id) && !x.r.echo.lock && x.r.echo.level > 0) && (
+              <p className="text-slate-400">{t('inv.refundHint')}</p>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="text-rose-300">{t('inv.count', { shown: selCount, total: rows.length })}</span>
+              <button
+                type="button"
+                className="rounded bg-rose-800 px-2 py-1 font-semibold text-white hover:bg-rose-700"
+                onClick={() => {
+                  onDeleteMany(selectableIds.filter((id) => selected.has(id)))
+                  setSelected(new Set())
+                }}
+              >{t('inv.deleteSelected', { n: selCount })}</button>
+            </div>
           </div>
         )}
       </div>
@@ -215,7 +228,12 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
                   compact
                   profile={profile}
                   className="transition-colors hover:border-sky-600"
-                  footer={<ScoreBadge r={r} profile={profile} variant="badge" />}
+                  footer={
+                    <>
+                      {bestOwners && <BestOwnerBadge owners={bestOwners.get(r.echo.id) ?? []} onJump={onJumpToChar} variant="card" />}
+                      <ScoreBadge r={r} profile={profile} variant="badge" />
+                    </>
+                  }
                 />
               </div>
               <div className="mt-0.5 flex items-center justify-between px-0.5 text-xs">
@@ -266,6 +284,7 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
                 <th className="pr-2">{t('ranking.colSubstat')}</th>
                 <th className="pr-2 text-right">{t('ranking.colScore')}</th>
                 <th className="pr-2">{t('ranking.colAdvice')}</th>
+                {bestOwners && <th className="pr-2">{t('ranking.colBestOwner')}</th>}
                 <th />
               </tr>
             </thead>
@@ -330,6 +349,11 @@ export default function RankingTable({ echoes, profile, onDelete, onDeleteMany, 
                       {t(`ranking.verdict.${advice.verdict}`)}
                       {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}
                     </td>
+                    {bestOwners && (
+                      <td className="whitespace-nowrap pr-2 text-xs">
+                        <BestOwnerBadge owners={bestOwners.get(r.echo.id) ?? []} onJump={onJumpToChar} />
+                      </td>
+                    )}
                     <td className="whitespace-nowrap text-right">
                       <button
                         className={`mr-1 text-xs ${r.echo.lock ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'}`}

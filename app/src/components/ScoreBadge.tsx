@@ -2,11 +2,22 @@ import { useEffect, useRef, useState } from 'react'
 import type { CharacterProfile, ScoredEcho } from '../types'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SUBSTATS } from '../data/substats'
+import { gradeOf, theoreticalMaxTotal, type Grade } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
 import { useT } from '../i18n'
 
 // Điểm số bấm được → popover breakdown (research/ui-ux.md B4): thanh đóng góp từng substat
 // + dòng main stat + công thức tổng. Thay cho tooltip title= (hover-only, mobile không xem được).
+// F17 (task 58): hạng chữ S–D cạnh điểm — PHẢI là <span> NGOÀI <button> (e2e match textContent
+// button bằng regex /^\d+\.\d$/ — nhét chữ vào button là vỡ). Màu tái dùng 5 màu semantic có sẵn.
+
+const GRADE_CLS: Record<Grade, string> = {
+  S: 'text-amber-300',
+  A: 'text-emerald-400',
+  B: 'text-sky-400',
+  C: 'text-slate-400',
+  D: 'text-rose-400',
+}
 
 export default function ScoreBadge({ r, variant = 'table', profile }: {
   r: ScoredEcho
@@ -59,9 +70,19 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
   const fitCls = r.fitLevel === 1 ? 'text-emerald-400' : r.fitLevel >= 0.6 ? 'text-amber-400' : 'text-rose-400'
   const fitMark = r.fitLevel === 1 ? '✓' : r.fitLevel >= 0.6 ? '～' : '✗'
 
+  // F17: grade cần profile (thang quy chiếu per-nhân-vật) — không có profile thì không hiện
+  const gradePct = profile ? (r.totalScore / theoreticalMaxTotal(profile, r.echo.cost)) * 100 : 0
+  const grade = profile ? gradeOf(r.totalScore, profile, r.echo.cost) : null
+
   return (
     // span (không phải div) để đặt được trong chân EchoCard lẫn ô bảng
-    <span ref={rootRef} className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+    <span ref={rootRef} className="relative inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      {grade && (
+        <span
+          title={t('breakdown.gradeTip')}
+          className={`text-[10px] font-bold ${GRADE_CLS[grade]}`}
+        >{grade}</span>
+      )}
       <button
         type="button"
         title={t('breakdown.tip')}
@@ -105,6 +126,11 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
           <span className="mt-1 block text-right text-[11px] text-slate-500">
             {t('breakdown.formula', { sub: r.score.toFixed(1), main: r.mainScore.toFixed(1), total: r.totalScore.toFixed(1) })}
           </span>
+          {grade && (
+            <span className={`mt-0.5 block text-right text-[11px] ${GRADE_CLS[grade]}`}>
+              {t('breakdown.gradeLine', { grade, pct: gradePct.toFixed(0) })}
+            </span>
+          )}
         </span>
       )}
     </span>

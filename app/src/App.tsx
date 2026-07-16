@@ -19,13 +19,14 @@ import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
 import { SONATA_SETS } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
-import { bestOwners, setBacklog } from './engine/insights'
+import { bestOwners, setBacklog, upgradeQueue } from './engine/insights'
 import { canAnchorMore, dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import { echoDisplayName } from './data/echoIndex'
 import InfoTip from './components/InfoTip'
 import SetFarmPriority from './components/SetFarmPriority'
 import FarmingBacklog from './components/FarmingBacklog'
 import CleanupPanel from './components/CleanupPanel'
+import UpgradePlanPanel from './components/UpgradePlanPanel'
 import TriagePanel from './components/TriagePanel'
 import PinnedOverview, { type PinnedRow } from './components/PinnedOverview'
 import type { PinnedOwner } from './components/PinnedByBadge'
@@ -174,6 +175,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     () => new Map(echoes.map((e) => [e.id, bestOwners(e, allProfiles, 3)])),
     [echoes, allProfiles],
   )
+  // F3+F6 (task 72): hàng đợi nâng cấp — TOÀN BỘ đã sort theo gainPerTuner (panel cắt top-10)
+  const upgradeRows = useMemo(() => upgradeQueue(echoes, bestOwnersByEcho), [echoes, bestOwnersByEcho])
 
   // U7 (task 60): echo id → nhân vật đang ghim bộ CHỨA echo đó (1 echo có thể ở bộ ghim nhiều người).
   // Badge "Đang dùng bởi X" ở kho/bàn thử — ngăn kéo nhầm echo BiS của main sang thử nhân vật phụ.
@@ -509,6 +512,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
         {/* F11 (task 62): dọn kho theo luật — panel full-width TRÊN bảng (luật R1/R4 toàn roster, không
             thuộc bảng scoped theo 1 nhân vật). Đóng mặc định (công cụ ít dùng). */}
         <CleanupPanel echoes={echoes} profiles={allProfiles} ownersByEcho={bestOwnersByEcho} pinnedBy={pinnedBy} onApply={applyCleanup} />
+        {/* F3+F6 (task 72): kế hoạch nâng cấp — DƯỚI CleanupPanel (dọn rác trước → đầu tư sau) */}
+        <UpgradePlanPanel rows={upgradeRows} onJump={jumpToChar} onEdit={setEditingEcho} />
         <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
           <aside className="space-y-3">
             <EchoForm onAdd={addEcho} />

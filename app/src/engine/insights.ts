@@ -1,4 +1,5 @@
 import type { CharacterProfile, Echo, RosterAssignment, SonataSet } from '../types'
+import { upgradePotential, type UpgradePotential } from './economy'
 import { scoreEcho, theoreticalMax } from './score'
 import { SET_PREF_BONUS, scoreLoadout, setTierScore } from './solver'
 
@@ -203,6 +204,37 @@ export function triageCandidates(
   }
   const val = (e: Echo) => ownersByEcho.get(e.id)?.[0]?.totalScore ?? -1
   return [...cands].sort((a, b) => val(a) - val(b))
+}
+
+export interface UpgradeQueueRow {
+  echo: Echo
+  /** Best-owner #1 (fit ≥ 0.6) — người hưởng lợi khi đầu tư echo này */
+  owner: OwnerFit
+  /** trials: 0 — closed-form, không MC (gọi hàng loạt) */
+  potential: UpgradePotential
+  /** evFinal − current: điểm kỳ vọng TĂNG THÊM cho owner khi full echo này */
+  evGain: number
+}
+
+/**
+ * F3 (task 72): hàng đợi nâng cấp toàn kho — echo nào đáng đổ EXP/Tuner TRƯỚC.
+ * Ứng viên: chưa trash + còn slot substat chưa mở + có best-owner (reuse App `bestOwnersByEcho`,
+ * cùng ngưỡng fit 0.6). Xếp theo `gainPerTuner` (ROI mỗi tuner — cùng chìa khoá phân bổ ngân
+ * sách F6), hoà thì evGain. Trả về TOÀN BỘ đã sort — UI tự cắt top-N (chip đếm cần tổng).
+ */
+export function upgradeQueue(echoes: Echo[], ownersByEcho: Map<string, OwnerFit[]>): UpgradeQueueRow[] {
+  const rows: UpgradeQueueRow[] = []
+  for (const e of echoes) {
+    if (e.trash) continue
+    const owner = ownersByEcho.get(e.id)?.[0]
+    if (!owner) continue
+    const potential = upgradePotential(e, owner.profile, { trials: 0 })
+    if (potential.remainingSlots === 0) continue
+    rows.push({ echo: e, owner, potential, evGain: potential.evFinal - potential.current })
+  }
+  return rows.sort(
+    (a, b) => b.potential.gainPerTuner - a.potential.gainPerTuner || b.evGain - a.evGain,
+  )
 }
 
 const GROUP_RANK: Record<BacklogStatus, number> = { need: 0, farm: 0, enough: 1, surplus: 1 }

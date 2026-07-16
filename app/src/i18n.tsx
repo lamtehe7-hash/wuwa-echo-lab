@@ -346,6 +346,13 @@ const DICT: Record<string, Entry> = {
   'upgrade.potentialTitle': { vi: 'Tiềm năng nâng cấp', en: 'Upgrade potential' },
   'upgrade.atFull': { vi: 'Tại full ~{ev} điểm (P10–P90 {p10}–{p90})', en: 'At full ~{ev} pts (P10–P90 {p10}–{p90})' },
   'upgrade.costLine': { vi: 'Cần thêm {exp} EXP · {tuners} Tuner · {credits} Credit', en: 'Needs {exp} EXP · {tuners} Tuner · {credits} Credit' },
+  'upgrade.planTitle': { vi: 'Kế hoạch nâng cấp', en: 'Upgrade plan' },
+  'upgrade.planSubtitle': { vi: 'Xếp theo điểm tăng thêm mỗi Tuner — đổ EXP/Tuner vào đây trước.', en: 'Ranked by points gained per Tuner — invest EXP/Tuner here first.' },
+  'upgrade.rowCost': { vi: '{exp} EXP · {tuners} Tuner', en: '{exp} EXP · {tuners} Tuner' },
+  'upgrade.budgetLabel': { vi: 'Tuner 5★ đang có', en: '5★ Tuners on hand' },
+  'upgrade.budgetHelp': { vi: 'Chỉ tính echo 5★ (Tuner đúng bậc).', en: 'Only counts 5★ echoes (Tuners are rarity-locked).' },
+  'upgrade.budgetResult': { vi: 'Đủ tune {k} echo · tổng +{gain} điểm', en: 'Enough to tune {k} echoes · total +{gain} pts' },
+  'upgrade.budgetCutoff': { vi: '── hết ngân sách, còn dư {left} Tuner ──', en: '── budget ends here, {left} Tuners left ──' },
   'bench.vsSolver': { vi: 'vs tối ưu', en: 'vs optimal' },
   'bench.vsSolverTip': { vi: 'Chênh lệch so với bộ do "🧩 Tìm bộ 5 tối ưu" đề xuất (kết quả bên dưới).', en: 'Difference vs the set suggested by "🧩 Find best 5-set" (result below).' },
 
@@ -537,4 +544,10 @@ export function useLang(): { lang: Lang; setLang: (l: Lang) => void } {
 export function useTMessage(): (m: LocMessage) => string {
   const t = useT()
   return (m: LocMessage) => t(m.key, m.params)
+}
+
+/** Format số lớn theo locale (VI "142.600" / EN "142,600") — KHÔNG rút gọn "142,6k"
+ *  (dấu phẩy thập phân VI dễ đọc nhầm với phân cách nghìn — quyết định designer task 71). */
+export function formatNum(lang: Lang, n: number): string {
+  return n.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US')
 }

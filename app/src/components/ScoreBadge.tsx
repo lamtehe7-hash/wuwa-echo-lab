@@ -5,7 +5,7 @@ import { SUBSTATS } from '../data/substats'
 import { upgradePotential } from '../engine/economy'
 import { gradeOf, theoreticalMaxTotal, type Grade } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
-import { useLang, useT } from '../i18n'
+import { formatNum, useLang, useT } from '../i18n'
 
 // Điểm số bấm được → popover breakdown (research/ui-ux.md B4): thanh đóng góp từng substat
 // + dòng main stat + công thức tổng. Thay cho tooltip title= (hover-only, mobile không xem được).
@@ -41,7 +41,7 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
     () => (open && profile ? upgradePotential(r.echo, profile) : null),
     [open, r.echo, profile],
   )
-  const fmtN = (n: number) => n.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US')
+  const fmtN = (n: number) => formatNum(lang, n)
 
   const toggle = () => {
     if (open) { setPos(null); return }

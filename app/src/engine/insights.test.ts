@@ -4,7 +4,7 @@ import { CHARACTERS } from '../data/characters'
 import { DEMO_ECHOES } from '../data/demo'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { GRADE_BANDS, gradeOf, scoreEcho, theoreticalMaxTotal } from './score'
-import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary, swapSuggestions, triageCandidates, type OwnerFit } from './insights'
+import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary, swapSuggestions, triageCandidates, upgradeQueue, type OwnerFit } from './insights'
 import { scoreLoadout } from './solver'
 import type { RosterAssignment } from '../types'
 
@@ -267,5 +267,46 @@ describe('triageCandidates', () => {
       // 'none' không có entry → val -1 → lên đầu
     ])
     expect(triageCandidates(es, 'worst', owners).map((e) => e.id)).toEqual(['none', 'lo', 'hi'])
+  })
+})
+
+describe('upgradeQueue (F3/task 72)', () => {
+  const mk = (id: string, over: Partial<Echo> = {}): Echo =>
+    ({ id, name: id, cost: 4, set: 'havoc-eclipse', rarity: 5, level: 25, mainStat: 'critRate', substats: [], ...over })
+  const cam = byId['camellya']
+  const fit = (): OwnerFit => ({ profile: cam, totalScore: 0, fitLevel: 1, setMatch: false })
+
+  it('loại trash / echo đã full substat / echo không có owner', () => {
+    const full = mk('full', {
+      substats: [
+        { stat: 'critRate', value: 8.7 }, { stat: 'critDmg', value: 17.4 }, { stat: 'atkPct', value: 9.4 },
+        { stat: 'atk', value: 40 }, { stat: 'energyRegen', value: 8.4 },
+      ],
+    })
+    const es = [mk('ok'), mk('bin', { trash: true }), full, mk('noowner')]
+    const owners = new Map<string, OwnerFit[]>([
+      ['ok', [fit()]], ['bin', [fit()]], ['full', [fit()]],
+    ])
+    expect(upgradeQueue(es, owners).map((r) => r.echo.id)).toEqual(['ok'])
+  })
+
+  it('sort theo gainPerTuner giảm dần: echo pool còn crit xếp trên echo đã ăn crit', () => {
+    // A đã roll critRate+critDmg (pool còn lại mean thấp hơn) vs B pool nguyên vẹn → B trước
+    const a = mk('a', { substats: [{ stat: 'critRate', value: 8.7 }, { stat: 'critDmg', value: 17.4 }] })
+    const b = mk('b')
+    const owners = new Map<string, OwnerFit[]>([['a', [fit()]], ['b', [fit()]]])
+    const rows = upgradeQueue([a, b], owners)
+    expect(rows.map((r) => r.echo.id)).toEqual(['b', 'a'])
+    expect(rows[0].potential.gainPerTuner).toBeGreaterThan(rows[1].potential.gainPerTuner)
+  })
+
+  it('evGain dương + potential dùng closed-form (p10=p90=evFinal vì trials:0)', () => {
+    const rows = upgradeQueue([mk('x', { level: 10 })], new Map([['x', [fit()]]]))
+    expect(rows).toHaveLength(1)
+    const r = rows[0]
+    expect(r.evGain).toBeGreaterThan(0)
+    expect(r.evGain).toBeCloseTo(r.potential.evFinal - r.potential.current, 10)
+    expect(r.potential.p10Final).toBe(r.potential.evFinal)
+    expect(r.potential.expNeeded).toBe(142_600 - 16_500)
   })
 })

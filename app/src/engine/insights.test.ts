@@ -4,7 +4,9 @@ import { CHARACTERS } from '../data/characters'
 import { DEMO_ECHOES } from '../data/demo'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { GRADE_BANDS, gradeOf, scoreEcho, theoreticalMaxTotal } from './score'
-import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary, triageCandidates, type OwnerFit } from './insights'
+import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary, swapSuggestions, triageCandidates, type OwnerFit } from './insights'
+import { scoreLoadout } from './solver'
+import type { RosterAssignment } from '../types'
 
 const byId = Object.fromEntries(CHARACTERS.map((c) => [c.id, c])) as Record<string, CharacterProfile>
 const demo = Object.fromEntries(DEMO_ECHOES.map((e) => [e.name ?? e.id, e])) as Record<string, Echo>
@@ -180,6 +182,50 @@ describe('setBacklog', () => {
 
   it('không throw trên toàn bộ set × roster với demo', () => {
     expect(() => setBacklog(SONATA_SETS, realChars, usable, 3)).not.toThrow()
+  })
+})
+
+// ---- F15 (task 65): swapSuggestions ----
+
+describe('swapSuggestions', () => {
+  const camellya = byId.camellya // havoc DPS: hợp havocDmg + crit
+  const shorekeeper = byId.shorekeeper // support: hợp energyRegen/heal
+  // eForA hợp Camellya (havocDmg + crit) — nhưng đang ở bộ SHOREKEEPER (lệch)
+  const eForA: Echo = { id: 'ea', name: 'ForA', cost: 3, set: 'havoc-eclipse', rarity: 5, level: 25, mainStat: 'havocDmg', substats: [{ stat: 'critRate', value: 10.5 }, { stat: 'critDmg', value: 21 }] }
+  // eForB hợp Shorekeeper (energyRegen) — nhưng đang ở bộ CAMELLYA (lệch)
+  const eForB: Echo = { id: 'eb', name: 'ForB', cost: 3, set: 'rejuvenating-glow', rarity: 5, level: 25, mainStat: 'energyRegen', substats: [{ stat: 'energyRegen', value: 10 }, { stat: 'hpPct', value: 10.9 }] }
+
+  it('tìm swap cùng cost làm tăng tổng điểm, hướng đúng', () => {
+    const assignments: RosterAssignment[] = [
+      { profile: camellya, result: scoreLoadout([eForB], camellya) },
+      { profile: shorekeeper, result: scoreLoadout([eForA], shorekeeper) },
+    ]
+    const swaps = swapSuggestions(assignments, 5)
+    expect(swaps.length).toBeGreaterThan(0)
+    expect(swaps[0].delta).toBeGreaterThan(0)
+    // swap: eForB rời Camellya sang Shorekeeper, eForA về Camellya
+    expect(swaps[0].echoOut.id).toBe('eb')
+    expect(swaps[0].echoIn.id).toBe('ea')
+  })
+
+  it('bộ đã tối ưu (mỗi người giữ echo hợp mình) → không có swap dương', () => {
+    const assignments: RosterAssignment[] = [
+      { profile: camellya, result: scoreLoadout([eForA], camellya) },
+      { profile: shorekeeper, result: scoreLoadout([eForB], shorekeeper) },
+    ]
+    expect(swapSuggestions(assignments).length).toBe(0)
+  })
+
+  it('bỏ qua nhân vật result null; khác cost không hoán', () => {
+    const c1: Echo = { ...eForA, id: 'c1', cost: 1 }
+    const assignments: RosterAssignment[] = [
+      { profile: camellya, result: scoreLoadout([eForB], camellya) },
+      { profile: shorekeeper, result: null },
+      { profile: byId.roccia, result: scoreLoadout([c1], byId.roccia) }, // cost 1 ≠ cost 3 → không hoán với eForB
+    ]
+    expect(() => swapSuggestions(assignments)).not.toThrow()
+    // chỉ 1 người có bộ cost-3 nên không có cặp cùng cost để swap
+    expect(swapSuggestions(assignments).every((s) => s.echoOut.cost === s.echoIn.cost)).toBe(true)
   })
 })
 

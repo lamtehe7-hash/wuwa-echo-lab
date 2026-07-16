@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CharacterProfile, Echo, RosterAssignment } from '../types'
 import { CHARACTERS } from '../data/characters'
 import { ELEMENT_COLOR } from '../data/elementColors'
+import { SONATA_BY_ID } from '../data/sonata'
 import { solveRoster } from '../engine/roster'
+import { swapSuggestions, type SwapSuggestion } from '../engine/insights'
+import { scoreLoadout } from '../engine/solver'
 import type { ProfileOverride } from '../store'
 import { ROLE_BADGE } from './CharacterPicker'
 import LoadoutView from './LoadoutView'
@@ -40,6 +43,31 @@ export default function RosterPanel({ echoes, overrides, resolve, pinned }: Prop
   const assign = () => {
     setResults(solveRoster(echoes, ids.map(resolve), forced, pinned))
     setStale(false)
+  }
+
+  // F15: gợi ý swap (chỉ khi kết quả CÒN MỚI — stale thì bộ đã lỗi thời). echoName fallback = tên set.
+  const swaps = useMemo(() => (results && !stale ? swapSuggestions(results, 5) : []), [results, stale])
+  const echoName = (e: Echo) => e.name?.trim() || SONATA_BY_ID[e.set]?.name || e.set
+  // Áp dụng 1 swap TẠI CHỖ: hoán 2 echo trong 2 bộ + chấm lại (kết quả roster vốn transient).
+  const applySwap = (s: SwapSuggestion) => {
+    setResults((prev) => {
+      if (!prev) return prev
+      // Guard: chỉ hoán khi echoOut còn ở fromChar & echoIn còn ở toChar (state đã đổi → bỏ, chống nhân đôi echo)
+      const from = prev.find((r) => r.profile.id === s.fromId)
+      const to = prev.find((r) => r.profile.id === s.toId)
+      if (!from?.result?.echoes.some((se) => se.echo.id === s.echoOut.id) || !to?.result?.echoes.some((se) => se.echo.id === s.echoIn.id)) return prev
+      return prev.map((r) => {
+        if (r.profile.id === s.fromId) {
+          const es = r.result!.echoes.map((se) => (se.echo.id === s.echoOut.id ? s.echoIn : se.echo))
+          return { ...r, result: scoreLoadout(es, r.profile) }
+        }
+        if (r.profile.id === s.toId) {
+          const es = r.result!.echoes.map((se) => (se.echo.id === s.echoIn.id ? s.echoOut : se.echo))
+          return { ...r, result: scoreLoadout(es, r.profile) }
+        }
+        return r
+      })
+    })
   }
 
   const move = (i: number, dir: -1 | 1) => {
@@ -136,6 +164,30 @@ export default function RosterPanel({ echoes, overrides, resolve, pinned }: Prop
               onClick={() => setOpenMap(Object.fromEntries(results.map((r) => [r.profile.id, false])))}
             >{t('roster.collapseAll')}</button>
           </div>
+          {/* F15: gợi ý swap joint-solver (chỉ khi kết quả còn mới) — áp dụng hoán tại chỗ */}
+          {swaps.length > 0 && (
+            <div className="space-y-1 rounded-lg border border-amber-900/50 bg-amber-950/15 p-2 text-xs">
+              <div className="font-semibold text-amber-300">{t('swap.title')}</div>
+              <p className="text-[11px] text-slate-500">{t('swap.hint')}</p>
+              <ul className="space-y-1">
+                {swaps.map((s) => {
+                  const rowText = t('swap.row', { from: s.fromName, to: s.toName, out: echoName(s.echoOut), in: echoName(s.echoIn) })
+                  return (
+                    <li key={`${s.fromId}-${s.toId}-${s.echoOut.id}-${s.echoIn.id}`} className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-slate-300">{rowText}</span>
+                      <span className="font-mono text-emerald-400">+{s.delta.toFixed(1)}</span>
+                      <button
+                        className="ml-auto rounded border border-amber-700 px-2 py-0.5 text-amber-300 hover:bg-amber-900/40"
+                        aria-label={`${rowText}: ${t('swap.apply')}`}
+                        title={`${rowText}: ${t('swap.apply')}`}
+                        onClick={() => applySwap(s)}
+                      >{t('swap.apply')}</button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
           <Stale stale={stale} onResolve={assign}>
             {results.map((r) => (
               <details

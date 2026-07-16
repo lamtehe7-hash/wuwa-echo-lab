@@ -1,6 +1,6 @@
-import type { CharacterProfile, Echo, SonataSet } from '../types'
+import type { CharacterProfile, Echo, RosterAssignment, SonataSet } from '../types'
 import { scoreEcho, theoreticalMax } from './score'
-import { SET_PREF_BONUS, setTierScore } from './solver'
+import { SET_PREF_BONUS, scoreLoadout, setTierScore } from './solver'
 
 // Cross-roster insights (task 58 / F1+F2 backlog proposals-2026-07-16.md):
 // đảo chiều câu hỏi — thay vì "nhân vật này nên đeo gì" (solver), trả lời
@@ -146,6 +146,49 @@ export interface SetBacklogRow {
 // F4 (task 63): Triage Queue — thứ tự duyệt echo "chưa quyết" (không lock/trash).
 //  - worst : xấu trước (dọn rác) = tăng dần theo điểm roster (best-owner #1); echo không hợp ai (val -1) lên đầu
 //  - newest: mới trước (lô vừa import) = ngược thứ tự thêm vào kho
+// F15 (task 65): "joint solver" nhẹ — sau khi gán đội TUẦN TỰ (solveRoster), tìm 1 SWAP đơn (hoán 2 echo
+// CÙNG COST giữa 2 nhân vật) làm TĂNG tổng điểm roster. Interpretable ("đổi X↔Y, +Z") thay vì giải lại
+// toàn cục NP-hard. Delta tính CHÍNH XÁC bằng scoreLoadout (cùng objective solver, GỒM set bonus).
+export interface SwapSuggestion {
+  fromId: string
+  fromName: string
+  toId: string
+  toName: string
+  /** echo đang ở fromChar → chuyển sang toChar */
+  echoOut: Echo
+  /** echo đang ở toChar → chuyển sang fromChar */
+  echoIn: Echo
+  /** tổng điểm 2 bộ tăng thêm sau swap */
+  delta: number
+}
+
+export function swapSuggestions(assignments: RosterAssignment[], topN = 5): SwapSuggestion[] {
+  const rows = assignments.filter((a) => a.result)
+  const out: SwapSuggestion[] = []
+  for (let i = 0; i < rows.length; i++) {
+    for (let j = i + 1; j < rows.length; j++) {
+      const A = rows[i]
+      const B = rows[j]
+      const aEchoes = A.result!.echoes.map((s) => s.echo)
+      const bEchoes = B.result!.echoes.map((s) => s.echo)
+      const oldTotal = A.result!.total + B.result!.total
+      for (const eA of aEchoes) {
+        for (const eB of bEchoes) {
+          if (eA.cost !== eB.cost || eA.id === eB.id) continue // cùng cost → 2 bộ vẫn hợp lệ (cost/slot không đổi)
+          const newA = scoreLoadout(aEchoes.map((e) => (e.id === eA.id ? eB : e)), A.profile)
+          const newB = scoreLoadout(bEchoes.map((e) => (e.id === eB.id ? eA : e)), B.profile)
+          if (!newA || !newB) continue
+          const delta = newA.total + newB.total - oldTotal
+          if (delta > 0.05) {
+            out.push({ fromId: A.profile.id, fromName: A.profile.name, toId: B.profile.id, toName: B.profile.name, echoOut: eA, echoIn: eB, delta })
+          }
+        }
+      }
+    }
+  }
+  return out.sort((a, b) => b.delta - a.delta).slice(0, topN)
+}
+
 export function triageCandidates(
   echoes: Echo[],
   order: 'worst' | 'newest',

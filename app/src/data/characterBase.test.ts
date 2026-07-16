@@ -32,3 +32,33 @@ describe('characterBase: toàn vẹn weaponType', () => {
     expect(by['xuanling']).toBe('sword')
   })
 })
+
+// Task 56: forte sinh từ datamine skilltree (8 node Stat Bonus = 2 loại stat × 4 node).
+// Tổng mỗi loại là hằng số game: CR 8 / CD 16 / ATK,HP,elementDmg,healing 12 / DEF 15.2.
+const FORTE_TOTALS: Record<string, number> = {
+  critRate: 8, critDmg: 16, atkPct: 12, hpPct: 12, defPct: 15.2, elementDmg: 12, healingBonus: 12,
+}
+
+describe('characterBase: toàn vẹn forte (task 56)', () => {
+  it('mọi nhân vật có đúng 2 loại stat forte, tổng khớp hằng số game', () => {
+    for (const c of CHARACTER_BASE) {
+      const keys = Object.keys(c.forte)
+      expect(keys.length, `${c.id} có ${keys.length} loại forte (kỳ vọng 2)`).toBe(2)
+      for (const k of keys) {
+        expect(FORTE_TOTALS[k], `${c.id} forte key lạ: ${k}`).toBeDefined()
+        expect(c.forte[k as keyof typeof c.forte], `${c.id} forte.${k} lệch hằng số`).toBe(FORTE_TOTALS[k])
+      }
+    }
+  })
+
+  // Mốc đã verify độc lập: Xuanling CR8 user đọc Forte in-game (task 52) — regen mà đổi là recipe hỏng.
+  it('mốc verify: xuanling CR8+ATK12; healer heal-bonus; camellya CD16', () => {
+    const by = Object.fromEntries(CHARACTER_BASE.map((c) => [c.id, c.forte]))
+    expect(by['xuanling']).toEqual({ critRate: 8, atkPct: 12 })
+    expect(by['camellya']).toEqual({ critDmg: 16, atkPct: 12 })
+    expect(by['verina']).toEqual({ atkPct: 12, healingBonus: 12 })
+    expect(by['shorekeeper']).toEqual({ hpPct: 12, healingBonus: 12 })
+    expect(by['cartethyia']).toEqual({ critRate: 8, hpPct: 12 })
+    expect(by['encore']).toEqual({ atkPct: 12, elementDmg: 12 })
+  })
+})

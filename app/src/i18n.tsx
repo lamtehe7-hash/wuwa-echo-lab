@@ -565,3 +565,10 @@ export function useTMessage(): (m: LocMessage) => string {
 export function formatNum(lang: Lang, n: number): string {
   return n.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US')
 }
+
+/** formatNum đã bind lang hiện tại — thay wrapper `const fmtN = (n) => formatNum(lang, n)`
+ *  từng chép ở UpgradePlanPanel/BuildCostEstimator/ScoreBadge/RankingTable (task 76). */
+export function useFmtN(): (n: number) => string {
+  const { lang } = useCtx()
+  return useCallback((n: number) => formatNum(lang, n), [lang])
+}

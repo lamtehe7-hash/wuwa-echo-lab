@@ -40,7 +40,8 @@ export const TUNE_CREDIT: Record<EchoRarity, number> = {
   5: 2000,
 }
 
-/** 4 ống EXP (Sealed Tube) — bậc 2★→5★ theo thứ tự */
+/** 4 ống EXP (Sealed Tube) — bậc 2★→5★ theo thứ tự. RESERVED: chưa có consumer trong app
+ *  (giữ cho mở rộng F10 quy đổi "còn thiếu X EXP ≈ N ống"; giá trị khoá test — đừng xoá tuỳ tiện) */
 export const TUBE_EXP: readonly number[] = [500, 1000, 2000, 5000]
 
 /** Shell Credit tiêu khi đổ EXP: credit = EXP × hệ số này */

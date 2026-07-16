@@ -9,8 +9,9 @@ import {
   TUNER_RETURN_RATIO,
   TUNERS_PER_SLOT,
 } from '../data/echoEconomy'
-import { MAX_SUBSTATS, SUBSTAT_KEYS, SUBSTATS, expectedRoll, maxRoll } from '../data/substats'
-import { mainStatFitLevel, scoreEcho, theoreticalMax } from './score'
+import { MAX_SUBSTATS, SUBSTAT_KEYS, SUBSTATS, maxRoll } from '../data/substats'
+import { mulberry32 } from './prng'
+import { expectedMarginalPerSlot, mainStatFitLevel, remainingPool, scoreEcho, theoreticalMax } from './score'
 
 // Kinh tế nâng cấp echo (task 70/F8 — nền cho F3 queue, F6 tuner planner, F10 build cost).
 // Mô hình đã chốt bằng datamine (research/echo-economy.md): mỗi mốc tune = 1 substat MỚI
@@ -40,17 +41,6 @@ export interface UpgradePotential {
   p90Final: number
   /** (evFinal − current) / tunersNeeded — thước xếp hạng ROI cho F6; 0 khi không cần tuner */
   gainPerTuner: number
-}
-
-/** PRNG tái lập được (mulberry32) — không dùng Math.random để test/UI ổn định giữa các lần chạy */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0
-  return () => {
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
 }
 
 /**
@@ -93,23 +83,21 @@ export function upgradePotential(
   const current = scored.totalScore
   const theoMax = theoreticalMax(profile)
   const toPts = (raw: number) => (raw / theoMax) * 100
+  // Base cho 3 nhánh return — phần chi phí/current giống nhau (task 76: hết 3 literal chép tay)
+  const base = { remainingSlots, expNeeded, tunersNeeded, creditsNeeded, current }
 
-  const used = new Set<string>(echo.substats.map((s) => s.stat))
-  const pool = SUBSTAT_KEYS.filter((k) => !used.has(k))
+  // Pool + EV per-slot: DÙNG CHUNG công thức của score.ts (remainingPool + expectedMarginalPerSlot)
+  // — trước đây chép lại tại chỗ, 2 nguồn công thức EV là drift risk (review 16/07 #11)
+  const pool = remainingPool(echo)
   const poolW = pool.map((k) => profile.weights[k] ?? 0)
 
   if (remainingSlots === 0 || pool.length === 0) {
-    return {
-      remainingSlots, expNeeded, tunersNeeded, creditsNeeded,
-      current, evFinal: current, maxFinal: current, p10Final: current, p90Final: current,
-      gainPerTuner: 0,
-    }
+    return { ...base, evFinal: current, maxFinal: current, p10Final: current, p90Final: current, gainPerTuner: 0 }
   }
   const draws = Math.min(remainingSlots, pool.length)
 
   // EV closed-form: mean(pool) × số slot (đối xứng hoán vị ⇒ đúng cả khi rút không lặp)
-  const evRawPerSlot = pool.reduce((s, k, i) => s + poolW[i] * (expectedRoll(k) / maxRoll(k)), 0) / pool.length
-  const evFinal = current + toPts(draws * evRawPerSlot)
+  const evFinal = current + toPts(draws * expectedMarginalPerSlot(echo, profile))
 
   // Trần: các loại trọng số cao nhất, roll max (eff = 1) — KHÔNG phải P100 của MC (max mọi nhánh)
   const maxRawGain = [...poolW].sort((a, b) => b - a).slice(0, draws).reduce((s, w) => s + w, 0)
@@ -118,10 +106,7 @@ export function upgradePotential(
 
   // trials ≤ 0 = bỏ vòng MC (gọi hàng loạt trong UpgradePlanPanel chỉ cần EV/cost closed-form)
   if (trials <= 0) {
-    return {
-      remainingSlots, expNeeded, tunersNeeded, creditsNeeded,
-      current, evFinal, maxFinal, p10Final: evFinal, p90Final: evFinal, gainPerTuner,
-    }
+    return { ...base, evFinal, maxFinal, p10Final: evFinal, p90Final: evFinal, gainPerTuner }
   }
 
   // MC P10/P90: mỗi trial rút `draws` LOẠI không lặp (partial Fisher–Yates) + roll theo mốc
@@ -143,12 +128,7 @@ export function upgradePotential(
   finals.sort()
   const q = (p: number) => finals[Math.min(trials - 1, Math.floor(p * (trials - 1)))]
 
-  return {
-    remainingSlots, expNeeded, tunersNeeded, creditsNeeded,
-    current, evFinal, maxFinal,
-    p10Final: q(0.1), p90Final: q(0.9),
-    gainPerTuner,
-  }
+  return { ...base, evFinal, maxFinal, p10Final: q(0.1), p90Final: q(0.9), gainPerTuner }
 }
 
 export interface RerollAdvice {

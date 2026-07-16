@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react'
 import type { Echo } from '../types'
 import { tunerBudgetPlan, type UpgradeQueueRow } from '../engine/insights'
-import { SONATA_BY_ID } from '../data/sonata'
-import { echoDisplayName, findEchoInfo } from '../data/echoIndex'
-import { iconUrl } from '../data/iconAssets'
 import BestOwnerBadge from './BestOwnerBadge'
-import { formatNum, useLang, useT } from '../i18n'
+import EchoLine from './EchoLine'
+import { useFmtN, useT } from '../i18n'
 
 // F3+F6 GỘP (task 72, spec designer 16/07): "Kế hoạch nâng cấp" — panel <details> đóng, tab Kho,
 // NGAY DƯỚI CleanupPanel (dọn rác trước → đầu tư sau). Danh sách top-10 echo đáng đổ EXP/Tuner
@@ -24,7 +22,7 @@ interface Props {
 
 export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
   const t = useT()
-  const { lang } = useLang()
+  const fmtN = useFmtN()
   const [budgetRaw, setBudgetRaw] = useState('')
   const budget = Math.max(0, Math.floor(Number(budgetRaw) || 0))
 
@@ -38,8 +36,6 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
     () => (budget > 0 ? tunerBudgetPlan(fiveStar, budget) : { cutoff: shown.length, gainSum: 0, leftover: 0 }),
     [fiveStar, budget, shown.length],
   )
-
-  const fmtN = (n: number) => formatNum(lang, n)
 
   return (
     <details className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
@@ -71,7 +67,6 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
         {shown.length > 0 && (
           <ul className="space-y-1 rounded border border-slate-800 bg-slate-950/40 p-1.5">
             {shown.map((r, i) => {
-              const info = findEchoInfo(r.echo.name)
               const dimmed = budget > 0 && i >= cutoff
               return (
                 <li key={r.echo.id} className={dimmed ? 'opacity-50' : ''}>
@@ -81,19 +76,7 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
                     </p>
                   )}
                   <span className="flex flex-wrap items-center gap-1.5">
-                    {info ? (
-                      <img
-                        src={iconUrl(info.icon)} alt="" loading="lazy" referrerPolicy="no-referrer"
-                        className="h-6 w-6 shrink-0 rounded-full border border-slate-700 bg-slate-800 object-cover"
-                        onError={(e) => { e.currentTarget.style.display = 'none' }}
-                      />
-                    ) : (
-                      <span className="h-6 w-6 shrink-0" />
-                    )}
-                    <span className="min-w-0 flex-1 truncate">
-                      <span className="text-slate-200">{echoDisplayName(r.echo)}</span>
-                      <span className="text-slate-500"> · cost {r.echo.cost} · {SONATA_BY_ID[r.echo.set]?.name}</span>
-                    </span>
+                    <EchoLine echo={r.echo} />
                     <BestOwnerBadge owners={[r.owner]} onJump={onJump} variant="card" />
                     <span className="shrink-0 font-mono text-emerald-400">+{r.evGain.toFixed(1)}</span>
                     <span className="shrink-0 text-slate-500">

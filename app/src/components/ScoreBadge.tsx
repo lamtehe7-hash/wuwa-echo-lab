@@ -5,7 +5,7 @@ import { SUBSTATS } from '../data/substats'
 import { rerollAdvice, upgradePotential } from '../engine/economy'
 import { gradeOf, theoreticalMaxTotal, type Grade } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
-import { formatNum, useLang, useT } from '../i18n'
+import { useFmtN, useT } from '../i18n'
 
 // Điểm số bấm được → popover breakdown (research/ui-ux.md B4): thanh đóng góp từng substat
 // + dòng main stat + công thức tổng. Thay cho tooltip title= (hover-only, mobile không xem được).
@@ -28,7 +28,7 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
   profile?: CharacterProfile
 }) {
   const t = useT()
-  const { lang } = useLang()
+  const fmtN = useFmtN()
   // Panel dùng position:fixed (toạ độ tính lúc mở) vì bảng nằm trong overflow-x-auto —
   // absolute sẽ bị scroll-container cắt mất. Cuộn trang khi đang mở → đóng (toạ độ hết đúng).
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
@@ -50,7 +50,6 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
     const adv = rerollAdvice(r.echo, profile)
     return adv && adv.evPerTransducer > 0.05 ? adv : null
   }, [r.echo, r.fitLevel, profile])
-  const fmtN = (n: number) => formatNum(lang, n)
 
   const toggle = () => {
     if (open) { setPos(null); return }

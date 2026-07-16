@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { CharacterProfile, Echo } from '../types'
 import { upgradePotential } from '../engine/economy'
-import { formatNum, useLang, useT } from '../i18n'
+import { useFmtN, useT } from '../i18n'
 
 // F10 (task 73, spec designer 16/07): "Chi phí hoàn thiện bộ" — <details> đóng trong LoadoutView
 // (sau StatBreakdown): tổng EXP/Tuner/Credit còn thiếu của 5 echo trong bộ + ước tính SỐ NGÀY farm.
@@ -19,7 +19,7 @@ interface Props {
 
 export default function BuildCostEstimator({ echoes, profile }: Props) {
   const t = useT()
-  const { lang } = useLang()
+  const fmtN = useFmtN()
   // localStorage bị chặn (private mode/policy) sẽ THROW ngay trong init → sập cả cây render;
   // guard như mọi chỗ khác trong app (pattern App.tsx wuwa-seen)
   const [tunerRate, setTunerRate] = useState(() => {
@@ -46,11 +46,11 @@ export default function BuildCostEstimator({ echoes, profile }: Props) {
 
   const tunerN = Math.max(0, Number(tunerRate) || 0)
   const expN = Math.max(0, Number(expRate) || 0)
-  const days = tunerN > 0 && expN > 0
-    ? Math.ceil(Math.max(need.tuners / tunerN, need.exp / expN))
-    : null
-  const bottleneck = days !== null && need.tuners / tunerN >= need.exp / expN ? 'Tuner' : 'EXP'
-  const fmtN = (n: number) => formatNum(lang, n)
+  // Tính mỗi vế 1 lần (task 76 — trước đây days + bottleneck mỗi cái tự chia lại)
+  const tunerDays = tunerN > 0 ? need.tuners / tunerN : null
+  const expDays = expN > 0 ? need.exp / expN : null
+  const days = tunerDays !== null && expDays !== null ? Math.ceil(Math.max(tunerDays, expDays)) : null
+  const bottleneck = tunerDays !== null && expDays !== null && tunerDays >= expDays ? 'Tuner' : 'EXP'
 
   const save = (key: string, v: string, set: (s: string) => void) => {
     set(v)

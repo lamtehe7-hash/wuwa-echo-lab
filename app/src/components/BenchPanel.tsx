@@ -8,6 +8,7 @@ import { dominantSet, scoreLoadout, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useT, useTMessage } from '../i18n'
 import AnchorToggle from './AnchorToggle'
+import DeltaBadge from './DeltaBadge'
 import EchoCard from './EchoCard'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import StatBreakdown from './StatBreakdown'
@@ -133,14 +134,7 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
         <div className="text-sm font-semibold text-sky-300">🧰 {t('bench.title')}</div>
         {result && (
           <div className="flex items-baseline gap-2">
-            {delta !== null && (
-              <span
-                className={`font-mono text-sm ${delta > 0.05 ? 'text-emerald-400' : delta < -0.05 ? 'text-rose-400' : 'text-slate-500'}`}
-                title={t('equip.deltaTip')}
-              >
-                {delta > 0.05 ? '▲' : delta < -0.05 ? '▼' : '＝'} {delta >= 0 ? '+' : ''}{delta.toFixed(1)}
-              </span>
-            )}
+            {delta !== null && <DeltaBadge delta={delta} title={t('equip.deltaTip')} className="text-sm" />}
             <span className="font-mono text-lg text-sky-200">{t('loadout.points', { n: result.total.toFixed(1) })}</span>
           </div>
         )}
@@ -164,9 +158,7 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
           {solverDelta !== null && (
             <span title={t('bench.vsSolverTip')}>
               {' · '}🧩 {t('bench.vsSolver')}:{' '}
-              <span className={`font-mono ${solverDelta > 0.05 ? 'text-emerald-400' : solverDelta < -0.05 ? 'text-rose-400' : 'text-slate-500'}`}>
-                {solverDelta > 0.05 ? '▲' : solverDelta < -0.05 ? '▼' : '＝'} {solverDelta >= 0 ? '+' : ''}{solverDelta.toFixed(1)}
-              </span>
+              <DeltaBadge delta={solverDelta} />
             </span>
           )}
         </div>

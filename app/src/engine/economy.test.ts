@@ -125,21 +125,16 @@ describe('upgradePotential — EV/phân phối', () => {
   it('maxFinal = current + top-w của pool (roll max) — tính tay', () => {
     // pool bỏ critRate + hp (đã có). Top-2 trọng số Camellya còn lại: critDmg (1) + havocDmg?
     // havocDmg không phải substat — top substat còn: critDmg, rồi atkPct/basicAtk…
-    const p = upgradePotential(
-      echo({
-        level: 25,
-        substats: [
-          { stat: 'critRate', value: 8.7 },
-          { stat: 'hp', value: 430 },
-          { stat: 'def', value: 50 },
-        ],
-      }),
-      camellya,
-    )
-    const scored = scoreEcho(
-      echo({ level: 25, substats: [{ stat: 'critRate', value: 8.7 }, { stat: 'hp', value: 430 }, { stat: 'def', value: 50 }] }),
-      camellya,
-    )
+    const three = echo({
+      level: 25,
+      substats: [
+        { stat: 'critRate', value: 8.7 },
+        { stat: 'hp', value: 430 },
+        { stat: 'def', value: 50 },
+      ],
+    })
+    const p = upgradePotential(three, camellya)
+    const scored = scoreEcho(three, camellya)
     const ws = ['critDmg', 'atkPct', 'basicAtk', 'atk', 'energyRegen', 'hpPct', 'defPct', 'heavyAtk', 'skillDmg', 'liberationDmg']
       .map((k) => camellya.weights[k as keyof typeof camellya.weights] ?? 0)
       .sort((x, y) => y - x)

@@ -63,9 +63,11 @@ if (tunerCounts.size !== 1) throw new Error(`IdentifyCost không đồng nhất 
 const tunersPerSlot = [...tunerCounts][0]
 if (!tunersPerSlot || tunersPerSlot <= 0) throw new Error('tunersPerSlot rỗng')
 for (const q of qRows) {
-  const expectSlots = q.SlotUnlockLevel.length
-  const maxSubs = q.Quality - (q.Quality === 2 ? 2 : 2) // chỉ sanity nhẹ: 2★=0, 3★=3, 4★=4, 5★=5 kiểm ở test
-  void maxSubs
+  // Assertion THẬT (task 76 — thay dead sanity cũ): mỗi mốc tune = 1 substat MỚI ⇒ số mốc phải
+  // bằng MAX_SUBSTATS của bậc trong engine (2★ không tune; 3★/4★/5★ = 3/4/5 — data/substats.ts).
+  // Kuro đổi số mốc ở bản vá ⇒ THROW tại đây trước khi emit data lệch với engine.
+  const expectSlots = q.Quality === 2 ? 0 : q.Quality
+  if (q.SlotUnlockLevel.length !== expectSlots) throw new Error(`SlotUnlockLevel bậc ${q.Quality}: ${q.SlotUnlockLevel.length} mốc ≠ ${expectSlots} (MAX_SUBSTATS engine)`)
   if (q.SlotUnlockLevel.some((l, i) => l !== (i + 1) * 5)) throw new Error(`SlotUnlockLevel bậc ${q.Quality} không phải bội 5: ${q.SlotUnlockLevel}`)
   if (expectSlots && q.SlotUnlockLevel[expectSlots - 1] !== q.LevelLimit) throw new Error(`slot cuối ≠ LevelLimit ở bậc ${q.Quality}`)
 }
@@ -134,7 +136,8 @@ export const TUNE_CREDIT: Record<EchoRarity, number> = {
 ${fmtRec((q) => String(q.IdentifyCoin))}
 }
 
-/** 4 ống EXP (Sealed Tube) — bậc 2★→5★ theo thứ tự */
+/** 4 ống EXP (Sealed Tube) — bậc 2★→5★ theo thứ tự. RESERVED: chưa có consumer trong app
+ *  (giữ cho mở rộng F10 quy đổi "còn thiếu X EXP ≈ N ống"; giá trị khoá test — đừng xoá tuỳ tiện) */
 export const TUBE_EXP: readonly number[] = [${tubes.map((t: any) => t.Exp).join(', ')}]
 
 /** Shell Credit tiêu khi đổ EXP: credit = EXP × hệ số này */

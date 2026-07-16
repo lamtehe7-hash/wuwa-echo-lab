@@ -8,6 +8,7 @@ import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useLang, useT, useTMessage } from '../i18n'
 import AnchorToggle from './AnchorToggle'
 import BuildCostEstimator from './BuildCostEstimator'
+import DeltaBadge from './DeltaBadge'
 import EchoCard from './EchoCard'
 import StatBreakdown from './StatBreakdown'
 
@@ -53,14 +54,7 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
           {t('loadout.title', { layout: result.layout.join('-'), cost: result.totalCost })}
         </div>
         <div className="flex items-baseline gap-2">
-          {delta !== null && (
-            <span
-              className={`font-mono text-sm ${delta > 0.05 ? 'text-emerald-400' : delta < -0.05 ? 'text-rose-400' : 'text-slate-500'}`}
-              title={t('equip.deltaTip')}
-            >
-              {delta > 0.05 ? '▲' : delta < -0.05 ? '▼' : '＝'} {delta >= 0 ? '+' : ''}{delta.toFixed(1)}
-            </span>
-          )}
+          {delta !== null && <DeltaBadge delta={delta} title={t('equip.deltaTip')} className="text-sm" />}
           <span className="font-mono text-lg text-emerald-200">{t('loadout.points', { n: result.total.toFixed(1) })}</span>
         </div>
       </div>

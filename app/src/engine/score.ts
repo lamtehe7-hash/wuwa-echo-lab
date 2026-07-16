@@ -26,11 +26,20 @@ export function echoRv(echo: Pick<Echo, 'substats'>): number {
   return echo.substats.reduce((s, x) => s + x.value / maxRoll(x.stat), 0) / echo.substats.length
 }
 
+/** Memo theo IDENTITY profile — hàm gọi cực dày (scoreEcho mỗi echo, solver mỗi node, bulk
+ * upgradePotential ×N) mà giá trị là loop-invariant. AN TOÀN vì profile immutable toàn app
+ * (mergeProfile luôn spread object mới — đã audit 17/07, không chỗ nào mutate weights tại chỗ). */
+const THEO_MAX_CACHE = new WeakMap<CharacterProfile, number>()
+
 /** Tổng 5 trọng số lớn nhất — mẫu số chuẩn hoá */
 export function theoreticalMax(profile: CharacterProfile): number {
+  const hit = THEO_MAX_CACHE.get(profile)
+  if (hit !== undefined) return hit
   const ws = SUBSTAT_KEYS.map((k) => profile.weights[k] ?? 0).sort((a, b) => b - a)
   const top5 = ws.slice(0, 5).reduce((s, w) => s + w, 0)
-  return top5 > 0 ? top5 : 1
+  const v = top5 > 0 ? top5 : 1
+  THEO_MAX_CACHE.set(profile, v)
+  return v
 }
 
 // ---- Quy đổi main stat / set bonus stat về đơn vị "roll chuẩn có trọng số" ----
@@ -114,8 +123,9 @@ export function rankEchoes(echoes: Echo[], profile: CharacterProfile): ScoredEch
  * Pool substat còn có thể ra khi tune tiếp: 13 loại − loại đã roll.
  * ĐÃ VERIFY (research/data-verification.md §5): main stat KHÔNG loại trừ substat cùng loại —
  * echo main Crit Rate vẫn roll được substat Crit Rate ("double crit"); chỉ cấm trùng giữa các substat.
+ * (export: economy.ts dùng chung — 1 nguồn công thức pool/EV, task 76 khử bản chép)
  */
-function remainingPool(echo: Echo): SubstatKey[] {
+export function remainingPool(echo: Echo): SubstatKey[] {
   const used = new Set<string>(echo.substats.map((s) => s.stat))
   return SUBSTAT_KEYS.filter((k) => !used.has(k))
 }

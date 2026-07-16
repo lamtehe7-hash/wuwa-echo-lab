@@ -9,7 +9,7 @@ import { recycleRefund } from '../engine/economy'
 import type { OwnerFit } from '../engine/insights'
 import { echoRv, rankEchoes, tuneAdvice } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
-import { formatNum, useLang, useT, useTMessage } from '../i18n'
+import { useFmtN, useT, useTMessage } from '../i18n'
 import BestOwnerBadge from './BestOwnerBadge'
 import EchoCard from './EchoCard'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
@@ -55,7 +55,7 @@ const SORT_LABEL_KEY: Record<SortKey, string> = { score: 'inv.sortScore', rv: 'i
 export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, pinnedBy, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
   const t = useT()
   const tm = useTMessage()
-  const { lang } = useLang()
+  const fmtN = useFmtN()
   const [q, setQ] = useState('')
   const [excludedOnly, setExcludedOnly] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -219,7 +219,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                 quá muộn) — SỐ THẬT của lựa chọn qua recycleRefund, chỉ hiện khi có gì để hoàn */}
             {selRefund && (
               <p className="text-slate-400">
-                {t('inv.refundEstimate', { exp: formatNum(lang, selRefund.exp), tuners: selRefund.tunerText })}
+                {t('inv.refundEstimate', { exp: fmtN(selRefund.exp), tuners: selRefund.tunerText })}
               </p>
             )}
             <div className="flex items-center gap-2">

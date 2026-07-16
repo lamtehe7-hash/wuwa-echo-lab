@@ -208,7 +208,7 @@ describe('solveBest5 — pinned (F14): ép echo ghim + khớp brute-force ràng 
       const echoes = Array.from({ length: n }, (_, i) => randomEcho(rng, i))
       for (const profile of profiles) {
         const pinnedId = pick(rng, echoes).id
-        const result = solveBest5(echoes, profile, undefined, 'score', undefined, [pinnedId])
+        const result = solveBest5(echoes, profile, { pinned: [pinnedId] })
         expect(result).not.toBeNull()
         expect(result!.echoes.some((se) => se.echo.id === pinnedId)).toBe(true)
         expect(result!.total).toBeCloseTo(referenceBestPinned(echoes, profile, pinnedId), 5)
@@ -221,7 +221,7 @@ describe('solveBest5 — pinned (F14): ép echo ghim + khớp brute-force ràng 
     const cam = CHARACTER_BY_ID['camellya']
     // ghim 1 echo cost-1 set 'moonlit-clouds' nhưng ép forcedSet 'havoc-eclipse'
     const pinnedEcho: Echo = { id: 'pin1', name: 'Pin1', cost: 1, set: 'moonlit-clouds', rarity: 5, level: 25, mainStat: 'atkPct', substats: [{ stat: 'critRate', value: 8 }] }
-    const result = solveBest5([...DEMO_ECHOES, pinnedEcho], cam, 'havoc-eclipse', 'score', undefined, ['pin1'])
+    const result = solveBest5([...DEMO_ECHOES, pinnedEcho], cam, { forcedSet: 'havoc-eclipse', pinned: ['pin1'] })
     expect(result).not.toBeNull()
     expect(result!.echoes.some((se) => se.echo.id === 'pin1')).toBe(true)
   })
@@ -229,7 +229,7 @@ describe('solveBest5 — pinned (F14): ép echo ghim + khớp brute-force ràng 
   it('pinned rỗng ⇒ Y HỆT không truyền pinned', () => {
     for (const profile of profiles) {
       const a = solveBest5(DEMO_ECHOES, profile)
-      const b = solveBest5(DEMO_ECHOES, profile, undefined, 'score', undefined, [])
+      const b = solveBest5(DEMO_ECHOES, profile, { pinned: [] })
       expect(b?.total).toBeCloseTo(a?.total ?? NaN, 6)
     }
   })
@@ -426,7 +426,7 @@ describe('solveBest5 — ER thật từ build context (task 55: vũ khí/passive
 
   it('ctx có vũ khí ER phủ hết need → TOÀN BỘ ER echo thành excess, total thấp hơn không-ctx', () => {
     const without = solveBest5([erEcho], yinlin)!
-    const withCtx = solveBest5([erEcho], yinlin, undefined, 'score', erCtx)!
+    const withCtx = solveBest5([erEcho], yinlin, { ctx: erCtx })!
     expect(nonEchoER(yinlin, erCtx)).toBeCloseTo(38.8, 5)
     // need không-ctx = 25 → excess = 7; need có-ctx = 0 → excess = 32 (phạt nặng hơn)
     expect(withCtx.total).toBeLessThan(without.total)
@@ -441,18 +441,18 @@ describe('solveBest5 — ER thật từ build context (task 55: vũ khí/passive
       id: 'noEr', name: 'NoER', cost: 3, set: 'void-thunder', rarity: 5, level: 25,
       mainStat: 'electroDmg', substats: [{ stat: 'critRate', value: 10.5 }],
     }
-    const r = solveBest5([noErEcho], heavyEr, undefined, 'score', erCtx)!
+    const r = solveBest5([noErEcho], heavyEr, { ctx: erCtx })!
     const note = r.note.find((n) => n.key === 'note.erShort')!
     expect(note).toBeDefined()
     expect(note.params?.need).toBe('11.2')
     expect(note.params?.extra).toBe('38.8')
     // vũ khí ER phủ cả need (erTarget 125 → need 25 < 38.8) → không còn note
-    const r2 = solveBest5([noErEcho], yinlin, undefined, 'score', erCtx)!
+    const r2 = solveBest5([noErEcho], yinlin, { ctx: erCtx })!
     expect(r2.note.some((n) => n.key === 'note.erShort')).toBe(false)
   })
 
   it('scoreLoadout cùng ctx = đúng điểm solver (delta bộ-hiện-tại cùng thang)', () => {
-    const best = solveBest5([erEcho], yinlin, undefined, 'score', erCtx)!
+    const best = solveBest5([erEcho], yinlin, { ctx: erCtx })!
     const re = scoreLoadout(best.echoes.map((s) => s.echo), yinlin, erCtx)!
     expect(re.total).toBeCloseTo(best.total, 9)
     expect(re.note.map((n) => n.key)).toEqual(best.note.map((n) => n.key))
@@ -463,8 +463,8 @@ describe("solveBest5 — objective 'damage': re-rank top-N theo damage model", (
   const camellya = CHARACTER_BY_ID['camellya']
   it("'score' (mặc định) không đổi; 'damage' cho bộ có damage TƯƠNG ĐỐI ≥ bộ 'score'", () => {
     const byDefault = solveBest5(DEMO_ECHOES, camellya)!
-    const byScore = solveBest5(DEMO_ECHOES, camellya, undefined, 'score')!
-    const byDamage = solveBest5(DEMO_ECHOES, camellya, undefined, 'damage')!
+    const byScore = solveBest5(DEMO_ECHOES, camellya, { objective: 'score' })!
+    const byDamage = solveBest5(DEMO_ECHOES, camellya, { objective: 'damage' })!
     // objective mặc định == 'score' tường minh (hành vi cũ nguyên vẹn)
     expect(byScore.total).toBeCloseTo(byDefault.total, 10)
     expect(byScore.layout).toEqual(byDefault.layout)
@@ -511,21 +511,21 @@ describe('solveBest5 — forcedSet: ép chỉ ghép echo thuộc 1 set', () => {
   ]
 
   it('mọi echo trong kết quả thuộc đúng set bị ép', () => {
-    const r = solveBest5(echoes, camellya, 'void-thunder')!
+    const r = solveBest5(echoes, camellya, { forcedSet: 'void-thunder' })!
     expect(r.echoes.length).toBe(5)
     expect(r.echoes.every((s) => s.echo.set === 'void-thunder')).toBe(true)
   })
 
   it('ép set chỉ có 2 echo → bộ 2 slot (thiếu slot, note.partialSlots)', () => {
     const few: Echo[] = [mk('c1', 'sierra-gale', 4, 'critRate'), mk('c2', 'sierra-gale', 3, 'aeroDmg'), ...echoes]
-    const r = solveBest5(few, camellya, 'sierra-gale')!
+    const r = solveBest5(few, camellya, { forcedSet: 'sierra-gale' })!
     expect(r.echoes.every((s) => s.echo.set === 'sierra-gale')).toBe(true)
     expect(r.echoes.length).toBe(2)
     expect(r.note.some((n) => n.key === 'note.partialSlots')).toBe(true)
   })
 
   it('ép set không có echo nào → null', () => {
-    expect(solveBest5(echoes, camellya, 'midnight-veil')).toBeNull()
+    expect(solveBest5(echoes, camellya, { forcedSet: 'midnight-veil' })).toBeNull()
   })
 
   it('không ép set → đủ 5 slot bình thường (không giới hạn 1 set)', () => {

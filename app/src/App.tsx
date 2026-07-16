@@ -17,10 +17,11 @@ import BuildEditor from './components/BuildEditor'
 import BenchPanel from './components/BenchPanel'
 import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
-import { SONATA_BY_ID, SONATA_SETS } from './data/sonata'
+import { SONATA_SETS } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
 import { bestOwners, setBacklog } from './engine/insights'
 import { canAnchorMore, dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
+import { echoDisplayName } from './data/echoIndex'
 import InfoTip from './components/InfoTip'
 import SetFarmPriority from './components/SetFarmPriority'
 import FarmingBacklog from './components/FarmingBacklog'
@@ -32,7 +33,7 @@ import { useLang, useT } from './i18n'
 import { exportJson, importJson, mergeProfile, newId, onPersistError, useEchoInventory, useEquipped, useOverrides, usePinned, useVaults } from './store'
 import ScannerImport from './components/ScannerImport'
 import VaultBar from './components/VaultBar'
-import type { Echo, LoadoutResult } from './types'
+import type { BuildContext, CharacterProfile, Echo, LoadoutResult } from './types'
 
 // Điều hướng tab theo tác vụ (pattern GO/Fribbels/wuwa.build — research/ui-ux.md §3):
 // Kho / Tối ưu / Đội hình / Import. Trạng thái tab + nhân vật sync vào URL hash
@@ -191,19 +192,27 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     return m
   }, [equipped])
 
-  // U6 (task 60): tổng quan mọi nhân vật có bộ ghim — điểm chấm CÙNG công thức equippedInfo
-  // (scoreLoadout + buildCtx per nhân vật). Thứ tự theo roster gốc (allProfiles), không sort điểm.
+  // Map tra echo theo id — dùng chung pinnedRows/equippedInfo/anchored/triage/delete (task 67 hoist
+  // lên đây, trước chỗ dùng đầu tiên; trước đây pinnedRows tự echoes.find O(N) mỗi id)
+  const echoById = useMemo(() => new Map(echoes.map((e) => [e.id, e])), [echoes])
+  // Chấm 1 bộ đã ghim theo danh sách id — CÙNG công thức cho equippedInfo (nhân vật đang chọn)
+  // lẫn pinnedRows (mọi nhân vật, U6) để 2 chỗ không bao giờ drift (task 67)
+  const scoreEquipped = (ids: string[], p: CharacterProfile, build?: BuildContext) => {
+    const found = ids.map((id) => echoById.get(id)).filter((e): e is Echo => e !== undefined)
+    return { result: scoreLoadout(found, p, build), missing: ids.length - found.length }
+  }
+
+  // U6 (task 60): tổng quan mọi nhân vật có bộ ghim. Thứ tự theo roster gốc (allProfiles), không sort điểm.
   const pinnedRows = useMemo<PinnedRow[]>(
     () =>
       allProfiles
         .filter((p) => equipped[p.id]?.length)
         .map((p) => {
-          const ids = equipped[p.id]
-          const found = ids.map((id) => echoes.find((e) => e.id === id)).filter((e): e is Echo => e !== undefined)
-          const result = scoreLoadout(found, p, overrides[p.id]?.build)
-          return { profile: p, total: result?.total ?? null, missing: ids.length - found.length }
+          const { result, missing } = scoreEquipped(equipped[p.id], p, overrides[p.id]?.build)
+          return { profile: p, total: result?.total ?? null, missing }
         }),
-    [allProfiles, equipped, echoes, overrides],
+    // scoreEquipped là closure render-scope — dep thật của nó là echoById (đã liệt kê)
+    [allProfiles, equipped, echoById, overrides],
   )
 
   // Đổi nhân vật đang tối ưu (CharacterPicker + bấm tên trong Best Owner): kết quả cũ thuộc
@@ -229,9 +238,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const equippedInfo = useMemo(() => {
     const ids = equipped[charId]
     if (!ids || ids.length === 0) return null
-    const found = ids.map((id) => echoes.find((e) => e.id === id)).filter((e): e is Echo => e !== undefined)
-    return { result: scoreLoadout(found, profile, buildCtx), missing: ids.length - found.length }
-  }, [equipped, charId, echoes, profile, buildCtx])
+    return scoreEquipped(ids, profile, buildCtx)
+  }, [equipped, charId, echoById, profile, buildCtx])
 
   // Kho/trọng số đổi → kết quả solve không còn khớp: GIỮ hiển thị nhưng đánh dấu cũ (mờ + nút giải lại)
   useEffect(() => {
@@ -245,14 +253,13 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const activeSet = (solved && !stale && loadout ? dominantSet(loadout.setCounts) : undefined) ?? assumedSet
 
   const solve = () => {
-    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective, buildCtx, activePinned[charId]))
+    setLoadout(solveBest5(usableEchoes, profile, { forcedSet: forcedSet || undefined, objective, ctx: buildCtx, pinned: activePinned[charId] }))
     setSolved(true)
     setStale(false)
     setSolveTick((n) => n + 1) // báo hiệu MainEchoHint thu gọn sau mỗi lần "Tìm bộ 5 tối ưu"
   }
 
   // F14: echo NEO cho nhân vật đang chọn (ép vào bộ solve lần sau). Neo/bỏ neo → kết quả cũ (Giải lại).
-  const echoById = useMemo(() => new Map(echoes.map((e) => [e.id, e])), [echoes])
   const anchoredIds = useMemo(() => new Set(pinned[charId] ?? []), [pinned, charId])
   // Task 66: pin "SỐNG" = echo còn trong kho + chưa trash — nguồn DUY NHẤT đưa vào engine
   // (id chết mà vẫn truyền thì solver lặng lẽ bỏ neo trong khi UI vẫn báo "đã neo"). Id chết GIỮ
@@ -355,8 +362,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // (toggleFlag thường không toast vì echo còn hiện mờ tại chỗ). Set + undo TƯỜNG MINH (bật cờ / bỏ cờ),
   // KHÔNG dùng toggleFlag flip — nếu user đổi cờ tay giữa lúc action↔undo, flip sẽ làm ngược (review task 63).
   const triageFlag = (id: string, key: 'lock' | 'trash') => {
-    const echo = echoes.find((e) => e.id === id)
-    const name = echo?.name || (echo && SONATA_BY_ID[echo.set]?.name) || id
+    const echo = echoById.get(id)
+    const name = echo ? echoDisplayName(echo) : id
     setEchoes((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: true } : e)))
     push(t(key === 'trash' ? 'triage.markedTrash' : 'triage.markedLock', { name }), {
       action: { label: t('common.undo'), fn: () => setEchoes((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: undefined } : e))) },
@@ -380,11 +387,11 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
 
   // Xoá ngay + toast có "Hoàn tác" (thay cho confirm chặn luồng)
   const deleteEcho = (id: string) => {
-    const echo = echoes.find((e) => e.id === id)
+    const echo = echoById.get(id)
     if (!echo || echo.lock) return // nút xoá đã disable khi khoá — guard thêm cho chắc
     const gen = inventoryGen.current
     setEchoes((prev) => prev.filter((e) => e.id !== id))
-    push(t('toast.deleted', { name: echo.name || SONATA_BY_ID[echo.set]?.name || echo.set }), {
+    push(t('toast.deleted', { name: echoDisplayName(echo) }), {
       action: { label: t('common.undo'), fn: () => restoreEchoes([echo], gen) },
     })
   }

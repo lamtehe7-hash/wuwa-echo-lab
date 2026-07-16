@@ -3,7 +3,7 @@ import type { CharacterProfile, Echo } from '../types'
 import type { OwnerFit } from '../engine/insights'
 import { CLEANUP_DEFAULTS, cleanupMatches, type CleanupRule, type CleanupRuleType } from '../engine/cleanup'
 import { SONATA_BY_ID } from '../data/sonata'
-import { findEchoInfo } from '../data/echoIndex'
+import { echoDisplayName, findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import { useT, useTMessage } from '../i18n'
@@ -112,7 +112,7 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
                     <span className="h-6 w-6 shrink-0" />
                   )}
                   <span className="min-w-0 flex-1 truncate">
-                    <span className="text-slate-200">{echo.name || SONATA_BY_ID[echo.set]?.name || echo.set}</span>
+                    <span className="text-slate-200">{echoDisplayName(echo)}</span>
                     <span className="text-slate-500"> · cost {echo.cost} · {SONATA_BY_ID[echo.set]?.name}</span>
                   </span>
                   <PinnedByBadge owners={pinnedBy?.get(echo.id) ?? []} />

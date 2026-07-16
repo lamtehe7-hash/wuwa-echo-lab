@@ -34,7 +34,7 @@ export function solveRoster(
       for (const id of ids) if (!myPinned.includes(id)) reservedForOthers.add(id)
     }
     const pool = reservedForOthers.size ? remaining.filter((e) => !reservedForOthers.has(e.id)) : remaining
-    const result = solveBest5(pool, profile, forcedSets?.[profile.id], 'score', undefined, myPinned)
+    const result = solveBest5(pool, profile, { forcedSet: forcedSets?.[profile.id], pinned: myPinned })
     if (result) {
       const used = new Set(result.echoes.map((s) => s.echo.id))
       remaining = remaining.filter((e) => !used.has(e.id))

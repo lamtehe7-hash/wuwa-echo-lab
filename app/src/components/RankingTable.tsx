@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { CharacterProfile, Echo, MainStatKey } from '../types'
-import { findEchoInfo } from '../data/echoIndex'
+import { echoDisplayName, findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
@@ -321,7 +321,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                           className="cursor-pointer font-medium text-slate-200 hover:text-sky-300 hover:underline"
                           title={t('ranking.editTip')}
                           onClick={() => onEdit(r.echo)}
-                        >{r.echo.name || SONATA_BY_ID[r.echo.set]?.name || r.echo.set}</button>
+                        >{echoDisplayName(r.echo)}</button>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
                         <span>cost {r.echo.cost} · {r.echo.rarity}★ +{r.echo.level} · {SONATA_BY_ID[r.echo.set]?.name}</span>

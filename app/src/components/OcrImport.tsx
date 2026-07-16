@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import type { Echo, EchoCost, LocMessage, MainStatKey, Substat } from '../types'
 import { MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
+import { echoDisplayName } from '../data/echoIndex'
 import { MAX_SUBSTATS } from '../data/substats'
 import { recognizeImageWithBoxes, terminateOcrEngine, type OcrProgress } from '../ocr/engine'
 import { parseEchoText, type EchoDraft } from '../ocr/parse'
@@ -511,7 +512,7 @@ export default function OcrImport({ onAdd }: Props) {
                 className="inline-flex items-center gap-1 rounded-full border border-emerald-800/50 bg-emerald-950/40 px-2 py-0.5 text-xs text-slate-300"
                 title={`${s.name.trim() || SONATA_BY_ID[s.set]?.name} · cost ${s.cost} · ${MAINSTAT_LABELS[s.mainStat]} · +${s.level}`}
               >
-                ✓ {s.name.trim() || SONATA_BY_ID[s.set]?.name || s.set}
+                ✓ {echoDisplayName(s)}
                 <span className="text-slate-500">◆{s.cost}</span>
               </span>
             ))}

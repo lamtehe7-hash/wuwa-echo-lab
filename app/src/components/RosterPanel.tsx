@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CharacterProfile, Echo, RosterAssignment } from '../types'
 import { CHARACTERS } from '../data/characters'
 import { ELEMENT_COLOR } from '../data/elementColors'
-import { SONATA_BY_ID } from '../data/sonata'
+import { echoDisplayName } from '../data/echoIndex'
 import { solveRoster } from '../engine/roster'
 import { swapSuggestions, type SwapSuggestion } from '../engine/insights'
 import { scoreLoadout } from '../engine/solver'
@@ -49,7 +49,7 @@ export default function RosterPanel({ echoes, overrides, resolve, pinned }: Prop
   // Echo NEO (F14, bất kỳ nhân vật nào) không được gợi ý di chuyển — neo là user ép vị trí (task 66).
   const anchoredAll = useMemo(() => new Set(Object.values(pinned ?? {}).flat()), [pinned])
   const swaps = useMemo(() => (results && !stale ? swapSuggestions(results, 5, anchoredAll) : []), [results, stale, anchoredAll])
-  const echoName = (e: Echo) => e.name?.trim() || SONATA_BY_ID[e.set]?.name || e.set
+  const echoName = echoDisplayName
   // Áp dụng 1 swap TẠI CHỖ: hoán 2 echo trong 2 bộ + chấm lại (kết quả roster vốn transient).
   const applySwap = (s: SwapSuggestion) => {
     setResults((prev) => {

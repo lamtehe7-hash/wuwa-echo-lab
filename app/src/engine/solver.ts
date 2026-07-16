@@ -245,14 +245,24 @@ export function canAnchorMore(pinnedEchoes: Echo[], candidate: Echo): AnchorChec
   return { ok: true }
 }
 
+// Task 67: gom các knob optional (đã 4 cái qua task 46/52/55/64) vào options object —
+// call site hết phải đệm `undefined, 'score', undefined` để với tới tham số cuối.
+export interface SolveOptions {
+  /** ép bộ chỉ dùng echo thuộc set này ('' /undefined = mọi set) */
+  forcedSet?: string
+  objective?: SolveObjective
+  /** chỉ số nền thật (vũ khí/forte/buff — task 52/55): ER gate + objective damage */
+  ctx?: BuildContext
+  /** F14: id echo NEO — ép vào bộ vô điều kiện */
+  pinned?: string[]
+}
+
 export function solveBest5(
   echoes: Echo[],
   profile: CharacterProfile,
-  forcedSet?: string,
-  objective: SolveObjective = 'score',
-  ctx?: BuildContext,
-  pinned?: string[],
+  opts: SolveOptions = {},
 ): LoadoutResult | null {
+  const { forcedSet, objective = 'score', ctx, pinned } = opts
   const src = forcedSet ? echoes.filter((e) => e.set === forcedSet) : echoes
   const theoMax = theoreticalMax(profile)
   const maxSetBonus = maxPossibleSetBonus(profile, theoMax)

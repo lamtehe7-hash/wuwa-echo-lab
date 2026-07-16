@@ -278,33 +278,31 @@ export function useOverrides(vaultId: string) {
   return { overrides, setOverrides }
 }
 
-// ---- Bộ echo "đang đeo" theo nhân vật (lưu id — echo sửa/tune vẫn bám theo), theo vault ----
+// ---- Map charId → echo id[] persist theo vault (equipped + pinned cùng shape/vòng đời) ----
+
+/** Factory dùng chung (task 67 — useEquipped/usePinned trước đây là 2 bản chép nguyên xi):
+ *  load 1 lần theo vault + tự save mỗi lần đổi, lỗi persist báo qua reportPersistError. */
+function usePersistedIdMap(keyOf: (v: string) => string, vaultId: string, saveLabel: string) {
+  const [map, setMap] = useState<Record<string, string[]>>(() => loadRecord<string[]>(keyOf(vaultId)))
+  useEffect(() => {
+    try {
+      localStorage.setItem(keyOf(vaultId), JSON.stringify(map))
+    } catch (err) {
+      reportPersistError(saveLabel, err)
+    }
+  }, [map, vaultId, keyOf, saveLabel])
+  return [map, setMap] as const
+}
 
 /** Hook map charId → danh sách echo id của bộ hiện tại (persist localStorage theo vault) */
 export function useEquipped(vaultId: string) {
-  const [equipped, setEquipped] = useState<Record<string, string[]>>(() => loadRecord<string[]>(equippedKeyOf(vaultId)))
-  useEffect(() => {
-    try {
-      localStorage.setItem(equippedKeyOf(vaultId), JSON.stringify(equipped))
-    } catch (err) {
-      reportPersistError('saveEquipped', err)
-    }
-  }, [equipped, vaultId])
+  const [equipped, setEquipped] = usePersistedIdMap(equippedKeyOf, vaultId, 'saveEquipped')
   return { equipped, setEquipped }
 }
 
-// ---- Echo GHIM theo nhân vật (F14, task 64): ép vào bộ solve — persist theo vault ----
-
-/** Hook map charId → danh sách echo id GHIM (luôn có trong bộ solve của nhân vật đó) */
+/** Hook map charId → danh sách echo id GHIM/NEO (F14 — luôn có trong bộ solve của nhân vật đó) */
 export function usePinned(vaultId: string) {
-  const [pinned, setPinned] = useState<Record<string, string[]>>(() => loadRecord<string[]>(pinnedKeyOf(vaultId)))
-  useEffect(() => {
-    try {
-      localStorage.setItem(pinnedKeyOf(vaultId), JSON.stringify(pinned))
-    } catch (err) {
-      reportPersistError('savePinned', err)
-    }
-  }, [pinned, vaultId])
+  const [pinned, setPinned] = usePersistedIdMap(pinnedKeyOf, vaultId, 'savePinned')
   return { pinned, setPinned }
 }
 

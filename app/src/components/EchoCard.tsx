@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { CharacterProfile, EchoCost, MainStatKey, Substat } from '../types'
-import { findEchoInfo } from '../data/echoIndex'
+import { echoDisplayName, findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
 import { ELEMENT_COLOR } from '../data/elementColors'
 import { FIXED_SECONDARY, MAINSTATS, MAINSTAT_LABELS } from '../data/mainstats'
@@ -74,7 +74,7 @@ export default function EchoCard({
   const mainValue = mainDef ? mainDef.max * (0.2 + 0.032 * Math.max(0, Math.min(25, echo.level))) : null
   const fixed = FIXED_SECONDARY[echo.cost]
   const elemColor = sonata?.element ? ELEMENT_COLOR[sonata.element] : '#94a3b8'
-  const displayName = echo.name?.trim() || sonata?.name || echo.set
+  const displayName = echoDisplayName(echo)
 
   // RV — chất lượng roll trung bình (mỗi substat WuWa là 1 roll; chất lượng = giá trị/mốc max).
   // Dùng chung `echoRv` (engine/score) — 1 nguồn với RankingTable/cleanup. null khi chưa có substat (ẩn badge).

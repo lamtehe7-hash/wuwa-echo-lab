@@ -2,6 +2,7 @@ import { useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from 'rea
 import type { BuildContext, CharacterProfile, Echo, MainStatKey } from '../types'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
+import { echoDisplayName } from '../data/echoIndex'
 import { loadoutDamage } from '../engine/damage'
 import { dominantSet, scoreLoadout, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
@@ -93,7 +94,7 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
   }
   const selEcho = selectedId ? byId.get(selectedId) : undefined
   const selName = selEcho ? selEcho.name || SONATA_BY_ID[selEcho.set]?.name || selEcho.set : ''
-  const nameOf = (e: Echo) => e.name || SONATA_BY_ID[e.set]?.name || e.set
+  const nameOf = echoDisplayName
 
   // ── Kho-picker: option lọc lấy từ echo THẬT trong kho (như RankingTable) ──
   const setOptions = useMemo(() => {

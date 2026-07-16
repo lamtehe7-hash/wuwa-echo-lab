@@ -660,6 +660,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               anchorBlock={anchorBlock}
               onToggleAnchor={toggleAnchor}
               compareTotal={equippedInfo?.result?.total ?? null}
+              solverTotal={solved && !stale && loadout ? loadout.total : null}
               onPin={(ids) => {
                 setEquipped((prev) => ({ ...prev, [charId]: ids }))
                 push(t('toast.pinned', { name: profile.name }))

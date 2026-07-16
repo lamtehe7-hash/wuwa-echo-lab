@@ -31,6 +31,8 @@ interface Props {
   ctx?: BuildContext
   /** Điểm "bộ hiện tại" đã ghi nhớ — hiện delta ▲/▼ cạnh tổng điểm */
   compareTotal: number | null
+  /** U11: điểm bộ solver còn MỚI (null = chưa solve / đã stale) — delta thứ 2 "vs tối ưu" ở dòng meta */
+  solverTotal: number | null
   onPin: (ids: string[]) => void
   /** U7 (task 60): echo id → nhân vật đang ghim echo đó (badge "Đang dùng bởi X" ở kho) */
   pinnedBy?: Map<string, PinnedOwner[]>
@@ -40,7 +42,7 @@ interface Props {
   onToggleAnchor?: (id: string) => void
 }
 
-export default function BenchPanel({ echoes, profile, slots, onChange, ctx, compareTotal, onPin, pinnedBy, anchoredIds, anchorBlock, onToggleAnchor }: Props) {
+export default function BenchPanel({ echoes, profile, slots, onChange, ctx, compareTotal, solverTotal, onPin, pinnedBy, anchoredIds, anchorBlock, onToggleAnchor }: Props) {
   const t = useT()
   const tm = useTMessage()
   const [hover, setHover] = useState<number | null>(null)
@@ -68,6 +70,9 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
   const mainEcho = resolved[0]
   const dmg = result ? loadoutDamage(result.echoes.map((s) => s.echo), profile, ctx, activeSet) : null
   const delta = result && compareTotal !== null ? result.total - compareTotal : null
+  // U11: delta vs bộ solver còn mới — cùng thang màu với delta-vs-equipped (số lớn hơn = xanh hơn,
+  // rose thường xuyên là BÌNH THƯỜNG: bench đa phần kém bộ solver quét cả kho)
+  const solverDelta = result && solverTotal !== null ? result.total - solverTotal : null
   const setBd = result ? setBonusBreakdown(result.setCounts, profile).filter((e) => e.statScore > 0.05 || e.prefBonus > 0) : []
 
   // ── Thao tác ô ──
@@ -154,6 +159,14 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                   {' · '}CD <span className="font-mono text-slate-300">{dmg.critDmgTotal.toFixed(1)}%</span>
                 </span>
               )}
+            </span>
+          )}
+          {solverDelta !== null && (
+            <span title={t('bench.vsSolverTip')}>
+              {' · '}🧩 {t('bench.vsSolver')}:{' '}
+              <span className={`font-mono ${solverDelta > 0.05 ? 'text-emerald-400' : solverDelta < -0.05 ? 'text-rose-400' : 'text-slate-500'}`}>
+                {solverDelta > 0.05 ? '▲' : solverDelta < -0.05 ? '▼' : '＝'} {solverDelta >= 0 ? '+' : ''}{solverDelta.toFixed(1)}
+              </span>
             </span>
           )}
         </div>

@@ -343,6 +343,8 @@ const DICT: Record<string, Entry> = {
   'bench.clear': { vi: '↺ Xóa hết', en: '↺ Clear all' },
   'bench.stashTitle': { vi: 'Kho echo — kéo hoặc bấm để thêm', en: 'Inventory — drag or click to add' },
   'bench.stashEmpty': { vi: 'Không có echo nào khớp (hoặc đã lên bàn hết).', en: 'No matching echoes (or all already placed).' },
+  'bench.vsSolver': { vi: 'vs tối ưu', en: 'vs optimal' },
+  'bench.vsSolverTip': { vi: 'Chênh lệch so với bộ do "🧩 Tìm bộ 5 tối ưu" đề xuất (kết quả bên dưới).', en: 'Difference vs the set suggested by "🧩 Find best 5-set" (result below).' },
 
   // ── BuildEditor / StatBreakdown (chỉ số nền + bảng cộng dồn) ──
   'build.title': { vi: 'Chỉ số nền (vũ khí · base · buff)', en: 'Base stats (weapon · base · buff)' },

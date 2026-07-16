@@ -343,6 +343,9 @@ const DICT: Record<string, Entry> = {
   'bench.clear': { vi: '↺ Xóa hết', en: '↺ Clear all' },
   'bench.stashTitle': { vi: 'Kho echo — kéo hoặc bấm để thêm', en: 'Inventory — drag or click to add' },
   'bench.stashEmpty': { vi: 'Không có echo nào khớp (hoặc đã lên bàn hết).', en: 'No matching echoes (or all already placed).' },
+  'upgrade.potentialTitle': { vi: 'Tiềm năng nâng cấp', en: 'Upgrade potential' },
+  'upgrade.atFull': { vi: 'Tại full ~{ev} điểm (P10–P90 {p10}–{p90})', en: 'At full ~{ev} pts (P10–P90 {p10}–{p90})' },
+  'upgrade.costLine': { vi: 'Cần thêm {exp} EXP · {tuners} Tuner · {credits} Credit', en: 'Needs {exp} EXP · {tuners} Tuner · {credits} Credit' },
   'bench.vsSolver': { vi: 'vs tối ưu', en: 'vs optimal' },
   'bench.vsSolverTip': { vi: 'Chênh lệch so với bộ do "🧩 Tìm bộ 5 tối ưu" đề xuất (kết quả bên dưới).', en: 'Difference vs the set suggested by "🧩 Find best 5-set" (result below).' },
 

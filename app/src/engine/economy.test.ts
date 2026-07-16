@@ -112,6 +112,16 @@ describe('upgradePotential — EV/phân phối', () => {
     expect(Math.abs(c.p90Final - a.p90Final)).toBeLessThan(1.5)
   })
 
+  it('trials: 0 bỏ vòng MC — p10/p90 = evFinal, cost/EV giữ nguyên (lời gọi hàng loạt)', () => {
+    const p0 = upgradePotential(half, camellya, { trials: 0 })
+    const p1 = upgradePotential(half, camellya)
+    expect(p0.p10Final).toBe(p0.evFinal)
+    expect(p0.p90Final).toBe(p0.evFinal)
+    expect(p0.evFinal).toBeCloseTo(p1.evFinal, 10)
+    expect(p0.tunersNeeded).toBe(p1.tunersNeeded)
+    expect(p0.gainPerTuner).toBeCloseTo(p1.gainPerTuner, 10)
+  })
+
   it('maxFinal = current + top-w của pool (roll max) — tính tay', () => {
     // pool bỏ critRate + hp (đã có). Top-2 trọng số Camellya còn lại: critDmg (1) + havocDmg?
     // havocDmg không phải substat — top substat còn: critDmg, rồi atkPct/basicAtk…

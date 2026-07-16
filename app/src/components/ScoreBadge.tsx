@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CharacterProfile, ScoredEcho } from '../types'
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SUBSTATS } from '../data/substats'
+import { upgradePotential } from '../engine/economy'
 import { gradeOf, theoreticalMaxTotal, type Grade } from '../engine/score'
 import { rateSubstat } from '../engine/substatRating'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 
 // Điểm số bấm được → popover breakdown (research/ui-ux.md B4): thanh đóng góp từng substat
 // + dòng main stat + công thức tổng. Thay cho tooltip title= (hover-only, mobile không xem được).
@@ -27,11 +28,20 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
   profile?: CharacterProfile
 }) {
   const t = useT()
+  const { lang } = useLang()
   // Panel dùng position:fixed (toạ độ tính lúc mở) vì bảng nằm trong overflow-x-auto —
   // absolute sẽ bị scroll-container cắt mất. Cuộn trang khi đang mở → đóng (toạ độ hết đúng).
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
   const open = pos !== null
   const rootRef = useRef<HTMLSpanElement>(null)
+
+  // F8 (task 71): tiềm năng nâng cấp — tính LƯỜI (chỉ khi popover mở) vì có vòng MC;
+  // bảng render hàng chục ScoreBadge, tính lúc render là phí vô ích.
+  const up = useMemo(
+    () => (open && profile ? upgradePotential(r.echo, profile) : null),
+    [open, r.echo, profile],
+  )
+  const fmtN = (n: number) => n.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US')
 
   const toggle = () => {
     if (open) { setPos(null); return }
@@ -98,7 +108,7 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
       {open && (
         <span
           style={{ top: pos.top, left: pos.left }}
-          className="fixed z-30 block w-64 rounded-lg border border-slate-700 bg-slate-900 p-2.5 text-left shadow-xl shadow-black/50"
+          className="fixed z-30 block max-h-[70vh] w-64 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-2.5 text-left shadow-xl shadow-black/50"
         >
           <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">{t('breakdown.title')}</span>
           {r.breakdown.length === 0 && <span className="block text-xs text-slate-600">{t('card.noSubs')}</span>}
@@ -129,6 +139,18 @@ export default function ScoreBadge({ r, variant = 'table', profile }: {
           {grade && (
             <span className={`mt-0.5 block text-right text-[11px] ${GRADE_CLS[grade]}`}>
               {t('breakdown.gradeLine', { grade, pct: gradePct.toFixed(0) })}
+            </span>
+          )}
+          {/* F8 (task 71): tiềm năng nâng cấp — chỉ khi còn slot substat chưa mở */}
+          {up && up.remainingSlots > 0 && (
+            <span className="mt-1.5 block border-t border-slate-800 pt-1.5 text-[11px]">
+              <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-500">{t('upgrade.potentialTitle')}</span>
+              <span className="block text-emerald-400">
+                {t('upgrade.atFull', { ev: up.evFinal.toFixed(1), p10: up.p10Final.toFixed(1), p90: up.p90Final.toFixed(1) })}
+              </span>
+              <span className="block text-slate-400">
+                {t('upgrade.costLine', { exp: fmtN(up.expNeeded), tuners: up.tunersNeeded, credits: fmtN(up.creditsNeeded) })}
+              </span>
             </span>
           )}
         </span>

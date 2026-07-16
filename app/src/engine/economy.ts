@@ -106,6 +106,15 @@ export function upgradePotential(
   // Trần: các loại trọng số cao nhất, roll max (eff = 1) — KHÔNG phải P100 của MC (max mọi nhánh)
   const maxRawGain = [...poolW].sort((a, b) => b - a).slice(0, draws).reduce((s, w) => s + w, 0)
   const maxFinal = current + toPts(maxRawGain)
+  const gainPerTuner = tunersNeeded > 0 ? (evFinal - current) / tunersNeeded : 0
+
+  // trials ≤ 0 = bỏ vòng MC (gọi hàng loạt trong UpgradePlanPanel chỉ cần EV/cost closed-form)
+  if (trials <= 0) {
+    return {
+      remainingSlots, expNeeded, tunersNeeded, creditsNeeded,
+      current, evFinal, maxFinal, p10Final: evFinal, p90Final: evFinal, gainPerTuner,
+    }
+  }
 
   // MC P10/P90: mỗi trial rút `draws` LOẠI không lặp (partial Fisher–Yates) + roll theo mốc
   const rand = mulberry32(seed)
@@ -130,7 +139,7 @@ export function upgradePotential(
     remainingSlots, expNeeded, tunersNeeded, creditsNeeded,
     current, evFinal, maxFinal,
     p10Final: q(0.1), p90Final: q(0.9),
-    gainPerTuner: tunersNeeded > 0 ? (evFinal - current) / tunersNeeded : 0,
+    gainPerTuner,
   }
 }
 

@@ -4,7 +4,7 @@ import { CHARACTERS } from '../data/characters'
 import { DEMO_ECHOES } from '../data/demo'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { GRADE_BANDS, gradeOf, scoreEcho, theoreticalMaxTotal } from './score'
-import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary } from './insights'
+import { BACKLOG_MAX_TARGET, bestOwners, setBacklog, setFarmPriority, setFarmSummary, triageCandidates, type OwnerFit } from './insights'
 
 const byId = Object.fromEntries(CHARACTERS.map((c) => [c.id, c])) as Record<string, CharacterProfile>
 const demo = Object.fromEntries(DEMO_ECHOES.map((e) => [e.name ?? e.id, e])) as Record<string, Echo>
@@ -180,5 +180,32 @@ describe('setBacklog', () => {
 
   it('không throw trên toàn bộ set × roster với demo', () => {
     expect(() => setBacklog(SONATA_SETS, realChars, usable, 3)).not.toThrow()
+  })
+})
+
+// ---- F4 (task 63): triageCandidates ----
+
+describe('triageCandidates', () => {
+  const mk = (id: string, over: Partial<Echo> = {}): Echo =>
+    ({ id, name: id, cost: 4, set: 'havoc-eclipse', rarity: 5, level: 25, mainStat: 'critRate', substats: [], ...over })
+
+  it('loại echo lock + trash khỏi danh sách duyệt', () => {
+    const es = [mk('a'), mk('b', { lock: true }), mk('c', { trash: true })]
+    expect(triageCandidates(es, 'newest', new Map()).map((e) => e.id)).toEqual(['a'])
+  })
+
+  it('newest: ngược thứ tự thêm vào kho', () => {
+    const es = [mk('a'), mk('b'), mk('c')]
+    expect(triageCandidates(es, 'newest', new Map()).map((e) => e.id)).toEqual(['c', 'b', 'a'])
+  })
+
+  it('worst: tăng dần theo điểm best-owner #1, echo không-hợp-ai lên đầu', () => {
+    const es = [mk('hi'), mk('lo'), mk('none')]
+    const owners = new Map<string, OwnerFit[]>([
+      ['hi', [{ totalScore: 90 } as OwnerFit]],
+      ['lo', [{ totalScore: 30 } as OwnerFit]],
+      // 'none' không có entry → val -1 → lên đầu
+    ])
+    expect(triageCandidates(es, 'worst', owners).map((e) => e.id)).toEqual(['none', 'lo', 'hi'])
   })
 })

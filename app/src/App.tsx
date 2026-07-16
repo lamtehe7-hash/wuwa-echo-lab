@@ -25,6 +25,7 @@ import InfoTip from './components/InfoTip'
 import SetFarmPriority from './components/SetFarmPriority'
 import FarmingBacklog from './components/FarmingBacklog'
 import CleanupPanel from './components/CleanupPanel'
+import TriagePanel from './components/TriagePanel'
 import PinnedOverview, { type PinnedRow } from './components/PinnedOverview'
 import type { PinnedOwner } from './components/PinnedByBadge'
 import { useLang, useT } from './i18n'
@@ -108,6 +109,9 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   }
   const [benchSlots, setBenchSlots] = useState<(string | null)[]>(EMPTY_BENCH)
   const [editingEcho, setEditingEcho] = useState<Echo | null>(null)
+  // F4 (task 63): Triage Queue — duyệt lần lượt. triageActive bật view thay thế trong tab Kho.
+  const [triageActive, setTriageActive] = useState(false)
+  const [triageOrder, setTriageOrder] = useState<'worst' | 'newest'>('worst')
   const fileRef = useRef<HTMLInputElement>(null)
 
   // State → hash (không bắn hashchange nên không loop); hashchange ngược lại cho back/sửa URL tay
@@ -293,6 +297,20 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     })
   }
 
+  // F4: đánh cờ trong triage → echo BIẾN MẤT khỏi tầm mắt (qua card kế) nên PHẢI toast+undo
+  // (toggleFlag thường không toast vì echo còn hiện mờ tại chỗ). Set + undo TƯỜNG MINH (bật cờ / bỏ cờ),
+  // KHÔNG dùng toggleFlag flip — nếu user đổi cờ tay giữa lúc action↔undo, flip sẽ làm ngược (review task 63).
+  const triageFlag = (id: string, key: 'lock' | 'trash') => {
+    const echo = echoes.find((e) => e.id === id)
+    const name = echo?.name || (echo && SONATA_BY_ID[echo.set]?.name) || id
+    setEchoes((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: true } : e)))
+    push(t(key === 'trash' ? 'triage.markedTrash' : 'triage.markedLock', { name }), {
+      action: { label: t('common.undo'), fn: () => setEchoes((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: undefined } : e))) },
+    })
+  }
+  // Số echo "chưa quyết" (không lock/trash) — cho nhãn nút entry + disable khi 0
+  const triageCount = useMemo(() => echoes.filter((e) => !e.trash && !e.lock).length, [echoes])
+
   // Xoá hàng loạt (bỏ qua echo khoá) + toast hoàn tác cả cụm
   const deleteMany = (ids: string[]) => {
     const idSet = new Set(ids)
@@ -391,6 +409,41 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
 
       {tab === 'inventory' && (empty ? emptyState : (
         <div className="space-y-3">
+        {triageActive ? (
+          // F4 (task 63): view duyệt lần lượt thay chỗ CleanupPanel + bảng (KHÔNG modal — "Sửa" mở EchoEditModal đè lên)
+          <TriagePanel
+            echoes={echoes}
+            order={triageOrder}
+            bestOwners={bestOwnersByEcho}
+            modalOpen={!!editingEcho}
+            onTrash={(id) => triageFlag(id, 'trash')}
+            onLock={(id) => triageFlag(id, 'lock')}
+            onEdit={setEditingEcho}
+            onJump={jumpToChar}
+            onExit={() => setTriageActive(false)}
+          />
+        ) : (
+        <>
+        {/* F4 entry: nút duyệt lần lượt + chọn thứ tự (tệ-trước / mới-trước) */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={triageCount === 0}
+            onClick={() => setTriageActive(true)}
+            className="rounded bg-sky-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-40"
+          >{t('triage.entry', { n: triageCount })}</button>
+          <span className="flex overflow-hidden rounded border border-slate-700 text-xs">
+            {(['worst', 'newest'] as const).map((o) => (
+              <button
+                key={o}
+                type="button"
+                aria-pressed={triageOrder === o}
+                className={`px-2 py-1 ${triageOrder === o ? 'bg-sky-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+                onClick={() => setTriageOrder(o)}
+              >{t(o === 'worst' ? 'triage.orderWorst' : 'triage.orderNewest')}</button>
+            ))}
+          </span>
+        </div>
         {/* F11 (task 62): dọn kho theo luật — panel full-width TRÊN bảng (luật R1/R4 toàn roster, không
             thuộc bảng scoped theo 1 nhân vật). Đóng mặc định (công cụ ít dùng). */}
         <CleanupPanel echoes={echoes} profiles={allProfiles} ownersByEcho={bestOwnersByEcho} onApply={applyCleanup} />
@@ -413,6 +466,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             />
           </div>
         </div>
+        </>
+        )}
         </div>
       ))}
 

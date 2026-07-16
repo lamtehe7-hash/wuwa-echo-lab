@@ -37,7 +37,7 @@ interface Props {
   onEdit: (echo: Echo) => void
 }
 
-const VERDICT_CLS: Record<string, string> = {
+export const VERDICT_CLS: Record<string, string> = {
   'keep-tuning': 'text-emerald-400',
   done: 'text-sky-400',
   usable: 'text-amber-400',

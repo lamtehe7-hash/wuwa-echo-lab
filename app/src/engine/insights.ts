@@ -143,6 +143,23 @@ export interface SetBacklogRow {
   status: BacklogStatus
 }
 
+// F4 (task 63): Triage Queue — thứ tự duyệt echo "chưa quyết" (không lock/trash).
+//  - worst : xấu trước (dọn rác) = tăng dần theo điểm roster (best-owner #1); echo không hợp ai (val -1) lên đầu
+//  - newest: mới trước (lô vừa import) = ngược thứ tự thêm vào kho
+export function triageCandidates(
+  echoes: Echo[],
+  order: 'worst' | 'newest',
+  ownersByEcho: Map<string, OwnerFit[]>,
+): Echo[] {
+  const cands = echoes.filter((e) => !e.lock && !e.trash)
+  if (order === 'newest') {
+    const idx = new Map(echoes.map((e, i) => [e.id, i]))
+    return [...cands].sort((a, b) => (idx.get(b.id) ?? 0) - (idx.get(a.id) ?? 0))
+  }
+  const val = (e: Echo) => ownersByEcho.get(e.id)?.[0]?.totalScore ?? -1
+  return [...cands].sort((a, b) => val(a) - val(b))
+}
+
 const GROUP_RANK: Record<BacklogStatus, number> = { need: 0, farm: 0, enough: 1, surplus: 1 }
 const STATUS_RANK: Record<BacklogStatus, number> = { need: 0, farm: 1, enough: 0, surplus: 1 }
 

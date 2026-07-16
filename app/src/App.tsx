@@ -19,7 +19,7 @@ import { CHARACTERS, CHARACTER_BY_ID } from './data/characters'
 import { DEMO_ECHOES } from './data/demo'
 import { SONATA_BY_ID } from './data/sonata'
 import { loadoutDamage } from './engine/damage'
-import { scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
+import { dominantSet, scoreLoadout, solveBest5, type SolveObjective } from './engine/solver'
 import { useLang, useT } from './i18n'
 import { exportJson, importJson, mergeProfile, newId, onPersistError, useEchoInventory, useEquipped, useOverrides, useVaults } from './store'
 import ScannerImport from './components/ScannerImport'
@@ -141,23 +141,28 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // useMemo giữ identity profile giữa các render — memo chấm điểm trong RankingTable mới có tác dụng
   const profile = useMemo(() => mergeProfile(CHARACTER_BY_ID[charId], overrides[charId]), [charId, overrides])
 
+  // Build context (vũ khí+base+buff) cho damage model + ngân sách ER thật của solver (task 55)
+  const buildCtx = overrides[charId]?.build
+
   // "Bộ hiện tại" đã ghi nhớ của nhân vật đang chọn — chấm lại theo kho/trọng số MỚI NHẤT
-  // (cùng objective với solver) để delta trước–sau luôn cùng thang
+  // (cùng objective + cùng ctx với solver) để delta trước–sau luôn cùng thang
   const equippedInfo = useMemo(() => {
     const ids = equipped[charId]
     if (!ids || ids.length === 0) return null
     const found = ids.map((id) => echoes.find((e) => e.id === id)).filter((e): e is Echo => e !== undefined)
-    return { result: scoreLoadout(found, profile), missing: ids.length - found.length }
-  }, [equipped, charId, echoes, profile])
+    return { result: scoreLoadout(found, profile, buildCtx), missing: ids.length - found.length }
+  }, [equipped, charId, echoes, profile, buildCtx])
 
   // Kho/trọng số đổi → kết quả solve không còn khớp: GIỮ hiển thị nhưng đánh dấu cũ (mờ + nút giải lại)
   useEffect(() => {
     setStale(true)
   }, [echoes, overrides])
 
-  // Build context (vũ khí+base+buff) cho damage model THẬT — mode Damage dùng để tối ưu theo crit thật
-  const buildCtx = overrides[charId]?.build
-  const activeSet = forcedSet || profile.preferredSets[0]
+  // Set nạp buff cho BuildEditor: ưu tiên set TRỘI của kết quả solve còn mới (khớp bảng breakdown
+  // trong LoadoutView — hết lệch 2 con số CR, lỗ hổng UI ghi nhận 16/07); chưa solve/đã stale thì
+  // đoán theo forcedSet/preferred[0] như cũ.
+  const assumedSet = forcedSet || profile.preferredSets[0]
+  const activeSet = (solved && !stale && loadout ? dominantSet(loadout.setCounts) : undefined) ?? assumedSet
 
   const solve = () => {
     setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective, buildCtx))
@@ -413,7 +418,8 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               </span>
               {equippedInfo.result && (
                 <span className="text-xs text-slate-500">
-                  ⚔ ×{loadoutDamage(equippedInfo.result.echoes.map((s) => s.echo), profile, buildCtx, activeSet).multiplier.toFixed(2)}
+                  {/* set buff theo set TRỘI của CHÍNH bộ đang đeo (không phải set đề cử/ép) */}
+                  ⚔ ×{loadoutDamage(equippedInfo.result.echoes.map((s) => s.echo), profile, buildCtx, dominantSet(equippedInfo.result.setCounts)).multiplier.toFixed(2)}
                 </span>
               )}
               {equippedInfo.missing > 0 && <span className="text-xs text-amber-400">{t('equip.missing', { n: equippedInfo.missing })}</span>}

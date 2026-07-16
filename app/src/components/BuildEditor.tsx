@@ -22,6 +22,10 @@ export default function BuildEditor({ profile, override, activeSet, onChange }: 
   const build: BuildContext = override?.build ?? {}
   const r = resolveContext(profile, build, activeSet)
   const inDb = !!CHARACTER_BASE_BY_ID[profile.id]
+  // Lọc dropdown theo loại vũ khí nhân vật (DB datamine, task 55) — 110 option → ~20 đúng loại.
+  // Vũ khí ĐÃ chọn giữ lại dù lệch loại (dữ liệu cũ) để <select> không mất value.
+  const weaponType = CHARACTER_BASE_BY_ID[profile.id]?.weaponType
+  const weaponList = weaponType ? WEAPONS.filter((w) => w.type === weaponType || w.id === build.weaponId) : WEAPONS
 
   const patchBuild = (patch: Partial<BuildContext>) => onChange({ ...override, build: { ...build, ...patch } })
   const setManualBase = (k: 'atk' | 'hp' | 'def', v: number | undefined) => {
@@ -55,7 +59,7 @@ export default function BuildEditor({ profile, override, activeSet, onChange }: 
           onChange={(e) => patchBuild({ weaponId: e.target.value || undefined })}
         >
           <option value="">— {t('build.weaponNone')} —</option>
-          {WEAPONS.map((w) => (
+          {weaponList.map((w) => (
             <option key={w.id} value={w.id}>{w.name} · {WEAPON_TYPE_LABEL[w.type]} {w.rarity}★</option>
           ))}
         </select>

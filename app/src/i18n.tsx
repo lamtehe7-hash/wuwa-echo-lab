@@ -291,7 +291,7 @@ const DICT: Record<string, Entry> = {
   'weights.arch.buffer': { vi: 'Buffer (ER)', en: 'Buffer (ER)' },
   'weights.arch.healerAtk': { vi: 'Healer (scale ATK)', en: 'Healer (ATK-scale)' },
   'weights.arch.healerHp': { vi: 'Healer (scale HP)', en: 'Healer (HP-scale)' },
-  'weights.erTarget': { vi: 'Mục tiêu tổng ER% (gồm 100 gốc; bỏ trống = không gate)', en: 'Target total ER% (incl. 100 base; blank = no gate)' },
+  'weights.erTarget': { vi: 'Mục tiêu tổng ER% (gồm 100 gốc; tự trừ ER vũ khí/passive từ ⚔ chỉ số nền; bỏ trống = không gate)', en: 'Target total ER% (incl. 100 base; weapon/passive ER from ⚔ build auto-counted; blank = no gate)' },
   'weights.help': {
     vi: 'Thang 0–1: 1 roll MAX của stat = w điểm. CR = CD = 1 cho DPS (1 roll CD ≈ 1 roll CR về EV quanh tỉ lệ crit 1:2).',
     en: 'Scale 0–1: 1 MAX roll of a stat = w points. CR = CD = 1 for DPS (1 CD roll ≈ 1 CR roll in EV around the 1:2 crit ratio).',
@@ -359,7 +359,7 @@ const DICT: Record<string, Entry> = {
 
   // ── Engine: solver note (solver.ts) ──
   'note.partialSlots': { vi: 'Chỉ ghép được {n}/5 slot từ kho hiện tại.', en: 'Only {n}/5 slots filled from current inventory.' },
-  'note.erShort': { vi: 'ER từ echo {er}% < mục tiêu {need}% (chưa tính vũ khí/passive).', en: 'ER from echoes {er}% < target {need}% (weapon/passive not counted).' },
+  'note.erShort': { vi: 'ER từ echo {er}% < mức cần từ echo {need}% (vũ khí/passive/forte đã góp {extra}%).', en: 'ER from echoes {er}% < {need}% needed from echoes (weapon/passive/forte contributes {extra}%).' },
   'note.mainStatOff': { vi: 'Có echo main stat chưa chuẩn — thay khi farm được bản đúng.', en: 'Some echo main stats are off — replace when you farm the correct ones.' },
 
   // ── Engine: OCR parser warnings (ocr/parse.ts) + OcrImport ──

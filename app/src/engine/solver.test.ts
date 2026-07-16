@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { CharacterProfile, Echo, MainStatKey, SubstatKey } from '../types'
-import { PREF_MAIN_BONUS, SET_PREF_BONUS, setTierScore, solveBest5 } from './solver'
+import { PREF_MAIN_BONUS, SET_PREF_BONUS, scoreLoadout, setTierScore, solveBest5 } from './solver'
 import { echoER, scoreEcho, theoreticalMax } from './score'
-import { loadoutDamageMultiplier } from './damage'
+import { loadoutDamageMultiplier, nonEchoER } from './damage'
 import { CHARACTERS, CHARACTER_BY_ID } from '../data/characters'
 import { DEMO_ECHOES } from '../data/demo'
 import { COST_CAP, MAINSTATS } from '../data/mainstats'
@@ -338,6 +338,50 @@ describe('solveBest5 — chiết khấu ER vượt erTarget', () => {
     const expectedPenalty = ((wEr * (excess / maxRoll('energyRegen'))) / theoreticalMax(yinlin)) * 100
     expect(expectedPenalty).toBeGreaterThan(0)
     expect(r.total).toBeCloseTo(r.subScore + r.setBonusScore - expectedPenalty, 9)
+  })
+})
+
+describe('solveBest5 — ER thật từ build context (task 55: vũ khí/passive gánh bớt erTarget)', () => {
+  const yinlin = CHARACTER_BY_ID['yinlin'] // erTarget 125 → need 25 khi không ctx
+  const erCtx = { weaponId: 'bloodpacts-pledge' } // secondary ER 38.8 > need 25 → echo hết phải gánh ER
+  const erEcho: Echo = {
+    id: 'withEr', name: 'WithER', cost: 3, set: 'void-thunder', rarity: 5, level: 25,
+    mainStat: 'energyRegen', // main ER 32.0
+    substats: [{ stat: 'critRate', value: 10.5 }, { stat: 'critDmg', value: 21.0 }],
+  }
+
+  it('ctx có vũ khí ER phủ hết need → TOÀN BỘ ER echo thành excess, total thấp hơn không-ctx', () => {
+    const without = solveBest5([erEcho], yinlin)!
+    const withCtx = solveBest5([erEcho], yinlin, undefined, 'score', erCtx)!
+    expect(nonEchoER(yinlin, erCtx)).toBeCloseTo(38.8, 5)
+    // need không-ctx = 25 → excess = 7; need có-ctx = 0 → excess = 32 (phạt nặng hơn)
+    expect(withCtx.total).toBeLessThan(without.total)
+    const wEr = yinlin.weights.energyRegen ?? 0
+    const expectedPenalty = ((wEr * (32 / maxRoll('energyRegen'))) / theoreticalMax(yinlin)) * 100
+    expect(withCtx.total).toBeCloseTo(withCtx.subScore + withCtx.setBonusScore - expectedPenalty, 9)
+  })
+
+  it('note.erShort dùng need ĐÃ TRỪ ER vũ khí + báo phần extra', () => {
+    const heavyEr = { ...yinlin, erTarget: 150 } // need không-ctx 50; có-ctx 50−38.8 = 11.2
+    const noErEcho: Echo = {
+      id: 'noEr', name: 'NoER', cost: 3, set: 'void-thunder', rarity: 5, level: 25,
+      mainStat: 'electroDmg', substats: [{ stat: 'critRate', value: 10.5 }],
+    }
+    const r = solveBest5([noErEcho], heavyEr, undefined, 'score', erCtx)!
+    const note = r.note.find((n) => n.key === 'note.erShort')!
+    expect(note).toBeDefined()
+    expect(note.params?.need).toBe('11.2')
+    expect(note.params?.extra).toBe('38.8')
+    // vũ khí ER phủ cả need (erTarget 125 → need 25 < 38.8) → không còn note
+    const r2 = solveBest5([noErEcho], yinlin, undefined, 'score', erCtx)!
+    expect(r2.note.some((n) => n.key === 'note.erShort')).toBe(false)
+  })
+
+  it('scoreLoadout cùng ctx = đúng điểm solver (delta bộ-hiện-tại cùng thang)', () => {
+    const best = solveBest5([erEcho], yinlin, undefined, 'score', erCtx)!
+    const re = scoreLoadout(best.echoes.map((s) => s.echo), yinlin, erCtx)!
+    expect(re.total).toBeCloseTo(best.total, 9)
+    expect(re.note.map((n) => n.key)).toEqual(best.note.map((n) => n.key))
   })
 })
 

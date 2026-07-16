@@ -3,7 +3,7 @@ import { COST_CAP } from '../data/mainstats'
 import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { maxRoll } from '../data/substats'
 import { echoER, refScale, scoreEcho, theoreticalMax, weightFor } from './score'
-import { loadoutDamage } from './damage'
+import { loadoutDamage, nonEchoER } from './damage'
 
 // Solver bộ-5 tối ưu (PROPOSAL.md §4): duyệt layout cost → DFS tổ hợp top-K mỗi cost,
 // cộng bonus set ở lá + chiết khấu ER thừa, prune bằng chặn trên lạc quan.
@@ -146,27 +146,38 @@ function maxPossibleSetBonus(profile: CharacterProfile, theoMax: number): number
   return Math.max(...PIECE_PARTITIONS.map((p) => p.reduce((s, k) => s + bestAt[k], 0)))
 }
 
-/** Chiết khấu ER vượt mục tiêu: phần thừa xem như roll vô dụng, trừ lại điểm đã cộng */
-function erPenalty(chosen: Candidate[], profile: CharacterProfile): { penalty: number; erGained: number } {
+/** Chiết khấu ER vượt mục tiêu: phần thừa xem như roll vô dụng, trừ lại điểm đã cộng.
+ *  `erExtra` = ER% NGOÀI echo (vũ khí/passive/forte — nonEchoER, task 55): trừ vào phần echo cần gánh. */
+function erPenalty(chosen: Candidate[], profile: CharacterProfile, erExtra: number): { penalty: number; erGained: number } {
   const erGained = chosen.reduce((s, c) => s + c.er, 0)
   if (!profile.erTarget) return { penalty: 0, erGained }
   const wEr = profile.weights.energyRegen ?? 0
   if (wEr === 0) return { penalty: 0, erGained }
-  const need = Math.max(0, profile.erTarget - 100)
+  const need = Math.max(0, profile.erTarget - 100 - erExtra)
   const excess = Math.max(0, erGained - need)
   const penaltyRaw = wEr * (excess / maxRoll('energyRegen'))
   return { penalty: (penaltyRaw / theoreticalMax(profile)) * 100, erGained }
+}
+
+/** Note "ER chưa đủ" khi echo chưa gánh nốt phần erTarget còn thiếu sau 100 gốc + ER ngoài echo. */
+function erShortNote(erGained: number, profile: CharacterProfile, erExtra: number): LocMessage | null {
+  if (!profile.erTarget) return null
+  const need = Math.max(0, profile.erTarget - 100 - erExtra)
+  if (erGained >= need) return null
+  return { key: 'note.erShort', params: { er: erGained.toFixed(1), need: need.toFixed(1), extra: erExtra.toFixed(1) } }
 }
 
 /**
  * Chấm một bộ CỐ ĐỊNH bằng ĐÚNG objective của solver (value + set bonus − ER penalty) —
  * dùng để so sánh "bộ đang đeo" vs gợi ý mới trên cùng một thang điểm.
  * Không kiểm tra cost cap/layout (bộ đến từ kết quả solver hoặc game nên vốn hợp lệ).
+ * `ctx` (task 55): cùng build context với solver để ngân sách ER trừ vũ khí/passive y hệt.
  */
-export function scoreLoadout(echoes: Echo[], profile: CharacterProfile): LoadoutResult | null {
+export function scoreLoadout(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext): LoadoutResult | null {
   if (echoes.length === 0) return null
   const list = echoes.slice(0, 5)
   const theoMax = theoreticalMax(profile)
+  const erExtra = nonEchoER(profile, ctx)
   const chosen: Candidate[] = list.map((e) => {
     const scored = scoreEcho(e, profile)
     const prefs = profile.mainStatPrefs[String(e.cost) as '1' | '3' | '4'] ?? []
@@ -179,13 +190,11 @@ export function scoreLoadout(echoes: Echo[], profile: CharacterProfile): Loadout
   })
   const sumValue = chosen.reduce((s, c) => s + c.value, 0)
   const { bonus, counts } = setBonusScore(chosen, profile, theoMax)
-  const { penalty, erGained } = erPenalty(chosen, profile)
+  const { penalty, erGained } = erPenalty(chosen, profile, erExtra)
   const note: LocMessage[] = []
   if (list.length < 5) note.push({ key: 'note.partialSlots', params: { n: list.length } })
-  if (profile.erTarget) {
-    const need = Math.max(0, profile.erTarget - 100)
-    if (erGained < need) note.push({ key: 'note.erShort', params: { er: erGained.toFixed(1), need } })
-  }
+  const erNote = erShortNote(erGained, profile, erExtra)
+  if (erNote) note.push(erNote)
   if (chosen.some((c) => !c.scored.mainStatFit)) note.push({ key: 'note.mainStatOff' })
   return {
     echoes: chosen.map((c) => c.scored),
@@ -211,11 +220,12 @@ export type SolveObjective = 'score' | 'damage'
  *   chọn bộ có chỉ số damage TƯƠNG ĐỐI cao nhất — hợp DPS (score chỉ xấp xỉ tuyến tính damage).
  *   Damage model phi tuyến nên KHÔNG dùng trực tiếp làm objective DFS (phá prune); re-rank an toàn.
  */
-/** Set trội của 1 bộ (nhiều mảnh nhất) — dùng nạp buff set đúng cho damage model. */
-function dominantSet(r: LoadoutResult): string | undefined {
+/** Set trội của 1 bộ (nhiều mảnh nhất) — nạp buff set đúng cho damage model/breakdown.
+ *  DÙNG CHUNG cho UI (LoadoutView/BenchPanel/App) — trước 16/07 mỗi nơi 1 bản sao. */
+export function dominantSet(counts: Record<string, number>): string | undefined {
   let best: string | undefined
   let bestN = 0
-  for (const [setId, n] of Object.entries(r.setCounts)) if (n > bestN) { bestN = n; best = setId }
+  for (const [setId, n] of Object.entries(counts)) if (n > bestN) { bestN = n; best = setId }
   return best
 }
 
@@ -229,6 +239,8 @@ export function solveBest5(
   const src = forcedSet ? echoes.filter((e) => e.set === forcedSet) : echoes
   const theoMax = theoreticalMax(profile)
   const maxSetBonus = maxPossibleSetBonus(profile, theoMax)
+  // ER thật (task 55): vũ khí/passive/forte gánh bớt erTarget → echo chỉ cần gánh phần còn lại
+  const erExtra = nonEchoER(profile, ctx)
   // Pool theo cost: điểm = substat + GIÁ TRỊ main stat + ưu tiên main đúng meta, cắt top-K
   const pools: Record<number, Candidate[]> = { 1: [], 3: [], 4: [] }
   for (const e of src) {
@@ -310,16 +322,14 @@ export function solveBest5(
     const dfs = (gi: number, taken: number, startIdx: number, sumValue: number) => {
       if (gi === groups.length) {
         const { bonus, counts } = setBonusScore(chosen, profile, theoMax)
-        const { penalty, erGained } = erPenalty(chosen, profile)
+        const { penalty, erGained } = erPenalty(chosen, profile, erExtra)
         const total = sumValue + bonus - penalty
         // >= để total BẰNG nhau vẫn vào consider (tie-break nhiều-slot xử lý ở đó)
         if (topN.length < N || total >= topN[topN.length - 1].total) {
           const note: LocMessage[] = []
           if (layout.length < 5) note.push({ key: 'note.partialSlots', params: { n: layout.length } })
-          if (profile.erTarget) {
-            const need = Math.max(0, profile.erTarget - 100)
-            if (erGained < need) note.push({ key: 'note.erShort', params: { er: erGained.toFixed(1), need } })
-          }
+          const erNote = erShortNote(erGained, profile, erExtra)
+          if (erNote) note.push(erNote)
           if (chosen.some((c) => !c.scored.mainStatFit)) note.push({ key: 'note.mainStatOff' })
           consider({
             echoes: chosen.map((c) => c.scored),
@@ -356,7 +366,7 @@ export function solveBest5(
     let bestI = 0
     let bestD = -Infinity
     for (let i = 0; i < topN.length; i++) {
-      const d = loadoutDamage(topN[i].echoes.map((se) => se.echo), profile, ctx, dominantSet(topN[i])).multiplier
+      const d = loadoutDamage(topN[i].echoes.map((se) => se.echo), profile, ctx, dominantSet(topN[i].setCounts)).multiplier
       if (d > bestD) { bestD = d; bestI = i }
     }
     return topN[bestI]

@@ -20,6 +20,10 @@ const branchArg = process.argv.indexOf('--branch')
 const BRANCH = branchArg >= 0 ? process.argv[branchArg + 1] : '3.5'
 const RAW = (p: string) => `https://raw.githubusercontent.com/Arikatsu/WutheringWaves_Data/${BRANCH}/BinData/${p}`
 const ELEMENT: Record<number, string> = { 1: 'glacio', 2: 'fusion', 3: 'electro', 4: 'aero', 5: 'spectro', 6: 'havoc' }
+// roleinfo.WeaponType: 1 BROADBLADE / 2 SWORD / 3 pistols / 4 gauntlets / 5 rectifier.
+// (Ghi chú cũ HANDOVER "1sword/2broadblade" NGƯỢC 1↔2 — verify 16/07 bằng 4 mốc: Jiyan/Augusta
+//  WeaponType=1 cầm broadblade (Verdant Summit/Thunderflare), Camellya/Xuanling=2 cầm sword (Red Spring/Azure Oath).)
+const WEAPON_TYPE: Record<number, string> = { 1: 'broadblade', 2: 'sword', 3: 'pistols', 4: 'gauntlets', 5: 'rectifier' }
 
 // slug romaji (từ asset path, lowercase) → charId trong characters.ts. [TENT]=cần xác nhận trong game.
 const ALIAS: Record<string, string> = {
@@ -42,6 +46,7 @@ const FORTE: Record<string, Partial<Record<WeightKey, number>>> = {
 
 interface RoleInfo {
   Id: number; RoleType: number; QualityId: number; PropertyId: number; ElementId: number
+  WeaponType: number
   RolePortrait?: string; FormationRoleCard?: string; RoleStand?: string
 }
 interface BaseProp { Id: number; Lv: number; LifeMax: number; Atk: number; Def: number }
@@ -74,7 +79,7 @@ const baseL1 = new Map<number, BaseProp>()
 for (const b of base) if (b.Lv === 1) baseL1.set(b.Id, b)
 const charById = new Map(CHARACTERS.map((c) => [c.id, c]))
 
-interface Resolved { charId: string; slug: string; el: string; hp: number; atk: number; def: number }
+interface Resolved { charId: string; slug: string; el: string; hp: number; atk: number; def: number; wt: string | undefined }
 const resolved = new Map<string, Resolved>()
 for (const ro of roles) {
   if (ro.RoleType !== 1 || (ro.QualityId !== 4 && ro.QualityId !== 5)) continue
@@ -87,7 +92,7 @@ for (const ro of roles) {
   const ch = charById.get(charId)
   if (!ch) { console.error(`# ⚠ ALIAS '${s}'→'${charId}' không có trong characters.ts`); continue }
   if (el !== ch.element) throw new Error(`ELEMENT MISMATCH '${charId}': char=${ch.element} vs datamine ${el} (slug ${s}) — map SAI`)
-  resolved.set(charId, { charId, slug: s!, el, hp: Math.round(b.LifeMax * rHp), atk: Math.round(b.Atk * rAtk), def: Math.round(b.Def * rDef) })
+  resolved.set(charId, { charId, slug: s!, el, hp: Math.round(b.LifeMax * rHp), atk: Math.round(b.Atk * rAtk), def: Math.round(b.Def * rDef), wt: WEAPON_TYPE[ro.WeaponType] })
 }
 
 // ─── snippet để splice (theo thứ tự CHARACTERS) ───
@@ -96,8 +101,9 @@ for (const ch of CHARACTERS) {
   const r = resolved.get(ch.id)
   if (!r) continue
   const forte = FORTE[ch.id] ?? {}
-  const notes = [TENT.has(r.slug) ? 'TENT verify' : '', Object.keys(forte).length ? '' : 'TODO forte'].filter(Boolean).join(', ')
-  console.log(`  { id: '${ch.id}', baseHp: ${r.hp}, baseAtk: ${r.atk}, baseDef: ${r.def}, forte: ${JSON.stringify(forte)} },` + (notes ? ` // ${notes}` : ''))
+  const notes = [TENT.has(r.slug) ? 'TENT verify' : '', Object.keys(forte).length ? '' : 'TODO forte', r.wt ? '' : 'weaponType lạ'].filter(Boolean).join(', ')
+  const wtField = r.wt ? `, weaponType: '${r.wt}'` : ''
+  console.log(`  { id: '${ch.id}', baseHp: ${r.hp}, baseAtk: ${r.atk}, baseDef: ${r.def}, forte: ${JSON.stringify(forte)}${wtField} },` + (notes ? ` // ${notes}` : ''))
 }
 
 // ─── report ───

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { CharacterProfile, Echo } from '../types'
-import { finalStatBreakdown, loadoutDamage, resolveContext } from './damage'
+import { finalStatBreakdown, loadoutDamage, nonEchoER, resolveContext } from './damage'
 
 // Profile tối giản khớp seed: id 'xuanling' (CHARACTER_BASE forte critRate 8), atk-scaling, ăn heavy.
 const xuanling: CharacterProfile = {
@@ -64,6 +64,18 @@ describe('resolveContext: base ATK char + vũ khí', () => {
     const r = resolveContext({ ...xuanling, id: 'unknown-char' })
     expect(r.hasContext).toBe(false)
     expect(r.baseStat).toBe(1000) // DEFAULT_BASELINE.baseAtk
+  })
+})
+
+describe('nonEchoER: ER% ngoài echo cho ngân sách ER của solver (task 55)', () => {
+  it('không ctx → 0 (xuanling: forte chỉ có CR, không vũ khí)', () => {
+    expect(nonEchoER(xuanling)).toBe(0)
+  })
+  it("secondary ER của vũ khí được tính (Bloodpact's Pledge 38.8)", () => {
+    expect(nonEchoER(xuanling, { weaponId: 'bloodpacts-pledge' })).toBeCloseTo(38.8, 5)
+  })
+  it('passiveFlat ER được tính (Emerald of Genesis: secondary là CR, passive +12.8 ER)', () => {
+    expect(nonEchoER(xuanling, { weaponId: 'emerald-of-genesis' })).toBeCloseTo(12.8, 5)
   })
 })
 

@@ -146,6 +146,8 @@ export interface CharacterBase {
   baseDef: number
   /** Forte "Stat Bonus" nội tại (tổng các node) — vd { critRate: 8 } hoặc { atkPct: 12 } */
   forte: Partial<Record<WeightKey, number>>
+  /** Loại vũ khí nhân vật dùng (datamine roleinfo.WeaponType) — lọc dropdown vũ khí BuildEditor */
+  weaponType?: WeaponType
 }
 
 /** Context build của 1 nhân vật (lưu trong ProfileOverride.build). Rỗng = dùng giả định cũ. */

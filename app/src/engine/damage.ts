@@ -270,6 +270,14 @@ export function resolveContext(profile: CharacterProfile, ctx?: BuildContext, ac
   return { hasContext, scaling, attackType, baseStat, charBaseStat, weaponBaseAtk, nonEcho, weaponMap, forteMap, buffMap, buffs }
 }
 
+/** ER% NGOÀI echo (secondary/passive vũ khí + forte + buff đang bật) — cho ngân sách ER thật
+ *  của solver (task 55): erTarget trừ 100 gốc + phần này rồi mới đến lượt echo gánh.
+ *  Không truyền activeSet (chưa biết set trước khi solve) — SET_BUFFS hiện không có ER nên không lệch. */
+export function nonEchoER(profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): number {
+  const r = resolveContext(profile, ctx, activeSet)
+  return (r.weaponMap.energyRegen ?? 0) + (r.forteMap.energyRegen ?? 0) + (r.buffMap.energyRegen ?? 0)
+}
+
 export interface DamageBreakdown {
   /** Chỉ số damage thô = statFactor × critMult × dmgBonus */
   index: number

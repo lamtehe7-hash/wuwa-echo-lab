@@ -3,7 +3,7 @@ import type { BuildContext, CharacterProfile, Echo, MainStatKey } from '../types
 import { MAINSTAT_LABELS } from '../data/mainstats'
 import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
-import { scoreLoadout, setBonusBreakdown } from '../engine/solver'
+import { dominantSet, scoreLoadout, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useT, useTMessage } from '../i18n'
 import { useToast } from './Toast'
@@ -17,14 +17,6 @@ import StatBreakdown from './StatBreakdown'
 
 const EMPTY: (string | null)[] = [null, null, null, null, null]
 const COST_CAP = 12
-
-/** Set trội (nhiều mảnh nhất) — nạp buff set đúng cho damage (giống LoadoutView.dominantSet) */
-function dominantSet(counts: Record<string, number>): string | undefined {
-  let best: string | undefined
-  let bestN = 0
-  for (const [id, n] of Object.entries(counts)) if (n > bestN) { bestN = n; best = id }
-  return best
-}
 
 interface Props {
   /** Toàn bộ kho (gồm cả trash) — ô resolve theo id; kho-picker tự lọc trash + echo đã lên bàn */
@@ -52,12 +44,13 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
 
   const byId = useMemo(() => new Map(echoes.map((e) => [e.id, e])), [echoes])
 
-  // Resolve id → echo + chấm điểm bộ (memo theo slots/kho/profile để không chấm lại mỗi render)
+  // Resolve id → echo + chấm điểm bộ (memo theo slots/kho/profile để không chấm lại mỗi render).
+  // ctx vào scoreLoadout để ngân sách ER trừ vũ khí/passive giống hệt solver (task 55).
   const { resolved, filled, result } = useMemo(() => {
     const resolved = slots.map((id) => (id ? byId.get(id) ?? null : null))
     const filled = resolved.filter((e): e is Echo => e != null)
-    return { resolved, filled, result: filled.length ? scoreLoadout(filled, profile) : null }
-  }, [slots, byId, profile])
+    return { resolved, filled, result: filled.length ? scoreLoadout(filled, profile, ctx) : null }
+  }, [slots, byId, profile, ctx])
 
   const activeSet = result ? dominantSet(result.setCounts) : undefined
   const totalCost = filled.reduce((s, e) => s + e.cost, 0)

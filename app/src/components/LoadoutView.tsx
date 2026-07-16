@@ -2,21 +2,13 @@ import type { BuildContext, CharacterProfile, LoadoutResult } from '../types'
 import { mainEchoesFor } from '../data/mainEchoes'
 import { SONATA_BY_ID } from '../data/sonata'
 import { loadoutDamage } from '../engine/damage'
-import { setBonusBreakdown } from '../engine/solver'
+import { dominantSet, setBonusBreakdown } from '../engine/solver'
 import { exportLoadoutCard } from '../exportLoadoutCard'
 import { useLang, useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
 import StatBreakdown from './StatBreakdown'
 
 // Hiển thị bộ 5 tối ưu do solver trả về
-
-/** Set trội của bộ (nhiều mảnh nhất) — nạp buff set đúng cho damage/breakdown */
-function dominantSet(counts: Record<string, number>): string | undefined {
-  let best: string | undefined
-  let bestN = 0
-  for (const [id, n] of Object.entries(counts)) if (n > bestN) { bestN = n; best = id }
-  return best
-}
 
 export default function LoadoutView({ result, profile, compareTotal = null, onPin, ctx }: {
   result: LoadoutResult | null

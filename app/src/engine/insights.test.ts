@@ -216,6 +216,20 @@ describe('swapSuggestions', () => {
     expect(swapSuggestions(assignments).length).toBe(0)
   })
 
+  it('echo NEO (pinnedIds) không được đề xuất swap — dù swap có lợi (task 66)', () => {
+    const assignments: RosterAssignment[] = [
+      { profile: camellya, result: scoreLoadout([eForB], camellya) },
+      { profile: shorekeeper, result: scoreLoadout([eForA], shorekeeper) },
+    ]
+    // không pin → có swap (sanity, trùng test trên)
+    expect(swapSuggestions(assignments, 5).length).toBeGreaterThan(0)
+    // pin 1 trong 2 đầu swap → swap đó biến mất
+    expect(swapSuggestions(assignments, 5, new Set(['eb']))).toEqual([])
+    expect(swapSuggestions(assignments, 5, new Set(['ea']))).toEqual([])
+    // pin echo KHÔNG liên quan → swap vẫn còn
+    expect(swapSuggestions(assignments, 5, new Set(['khac'])).length).toBeGreaterThan(0)
+  })
+
   it('bỏ qua nhân vật result null; khác cost không hoán', () => {
     const c1: Echo = { ...eForA, id: 'c1', cost: 1 }
     const assignments: RosterAssignment[] = [

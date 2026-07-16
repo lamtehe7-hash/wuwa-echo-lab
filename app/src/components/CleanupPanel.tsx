@@ -5,6 +5,7 @@ import { CLEANUP_DEFAULTS, cleanupMatches, type CleanupRule, type CleanupRuleTyp
 import { SONATA_BY_ID } from '../data/sonata'
 import { findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
+import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import { useT, useTMessage } from '../i18n'
 
 // F11 (task 62): "Dọn kho theo luật" — panel <details> đóng, TRÊN RankingTable (tab Kho). Chọn 1 luật
@@ -24,11 +25,13 @@ interface Props {
   profiles: CharacterProfile[]
   /** App `bestOwnersByEcho` — reuse cho luật no-owner (khỏi tính lại, khỏi lệch ngưỡng fitLevel) */
   ownersByEcho: Map<string, OwnerFit[]>
+  /** App `pinnedBy` — echo đang ở BỘ GHIM của ai: badge 📌 trong preview trước khi đánh dấu loại (task 66) */
+  pinnedBy?: Map<string, PinnedOwner[]>
   /** Đánh dấu loại (trash) các id + toast undo (App) */
   onApply: (ids: string[]) => void
 }
 
-export default function CleanupPanel({ echoes, profiles, ownersByEcho, onApply }: Props) {
+export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy, onApply }: Props) {
   const t = useT()
   const tm = useTMessage()
   const [ruleType, setRuleType] = useState<CleanupRuleType>('no-owner')
@@ -112,6 +115,7 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, onApply }
                     <span className="text-slate-200">{echo.name || SONATA_BY_ID[echo.set]?.name || echo.set}</span>
                     <span className="text-slate-500"> · cost {echo.cost} · {SONATA_BY_ID[echo.set]?.name}</span>
                   </span>
+                  <PinnedByBadge owners={pinnedBy?.get(echo.id) ?? []} />
                   <span className="shrink-0 text-rose-400">{tm(reason)}</span>
                 </li>
               )

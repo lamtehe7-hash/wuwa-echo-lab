@@ -93,6 +93,18 @@ describe('solveRoster — pinned (F14): reserve echo cho người ghim', () => {
     const pinned = solveRoster([scarce], [camellya, roccia], undefined, { camellya: ['scarce'] })
     expect(pinned[0].result?.echoes.some((s) => s.echo.id === 'scarce')).toBe(true)
   })
+
+  it('ghim TRÙNG cùng echo cho cả 2 (data conflict) → người đứng trước nhận, KHÔNG ai bị mất lặng lẽ (task 66)', () => {
+    // Trước fix: reserve chéo loại echo khỏi pool CẢ HAI → cả hai result đều không có scarce
+    const both = solveRoster([scarce], [camellya, roccia], undefined, { camellya: ['scarce'], roccia: ['scarce'] })
+    expect(both[0].result?.echoes.some((s) => s.echo.id === 'scarce')).toBe(true)
+    // người sau không còn echo nào trong kho → null (như test "kho cạn"), nhưng người trước PHẢI có
+    expect(both[1].result).toBeNull()
+
+    // Đảo thứ tự → người đứng trước (roccia) nhận
+    const rev = solveRoster([scarce], [roccia, camellya], undefined, { camellya: ['scarce'], roccia: ['scarce'] })
+    expect(rev[0].result?.echoes.some((s) => s.echo.id === 'scarce')).toBe(true)
+  })
 })
 
 describe('solveRoster — forcedSets: mỗi nhân vật ép set riêng', () => {

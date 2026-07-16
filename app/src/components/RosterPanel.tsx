@@ -46,13 +46,17 @@ export default function RosterPanel({ echoes, overrides, resolve, pinned }: Prop
   }
 
   // F15: gợi ý swap (chỉ khi kết quả CÒN MỚI — stale thì bộ đã lỗi thời). echoName fallback = tên set.
-  const swaps = useMemo(() => (results && !stale ? swapSuggestions(results, 5) : []), [results, stale])
+  // Echo NEO (F14, bất kỳ nhân vật nào) không được gợi ý di chuyển — neo là user ép vị trí (task 66).
+  const anchoredAll = useMemo(() => new Set(Object.values(pinned ?? {}).flat()), [pinned])
+  const swaps = useMemo(() => (results && !stale ? swapSuggestions(results, 5, anchoredAll) : []), [results, stale, anchoredAll])
   const echoName = (e: Echo) => e.name?.trim() || SONATA_BY_ID[e.set]?.name || e.set
   // Áp dụng 1 swap TẠI CHỖ: hoán 2 echo trong 2 bộ + chấm lại (kết quả roster vốn transient).
   const applySwap = (s: SwapSuggestion) => {
     setResults((prev) => {
       if (!prev) return prev
-      // Guard: chỉ hoán khi echoOut còn ở fromChar & echoIn còn ở toChar (state đã đổi → bỏ, chống nhân đôi echo)
+      // Guard: chỉ hoán khi echoOut còn ở fromChar & echoIn còn ở toChar (state đã đổi → bỏ, chống
+      // nhân đôi echo) + không đụng echo neo (lưới an toàn — swaps đã lọc nhưng pin có thể vừa đổi)
+      if (anchoredAll.has(s.echoOut.id) || anchoredAll.has(s.echoIn.id)) return prev
       const from = prev.find((r) => r.profile.id === s.fromId)
       const to = prev.find((r) => r.profile.id === s.toId)
       if (!from?.result?.echoes.some((se) => se.echo.id === s.echoOut.id) || !to?.result?.echoes.some((se) => se.echo.id === s.echoIn.id)) return prev

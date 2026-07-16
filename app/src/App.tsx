@@ -245,7 +245,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const activeSet = (solved && !stale && loadout ? dominantSet(loadout.setCounts) : undefined) ?? assumedSet
 
   const solve = () => {
-    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective, buildCtx, pinned[charId]))
+    setLoadout(solveBest5(usableEchoes, profile, forcedSet || undefined, objective, buildCtx, activePinned[charId]))
     setSolved(true)
     setStale(false)
     setSolveTick((n) => n + 1) // báo hiệu MainEchoHint thu gọn sau mỗi lần "Tìm bộ 5 tối ưu"
@@ -254,11 +254,28 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // F14: echo NEO cho nhân vật đang chọn (ép vào bộ solve lần sau). Neo/bỏ neo → kết quả cũ (Giải lại).
   const echoById = useMemo(() => new Map(echoes.map((e) => [e.id, e])), [echoes])
   const anchoredIds = useMemo(() => new Set(pinned[charId] ?? []), [pinned, charId])
+  // Task 66: pin "SỐNG" = echo còn trong kho + chưa trash — nguồn DUY NHẤT đưa vào engine
+  // (id chết mà vẫn truyền thì solver lặng lẽ bỏ neo trong khi UI vẫn báo "đã neo"). Id chết GIỮ
+  // trong store (undo trash còn phục hồi neo) — user dọn tường minh bằng nút "Dọn neo hỏng".
+  const activePinned = useMemo(() => {
+    const out: Record<string, string[]> = {}
+    for (const [cid, ids] of Object.entries(pinned)) {
+      if (!ids?.length) continue
+      const alive = ids.filter((id) => { const e = echoById.get(id); return !!e && !e.trash })
+      if (alive.length) out[cid] = alive
+    }
+    return out
+  }, [pinned, echoById])
   const anchoredEchoes = useMemo(
-    () => [...anchoredIds].map((id) => echoById.get(id)).filter((e): e is Echo => !!e),
-    [anchoredIds, echoById],
+    () => (activePinned[charId] ?? []).map((id) => echoById.get(id)).filter((e): e is Echo => !!e),
+    [activePinned, charId, echoById],
   )
   const anchoredCost = anchoredEchoes.reduce((s, e) => s + e.cost, 0)
+  // Neo hỏng = id còn trong pinned nhưng echo đã xoá/đã loại — hiện cảnh báo + nút dọn
+  const deadAnchors = anchoredIds.size - anchoredEchoes.length
+  const pruneDeadAnchors = () => {
+    setPinned((prev) => ({ ...prev, [charId]: (prev[charId] ?? []).filter((id) => { const e = echoById.get(id); return !!e && !e.trash }) }))
+  }
   const toggleAnchor = (echoId: string) => {
     setPinned((prev) => {
       const cur = prev[charId] ?? []
@@ -274,6 +291,12 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // Lý do (đã dịch) không cho neo thêm echo này — null = cho neo (dùng chặn nút ⚓ ở LoadoutView/Bench)
   const anchorBlock = (echo: Echo): string | null => {
     if (anchoredIds.has(echo.id)) return null // đã neo → luôn cho bỏ neo
+    // Task 66: 1 echo chỉ neo cho 1 nhân vật — neo trùng làm solveRoster reserve chéo, cả hai mất
+    for (const [cid, ids] of Object.entries(pinned)) {
+      if (cid !== charId && ids?.includes(echo.id)) {
+        return t('anchor.pinnedElsewhere', { name: CHARACTER_BY_ID[cid]?.name ?? cid })
+      }
+    }
     const chk = canAnchorMore(anchoredEchoes, echo)
     if (chk.ok) return null
     if (chk.reason === 'count') return t('anchor.capCount')
@@ -446,6 +469,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             echoes={echoes}
             order={triageOrder}
             bestOwners={bestOwnersByEcho}
+            pinnedBy={pinnedBy}
             modalOpen={!!editingEcho}
             onTrash={(id) => triageFlag(id, 'trash')}
             onLock={(id) => triageFlag(id, 'lock')}
@@ -477,7 +501,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
         </div>
         {/* F11 (task 62): dọn kho theo luật — panel full-width TRÊN bảng (luật R1/R4 toàn roster, không
             thuộc bảng scoped theo 1 nhân vật). Đóng mặc định (công cụ ít dùng). */}
-        <CleanupPanel echoes={echoes} profiles={allProfiles} ownersByEcho={bestOwnersByEcho} onApply={applyCleanup} />
+        <CleanupPanel echoes={echoes} profiles={allProfiles} ownersByEcho={bestOwnersByEcho} pinnedBy={pinnedBy} onApply={applyCleanup} />
         <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
           <aside className="space-y-3">
             <EchoForm onAdd={addEcho} />
@@ -572,11 +596,18 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             >{t('app.findBest5')}</button>
           </div>
 
-          {/* F14: dòng tóm tắt echo đã neo (DƯỚI hàng CTA, không chung hàng vì U8 đã chật) */}
+          {/* F14: dòng tóm tắt echo đã neo (DƯỚI hàng CTA, không chung hàng vì U8 đã chật).
+              Đếm theo neo SỐNG (activePinned) — khớp cái solver thật sự ép; neo hỏng báo riêng (task 66). */}
           {anchoredIds.size > 0 && (
             <p className="text-xs text-amber-400">
-              ⚓ {t('anchor.summary', { n: anchoredIds.size, cost: anchoredCost })}
+              ⚓ {t('anchor.summary', { n: anchoredEchoes.length, cost: anchoredCost })}
               <button className="ml-2 text-slate-500 underline hover:text-rose-400" onClick={clearAnchors}>{t('anchor.clearAll')}</button>
+              {deadAnchors > 0 && (
+                <span className="ml-2 text-rose-400">
+                  {t('anchor.dead', { n: deadAnchors })}
+                  <button className="ml-1 text-slate-500 underline hover:text-slate-300" onClick={pruneDeadAnchors}>{t('anchor.pruneDead')}</button>
+                </span>
+              )}
             </p>
           )}
 
@@ -691,7 +722,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
       {/* Giữ mounted (chỉ ẩn CSS): RosterPanel giữ danh sách đội + kết quả trong state cục bộ —
           unmount khi chuyển tab sẽ mất sạch. (OcrImport thì NGƯỢC LẠI: cố ý unmount để nhả worker WASM.) */}
       <div className={tab === 'roster' && !empty ? '' : 'hidden'}>
-        <RosterPanel echoes={usableEchoes} overrides={overrides} resolve={resolve} pinned={pinned} />
+        <RosterPanel echoes={usableEchoes} overrides={overrides} resolve={resolve} pinned={activePinned} />
       </div>
 
       {tab === 'import' && (

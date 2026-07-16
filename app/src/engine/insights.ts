@@ -162,7 +162,8 @@ export interface SwapSuggestion {
   delta: number
 }
 
-export function swapSuggestions(assignments: RosterAssignment[], topN = 5): SwapSuggestion[] {
+/** @param pinnedIds echo đã NEO (F14, mọi nhân vật) — không đề xuất di chuyển (neo = user ép vị trí, task 66) */
+export function swapSuggestions(assignments: RosterAssignment[], topN = 5, pinnedIds?: Set<string>): SwapSuggestion[] {
   const rows = assignments.filter((a) => a.result)
   const out: SwapSuggestion[] = []
   for (let i = 0; i < rows.length; i++) {
@@ -175,6 +176,7 @@ export function swapSuggestions(assignments: RosterAssignment[], topN = 5): Swap
       for (const eA of aEchoes) {
         for (const eB of bEchoes) {
           if (eA.cost !== eB.cost || eA.id === eB.id) continue // cùng cost → 2 bộ vẫn hợp lệ (cost/slot không đổi)
+          if (pinnedIds?.has(eA.id) || pinnedIds?.has(eB.id)) continue // echo neo không rời chủ
           const newA = scoreLoadout(aEchoes.map((e) => (e.id === eA.id ? eB : e)), A.profile)
           const newB = scoreLoadout(bEchoes.map((e) => (e.id === eB.id ? eA : e)), B.profile)
           if (!newA || !newB) continue

@@ -244,6 +244,10 @@ const DICT: Record<string, Entry> = {
   'anchor.capCost': { vi: 'Neo thêm sẽ vượt cost cap (12)', en: 'Anchoring more would exceed the cost cap (12)' },
   'anchor.capGroup': { vi: 'Đã neo tối đa {cap} echo cost {c}', en: 'Max {cap} cost-{c} anchored echoes' },
   'anchor.infeasible': { vi: 'Không ghép được bộ với echo đã neo — thử bỏ neo bớt hoặc đổi set ép.', en: "Couldn't build a loadout with the anchored echoes — try unanchoring some or changing the forced set." },
+  // task 66 (F14 hardening): 1 echo chỉ neo 1 nhân vật + báo neo hỏng (echo đã loại/xoá)
+  'anchor.pinnedElsewhere': { vi: 'Đã neo cho {name} — bỏ neo bên đó trước', en: 'Already anchored for {name} — unanchor there first' },
+  'anchor.dead': { vi: '{n} neo không còn hiệu lực (echo đã loại/xoá).', en: '{n} anchor(s) no longer valid (echo trashed/deleted).' },
+  'anchor.pruneDead': { vi: 'Dọn neo hỏng', en: 'Clear dead anchors' },
   // F15 (task 65): swap suggestions — joint solver nhẹ (đổi 2 echo cùng cost giữa 2 nhân vật)
   'swap.title': { vi: '💡 Gợi ý đổi echo (tối ưu chung)', en: '💡 Swap suggestions (joint optimization)' },
   'swap.hint': { vi: 'Đổi 2 echo cùng cost giữa 2 nhân vật để tăng TỔNG điểm đội (gán tuần tự có thể chưa tối ưu toàn cục).', en: 'Swap two same-cost echoes between characters to raise the team TOTAL (sequential assignment may miss the global optimum).' },

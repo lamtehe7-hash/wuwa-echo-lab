@@ -229,8 +229,8 @@ export function dominantSet(counts: Record<string, number>): string | undefined 
   return best
 }
 
-// F14 (task 64): trần số echo neo (pinned) theo nhóm cost trong 1 bộ — trùng GROUP_MAX của solver
-// (cost-4 ≤3, cost-3 ≤4, cost-1 ≤5). Dùng ở UI để CHẶN neo tạo tổ hợp bất khả thi ngay từ đầu.
+// Trần số mảnh mỗi nhóm cost trong 1 layout (cost-4 ≤3, cost-3 ≤4, cost-1 ≤5) — dùng CHUNG cho
+// pool-keep của solveBest5 lẫn UI chặn neo (F14 canAnchorMore); 1 nguồn, khỏi desync (task 66).
 export const ANCHOR_GROUP_MAX: Record<number, number> = { 1: 5, 3: 4, 4: 3 }
 export interface AnchorCheck { ok: boolean; reason?: 'count' | 'cost' | 'group'; cap?: number }
 
@@ -288,9 +288,8 @@ export function solveBest5(
   // Cắt top-K theo value, nhưng GIỮ THÊM ứng viên theo TỪNG set có mặt trong pool — KHÔNG
   // chỉ preferredSets (review 16/07: bản cũ chỉ cứu preferred → set khác có bonus dương mà
   // mảnh rank ngoài top-K bị vứt TRƯỚC khi DFS chạy = mất nghiệm tối ưu với kho >10 echo/cost).
-  // Cap = số mảnh tối đa nhóm cost đó có thể dùng trong 1 layout (cost-4 ≤3, cost-3 ≤4,
-  // cost-1 ≤5); set có bonus = 0 với profile này thì khỏi giữ thêm (không thể cải thiện nghiệm).
-  const GROUP_MAX: Record<number, number> = { 1: 5, 3: 4, 4: 3 }
+  // Cap = số mảnh tối đa nhóm cost đó có thể dùng trong 1 layout (ANCHOR_GROUP_MAX dùng chung);
+  // set có bonus = 0 với profile này thì khỏi giữ thêm (không thể cải thiện nghiệm).
   const setWorthCache = new Map<string, boolean>()
   const setWorthExtra = (setId: string): boolean => {
     let w = setWorthCache.get(setId)
@@ -307,7 +306,7 @@ export function solveBest5(
     const perSet: Record<string, number> = {}
     for (const c of arr) {
       const setId = c.scored.echo.set
-      const cap = profile.preferredSets.includes(setId) ? 5 : setWorthExtra(setId) ? GROUP_MAX[k] : 0
+      const cap = profile.preferredSets.includes(setId) ? 5 : setWorthExtra(setId) ? ANCHOR_GROUP_MAX[k] : 0
       const have = perSet[setId] ?? 0
       if (have >= cap) continue
       kept.add(c)

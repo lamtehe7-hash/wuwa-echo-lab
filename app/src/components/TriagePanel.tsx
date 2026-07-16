@@ -6,6 +6,7 @@ import { tuneAdvice } from '../engine/score'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
 import BestOwnerBadge from './BestOwnerBadge'
+import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import { VERDICT_CLS } from './RankingTable'
 
 // F4 (task 63): Triage Queue — duyệt echo LẦN LƯỢT (giữ/khoá/loại/sửa). INLINE view thay chỗ toàn bộ
@@ -16,6 +17,8 @@ interface Props {
   echoes: Echo[]
   order: 'worst' | 'newest'
   bestOwners: Map<string, OwnerFit[]>
+  /** App `pinnedBy` — echo đang ở BỘ GHIM của nhân vật nào (cảnh báo trước khi Loại, task 66) */
+  pinnedBy?: Map<string, PinnedOwner[]>
   /** có modal Sửa (EchoEditModal) đang mở không — để Escape không đóng cả 2 + không giành focus */
   modalOpen: boolean
   onTrash: (id: string) => void
@@ -25,7 +28,7 @@ interface Props {
   onExit: () => void
 }
 
-export default function TriagePanel({ echoes, order, bestOwners, modalOpen, onTrash, onLock, onEdit, onJump, onExit }: Props) {
+export default function TriagePanel({ echoes, order, bestOwners, pinnedBy, modalOpen, onTrash, onLock, onEdit, onJump, onExit }: Props) {
   const t = useT()
   const tm = useTMessage()
   // Snapshot id CỐ ĐỊNH lúc vào (không co lại khi trash/lock đổi giữa chừng — tránh mảng tụt dưới chân user)
@@ -64,6 +67,8 @@ export default function TriagePanel({ echoes, order, bestOwners, modalOpen, onTr
   const owners = currentId ? bestOwners.get(currentId) ?? [] : []
   const top = owners[0]
   const advice = echo && top ? tuneAdvice(echo, top.profile) : null
+  // Echo đang nằm trong bộ ghim của ai — badge 📌 cạnh best-owner để không "Loại" nhầm đồ đang đeo
+  const equippedBy = (currentId ? pinnedBy?.get(currentId) : undefined) ?? []
 
   return (
     <div aria-label={t('triage.title')} className="mx-auto max-w-md space-y-3">
@@ -84,7 +89,16 @@ export default function TriagePanel({ echoes, order, bestOwners, modalOpen, onTr
         </div>
       ) : (
         <>
-          <EchoCard echo={echo} profile={top?.profile} footer={<BestOwnerBadge owners={owners} onJump={onJump} variant="card" />} />
+          <EchoCard
+            echo={echo}
+            profile={top?.profile}
+            footer={
+              <span className="flex flex-wrap items-center gap-1.5">
+                <BestOwnerBadge owners={owners} onJump={onJump} variant="card" />
+                <PinnedByBadge owners={equippedBy} />
+              </span>
+            }
+          />
           {top ? (
             <p className={`text-xs ${VERDICT_CLS[advice!.verdict]}`}>
               {t(`ranking.verdict.${advice!.verdict}`)} — {tm(advice!.reason)}

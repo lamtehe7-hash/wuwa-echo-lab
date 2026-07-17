@@ -100,7 +100,7 @@ export const SONATA_SETS: SonataSet[] = [
   set({
     id: 'midnight-veil', name: 'Midnight Veil', element: 'havoc', version: '2.0',
     short: '2pc: Havoc +10% · 5pc: Outro nổ 480% Havoc; người vào +15% Havoc',
-    bonuses: [elem2('havocDmg'), { pieces: 5, stats: [{ stat: 'havocDmg', value: 15, uptime: 0.6 }] }],
+    bonuses: [elem2('havocDmg'), { pieces: 5, stats: [] }], // +15% Havoc là buff cho NGƯỜI VÀO SÂN (như moonlit-clouds) — không phải self-buff (audit 17/07 vs game8)
   }),
   set({
     id: 'empyrean-anthem', name: 'Empyrean Anthem', version: '2.0',
@@ -189,18 +189,19 @@ export const SONATA_SETS: SonataSet[] = [
   set({
     id: 'chromatic-foam', name: 'Chromatic Foam', element: 'fusion', version: '3.1',
     short: '2pc: Fusion +10% · 5pc: Burst→Fusion +10%; Outro→người vào +25% Fusion',
-    bonuses: [elem2('fusionDmg'), { pieces: 5, stats: [{ stat: 'fusionDmg', value: 10, uptime: 0.7 }] }],
+    bonuses: [elem2('fusionDmg'), { pieces: 5, stats: [{ stat: 'fusionDmg', value: 10, uptime: 0.6 }] }], // Fusion Burst = trigger nguyên tố hẹp, đồng bậc trailblazing-star/windward (audit 17/07)
   }),
   set({
     id: 'sound-of-true-name', name: 'Sound of True Name', element: 'aero', version: '3.1',
     short: '2pc: Aero +10% · 5pc: Echo Skill→Echo Skill CR +20%, Aero +15%',
-    bonuses: [elem2('aeroDmg'), { pieces: 5, stats: [{ stat: 'aeroDmg', value: 15, uptime: 0.6 }] }],
+    bonuses: [elem2('aeroDmg'), { pieces: 5, stats: [{ stat: 'aeroDmg', value: 15, uptime: 0.5 }] }], // Echo Skill (CD) + duration 5s — đồng bậc thread-of-severed-fate (audit 17/07)
   }),
   // ── 3.3–3.5 ──
   set({
     id: 'wishes-of-quiet-snowfall', name: 'Wishes of Quiet Snowfall', element: 'glacio', version: '3.3',
     short: '2pc: Glacio +10% · 5pc: Glacio Chafe→Glacio +10% + cơ chế Snowfall (CR +25%)',
-    bonuses: [elem2('glacioDmg'), { pieces: 5, stats: [{ stat: 'glacioDmg', value: 10, uptime: 0.7 }, { stat: 'critRate', value: 25, uptime: 0.5 }] }],
+    // Chafe = trigger hẹp 15s (đồng bậc eternal-radiance); CR 25 gate bởi CD CỨNG 25s + phải cast Lib đúng lúc Snowfall → bậc "rất hẹp" (audit 17/07)
+    bonuses: [elem2('glacioDmg'), { pieces: 5, stats: [{ stat: 'glacioDmg', value: 10, uptime: 0.6 }, { stat: 'critRate', value: 25, uptime: 0.4 }] }],
   }),
   set({
     id: 'reel-of-spliced-memories', name: 'Reel of Spliced Memories', version: '3.3',
@@ -220,7 +221,8 @@ export const SONATA_SETS: SonataSet[] = [
     short: '2pc: ER +10% · 5pc: Havoc Bane→CR+20%,Heavy+25%; Glacio Chafe→team ATK theo ER',
     bonuses: [
       { pieces: 2, stats: [{ stat: 'energyRegen', value: 10, uptime: 1 }] },
-      { pieces: 5, stats: [{ stat: 'critRate', value: 20, uptime: 0.5 }, { stat: 'heavyAtk', value: 25, uptime: 0.5 }] },
+      // Havoc Bane hẹp + duration 15s = đồng bậc heart-of-evils-purge/eternal-radiance 0.6 (audit 17/07)
+      { pieces: 5, stats: [{ stat: 'critRate', value: 20, uptime: 0.6 }, { stat: 'heavyAtk', value: 25, uptime: 0.6 }] },
     ],
   }),
   set({

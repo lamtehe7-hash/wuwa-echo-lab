@@ -361,7 +361,11 @@ const DICT: Record<string, Entry> = {
   'buildcost.needed': { vi: 'Còn cần {exp} EXP · {tuners} Tuner · {credits} Credit', en: 'Still needs {exp} EXP · {tuners} Tuner · {credits} Credit' },
   'buildcost.tunerPerDayLabel': { vi: 'Tuner/ngày', en: 'Tuners/day' },
   'buildcost.expPerDayLabel': { vi: 'EXP/ngày', en: 'EXP/day' },
-  'buildcost.expPerDayHint': { vi: 'chưa xác minh, vd ~2500', en: 'unverified, e.g. ~2500' },
+  'buildcost.expPerDayHint': { vi: 'vd ~101000', en: 'e.g. ~101000' },
+  'buildcost.defaultNote': {
+    vi: 'Mặc định: đo thật 4 run Tacet Field/ngày (80 Tuner · 92k EXP) + Weekly Activity — chỉnh theo tài khoản của bạn.',
+    en: 'Defaults: measured from 4 real Tacet Field runs/day (80 Tuners · 92k EXP) + Weekly Activity — adjust to your account.',
+  },
   'buildcost.daysEstimate': { vi: '≈ {days} ngày farm (giới hạn bởi {res})', en: '≈ {days} days to farm (bottlenecked by {res})' },
   'buildcost.enterRate': { vi: 'Nhập tốc độ farm (cả 2 ô) để ước tính số ngày.', en: 'Enter both farming rates to estimate days.' },
   'reroll.title': { vi: '🎲 Đáng Reroll?', en: '🎲 Worth a reroll?' },

@@ -79,6 +79,23 @@ mỗi mốc là 1 substat MỚI. Engine `remainingPool`/`expectedMarginalPerSlot
 - **Income farm/ngày (Tacet Field mỗi 60 waveplate)**: số live-ops (đổi theo level/patch, không có trong datamine
   tĩnh). wuwa.uk ghi "1–2 Premium Tuner/run" — KHÔNG tin cậy (mâu thuẫn kinh nghiệm chơi phổ biến ~10–12).
   → F10 thiết kế income là **tham số user chỉnh được**, không hardcode.
+- **Web-research income 17/07/2026 (agent, ~25 lượt search/fetch)** — vẫn CHƯA đủ điền default:
+  - Chắc chắn (nhiều nguồn khớp): waveplate cap **240/ngày** (hồi 1/6ph, game8 454091) · Tacet Field
+    **60 WP/run** → tối đa **4 run/ngày** (game8 457265+456510, buffget, samurai-gamers; số "40 WP" ở vài
+    trang là NHẦM với Forgery Challenge) · giá trị tube 500/1000/2000/5000 (khớp datamine §2).
+  - Tin được mức trung bình (single-source game8, số cụ thể): **Weekly Activity** (605757) mốc 4000đ =
+    8 Premium + 12 Advanced tube = 64.000 EXP/tuần; mốc 6000đ = **50 Premium Tuner** + 50k credit/tuần
+    → ~7,1 tuner + ~9,1k EXP/ngày. **Whimpering Wastes Chasm** (498614) full-clear/chu kỳ ~28 ngày =
+    **150 Tuner + 50.000 EXP** → ~5,4 tuner + ~1,8k EXP/ngày.
+  - ~~GAP: drop per-run Tacet Field~~ → **CHỐT 17/07 đêm bằng ĐO THẬT (4 screenshot user, 4 run liên
+    tiếp, counter waveplate 180→120→60→0)**: mỗi run = **20 Premium Tuner + 3 Premium tube + 4 Advanced
+    tube (= 23.000 EXP) + 5.250 credit** — drop CỐ ĐỊNH cả 4 run (echo rơi kèm thì ngẫu nhiên). Số này
+    BÁC hẳn "1–2 tuner/run" của wuwa.uk, khớp kinh nghiệm cộng đồng.
+  - **Default F10 đã cắm (BuildCostEstimator, task 78)**: `tunersPerDay = 87` (4×20 + 50/7 weekly) ·
+    `expPerDay = 101.000` (4×23.000 + 64.000/7 weekly). KHÔNG cộng Whimpering Wastes (skill-gate, chu kỳ
+    ~28 ngày — user tự cộng nếu clear đều). User nhập giá trị khác → override qua localStorage; xoá
+    trống → app tôn trọng, không đè default lại. Độ tin: Tacet per-run HIGH (đo thật), weekly MEDIUM
+    (single-source game8 605757). Đổi số khi patch đổi drop table — đo lại 1 run là đủ.
 - `phantombreach.json` (60000xxx + 2400/3600/4800/6000 credit): bảng breach per-phantom (legacy/echo skill) —
   không liên quan chi phí build, bỏ.
 - `phantomlevelconsume.json` (exp 10/50/100/300, credit ×5): giá trị feed echo CHƯA luyện làm fodder theo bậc —

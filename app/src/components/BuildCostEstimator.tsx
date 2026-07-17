@@ -5,12 +5,19 @@ import { useFmtN, useT } from '../i18n'
 
 // F10 (task 73, spec designer 16/07): "Chi phí hoàn thiện bộ" — <details> đóng trong LoadoutView
 // (sau StatBreakdown): tổng EXP/Tuner/Credit còn thiếu của 5 echo trong bộ + ước tính SỐ NGÀY farm.
-// Income/ngày là THAM SỐ user nhập (persist localStorage) — datamine KHÔNG có số income live-ops,
-// repo không đoán số → cả 2 input ĐỂ TRỐNG mặc định, chỉ ước tính khi user điền đủ.
+// Income/ngày là THAM SỐ user chỉnh được (persist localStorage) — datamine KHÔNG có số income live-ops.
 // Tuner và EXP đến từ nguồn farm khác nhau → KHÔNG gộp 1 số, lấy max + ghi rõ nút thắt.
 
 const LS_TUNER = 'wuwa-income-tuner'
 const LS_EXP = 'wuwa-income-exp'
+
+// Default income (task 78, 17/07/2026) — nguồn: research/echo-economy.md §5b.
+// ĐO THẬT 4 run Tacet Field (screenshot user, SOL3 max): mỗi run 20 Premium Tuner + 3 Premium/4 Advanced
+// tube = 23.000 EXP, counter waveplate 180→120→60→0 xác nhận 60 WP/run × 4 run/ngày.
+// Cộng Weekly Activity 50 Tuner + 64.000 EXP/tuần (game8 archives/605757); KHÔNG cộng Whimpering Wastes
+// (skill-gate, chu kỳ ~28 ngày). User chỉnh theo tài khoản — giá trị nhập sẽ override qua localStorage.
+const DEFAULT_TUNER_PER_DAY = 87 // 4×20 + 50/7 ≈ 87,1
+const DEFAULT_EXP_PER_DAY = 101000 // 4×23.000 + 64.000/7 ≈ 101.143
 
 interface Props {
   echoes: Echo[]
@@ -23,10 +30,10 @@ export default function BuildCostEstimator({ echoes, profile }: Props) {
   // localStorage bị chặn (private mode/policy) sẽ THROW ngay trong init → sập cả cây render;
   // guard như mọi chỗ khác trong app (pattern App.tsx wuwa-seen)
   const [tunerRate, setTunerRate] = useState(() => {
-    try { return localStorage.getItem(LS_TUNER) ?? '' } catch { return '' }
+    try { return localStorage.getItem(LS_TUNER) ?? String(DEFAULT_TUNER_PER_DAY) } catch { return String(DEFAULT_TUNER_PER_DAY) }
   })
   const [expRate, setExpRate] = useState(() => {
-    try { return localStorage.getItem(LS_EXP) ?? '' } catch { return '' }
+    try { return localStorage.getItem(LS_EXP) ?? String(DEFAULT_EXP_PER_DAY) } catch { return String(DEFAULT_EXP_PER_DAY) }
   })
 
   const need = useMemo(() => {
@@ -87,6 +94,7 @@ export default function BuildCostEstimator({ echoes, profile }: Props) {
             />
           </label>
         </div>
+        <p className="text-[10px] text-slate-500">{t('buildcost.defaultNote')}</p>
         {days !== null ? (
           <p className="font-semibold text-sky-300">{t('buildcost.daysEstimate', { days, res: bottleneck })}</p>
         ) : (

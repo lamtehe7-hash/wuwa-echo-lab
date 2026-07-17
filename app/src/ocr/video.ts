@@ -4,18 +4,72 @@
 // user khoanh tay) → tesseract → parseEchoText → dedup theo "chữ ký" echo.
 
 import type { EchoDraft } from './parse'
-import { preprocessToCanvas, type PreprocessOptions } from './preprocess'
+import { preprocessToCanvas, type ImageDataLike, type PreprocessOptions, type Rect } from './preprocess'
 
-/** Trần số frame một lần quét (chống video quá dài làm treo trình duyệt) */
+/** Trần số frame OCR một lần quét (chống video quá dài làm treo trình duyệt) */
 export const MAX_FRAMES = 600
 
-/** Danh sách mốc thời gian cần trích, cách nhau stepSec, tối đa MAX_FRAMES */
-export function frameTimestamps(duration: number, stepSec: number): number[] {
+/** Pass chọn-frame-nét lấy mẫu dày gấp N lần bước OCR (frame trúng lúc cuộn/chuyển cảnh
+ *  bị loại, mỗi cửa sổ stepSec chỉ OCR frame NÉT nhất — tổng số frame OCR không đổi) */
+export const SHARP_OVERSAMPLE = 3
+
+/** Danh sách mốc thời gian cần trích, cách nhau stepSec (chặn dưới 0.2s), tối đa maxFrames */
+export function frameTimestamps(duration: number, stepSec: number, maxFrames = MAX_FRAMES): number[] {
   if (!Number.isFinite(duration) || duration <= 0) return []
   const step = Math.max(0.2, stepSec)
   const out: number[] = []
-  for (let t = 0; t < duration && out.length < MAX_FRAMES; t += step) out.push(t)
+  for (let t = 0; t < duration && out.length < maxFrames; t += step) out.push(t)
   return out
+}
+
+/**
+ * Độ nét một frame = variance đáp ứng Laplacian trên kênh xám (chuẩn "variance of Laplacian"):
+ * frame mờ chuyển cảnh/đang cuộn cho biên bệt → variance thấp; panel đứng yên chữ sắc → cao.
+ * Chỉ dùng để SO SÁNH các frame cùng vùng crop trong 1 video — không phải ngưỡng tuyệt đối.
+ */
+export function sharpnessScore(img: ImageDataLike): number {
+  const { data, width, height } = img
+  if (width < 3 || height < 3) return 0
+  const gray = new Float32Array(width * height)
+  for (let p = 0, i = 0; i < data.length; p++, i += 4) {
+    gray[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+  }
+  let sum = 0
+  let sum2 = 0
+  let n = 0
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const p = y * width + x
+      const v = 4 * gray[p] - gray[p - 1] - gray[p + 1] - gray[p - width] - gray[p + width]
+      sum += v
+      sum2 += v * v
+      n++
+    }
+  }
+  const mean = sum / n
+  return sum2 / n - mean * mean
+}
+
+export interface FrameSharpness {
+  time: number
+  sharpness: number
+}
+
+/**
+ * Mỗi cửa sổ windowSec giữ đúng 1 mốc thời gian có sharpness cao nhất (thứ tự thời gian).
+ * Đầu vào là kết quả pass đo-nét lấy mẫu dày; đầu ra là danh sách mốc sẽ OCR thật.
+ */
+export function pickSharpestPerWindow(cands: FrameSharpness[], windowSec: number): number[] {
+  const win = Math.max(0.2, windowSec)
+  const byWindow = new Map<number, FrameSharpness>()
+  for (const c of cands) {
+    const k = Math.floor(c.time / win)
+    const cur = byWindow.get(k)
+    if (!cur || c.sharpness > cur.sharpness) byWindow.set(k, c)
+  }
+  return [...byWindow.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, c]) => c.time)
 }
 
 /**
@@ -170,4 +224,13 @@ export function seekFrame(video: HTMLVideoElement, t: number): Promise<void> {
 /** Chụp frame hiện tại của video thành canvas đã tiền xử lý */
 export function captureFrame(video: HTMLVideoElement, opts: PreprocessOptions = {}): HTMLCanvasElement {
   return preprocessToCanvas(video, video.videoWidth, video.videoHeight, opts)
+}
+
+/** Đo độ nét frame hiện tại (vùng crop, KHÔNG scale/binarize — chỉ để so sánh giữa các frame) */
+export function frameSharpness(video: HTMLVideoElement, crop?: Rect): number {
+  const canvas = preprocessToCanvas(video, video.videoWidth, video.videoHeight, { crop, scale: 1, binarize: false })
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx) return 0
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  return sharpnessScore({ data: img.data, width: img.width, height: img.height })
 }

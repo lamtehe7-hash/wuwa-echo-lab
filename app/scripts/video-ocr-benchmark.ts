@@ -8,21 +8,38 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PNG } from 'pngjs'
 import { binarize } from '../src/ocr/preprocess'
-import { parseEchoText, type EchoDraft } from '../src/ocr/parse'
+import { parseEchoText, recoverDraft, type EchoDraft } from '../src/ocr/parse'
 import { detectSetFromImage } from '../src/ocr/seticon'
-import { mergeDrafts } from '../src/ocr/video'
+import { mergeDrafts, sharpnessScore } from '../src/ocr/video'
 import { recognizeImageWithBoxes, terminateOcrEngine } from '../src/ocr/engine'
 
 const dir = process.argv[2]
 const rawMode = process.argv.includes('--raw')
+// --pick K: mô phỏng pass chọn-frame-nét của app — frame trích DÀY (vd 6fps), mỗi cụm K frame
+// liên tiếp chỉ OCR frame có sharpnessScore cao nhất (tương đương cửa sổ stepSec của app)
+const pickIdx = process.argv.findIndex((a) => a === '--pick')
+const pickK = pickIdx >= 0 ? Math.max(1, Number(process.argv[pickIdx + 1]) || 1) : 1
 if (!dir) {
-  console.error('Cách dùng: npx tsx scripts/video-ocr-benchmark.ts <thư-mục-frames-png> [--raw]')
+  console.error('Cách dùng: npx tsx scripts/video-ocr-benchmark.ts <thư-mục-frames-png> [--raw] [--pick K]')
   process.exit(1)
 }
-const files = readdirSync(dir).filter((f) => f.toLowerCase().endsWith('.png')).sort()
+let files = readdirSync(dir).filter((f) => f.toLowerCase().endsWith('.png')).sort()
 if (files.length === 0) {
   console.error(`Không có file .png nào trong ${dir}`)
   process.exit(1)
+}
+if (pickK > 1) {
+  const scored = files.map((f) => {
+    const png = PNG.sync.read(readFileSync(join(dir, f)))
+    return { f, s: sharpnessScore({ data: new Uint8ClampedArray(png.data), width: png.width, height: png.height }) }
+  })
+  const picked: string[] = []
+  for (let i = 0; i < scored.length; i += pickK) {
+    const group = scored.slice(i, i + pickK)
+    picked.push(group.reduce((a, b) => (b.s > a.s ? b : a)).f)
+  }
+  console.log(`--pick ${pickK}: OCR ${picked.length}/${files.length} frame nét nhất mỗi cụm`)
+  files = picked
 }
 
 const fmtSub = (s: { stat: string; value: number }) => `${s.stat}=${s.value}`
@@ -54,7 +71,7 @@ for (const f of files) {
   )
 }
 
-const merged = mergeDrafts(drafts)
+const merged = mergeDrafts(drafts).map((m) => ({ ...m, draft: recoverDraft(m.draft) }))
 console.log(`\n===== ${merged.length} echo sau khi gộp / ${files.length} frame =====`)
 merged.forEach(({ draft, frames }, i) => {
   console.log(`\n#${i + 1} — thấy ở ${frames} frame`)

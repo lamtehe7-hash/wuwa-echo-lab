@@ -1,4 +1,5 @@
 import type { EchoCost, LocMessage, MainStatKey, SubstatKey } from '../types'
+import { TUNE_SLOT_LEVELS } from '../data/echoEconomy'
 import { ECHOES, type EchoInfo } from '../data/echoes'
 import { FIXED_SECONDARY, MAINSTATS } from '../data/mainstats'
 import { SONATA_SETS } from '../data/sonata'
@@ -204,13 +205,26 @@ function extractCost(lines: string[]): EchoCost | undefined {
   return undefined
 }
 
-/** Tên echo từ dòng "Tên +25" của panel chi tiết; lọc ký tự rác OCR (icon, dấu lạ) */
-function extractName(lines: string[]): string | undefined {
-  for (const line of lines) {
-    const m = line.match(/^(.*?)\s*\+\s*\d{1,2}\s*$/)
+function cleanNameText(s: string): string {
+  return s.replace(/[^A-Za-z' -]/g, ' ').replace(/\s{2,}/g, ' ').trim()
+}
+
+/**
+ * Tên echo từ dòng "Tên +25" của panel chi tiết; lọc ký tự rác OCR (icon, dấu lạ).
+ * Tên DÀI bị UI wrap 2 dòng ("Reminiscence: Threnodian -" ⏎ "Leviathan +0") → trả kèm
+ * `joined` = dòng TRƯỚC ghép với dòng "+NN" để caller thử khớp DB khi tên 1 dòng không khớp
+ * (video 17/07: mọi frame Leviathan mất pool set vì chỉ đọc nửa cuối tên).
+ */
+function extractName(lines: string[]): { name: string; joined?: string } | undefined {
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(.*?)\s*\+\s*\d{1,2}\s*$/)
     if (!m) continue
-    const cleaned = m[1].replace(/[^A-Za-z' -]/g, ' ').replace(/\s{2,}/g, ' ').trim()
-    if (cleaned.length >= 3) return cleaned
+    const cleaned = cleanNameText(m[1])
+    const prev = i > 0 ? cleanNameText(lines[i - 1]) : ''
+    const joined = prev.length >= 3 ? `${prev} ${cleaned}`.trim() : undefined
+    if (cleaned.length >= 3) return { name: cleaned, joined }
+    // Dòng "+NN" không còn chữ nào (tên nằm TRỌN dòng trước): dùng dòng trước làm tên
+    if (joined) return { name: joined }
   }
   return undefined
 }
@@ -221,8 +235,7 @@ function extractName(lines: string[]): string | undefined {
  */
 const ECHO_NORM: { key: string; info: EchoInfo }[] = ECHOES.map((e) => ({ key: normalizeLabel(e.name), info: e }))
 
-export function matchEchoInfo(name: string): EchoInfo | undefined {
-  const key = normalizeLabel(name)
+function matchEchoByKey(key: string): EchoInfo | undefined {
   if (key.length < 3) return undefined
   let best: { info: EchoInfo; dist: number } | null = null
   for (const { key: k, info } of ECHO_NORM) {
@@ -231,6 +244,17 @@ export function matchEchoInfo(name: string): EchoInfo | undefined {
     if (dist === 0) break
   }
   if (best && best.dist <= matchThreshold(key.length)) return best.info
+  return undefined
+}
+
+export function matchEchoInfo(name: string): EchoInfo | undefined {
+  const key = normalizeLabel(name)
+  const hit = matchEchoByKey(key)
+  if (hit) return hit
+  // "Phantom: <tên>" là SKIN cosmetic — game8/DB chỉ liệt kê echo gốc (cùng stat/set).
+  // Prefix làm Levenshtein vượt ngưỡng ("Phantom Impermanence Heron" cách bản gốc 7) → thử
+  // lại sau khi bỏ prefix; kết quả trả tên DB gốc (đúng semantics: cùng một echo).
+  if (key.startsWith('phantom')) return matchEchoByKey(key.slice('phantom'.length))
   return undefined
 }
 
@@ -285,6 +309,21 @@ function mainVsSubCutoff(key: SubstatKey, maxRoll: number, level: number | undef
   return Math.max((maxRoll + expectedMain) / 2, maxRoll * 1.05)
 }
 
+/**
+ * Khôi phục substat bị OCR NUỐT DẤU THẬP PHÂN ("Crit Rate 6.9%" → "69%", "ATK 9.4%" → "94%" —
+ * xác minh trên text thô video 1080p 18/07, nguồn multiMainStat lớn nhất: giá trị phồng ×10
+ * vượt ngưỡng main→sub nên sub bị đá thành "main thứ 2" rồi vứt). An toàn tuyệt đối vì 2 miền
+ * không giao nhau: main % thật của game ≤ 47.6 ở mọi cost, còn mốc-roll-sub ×10 luôn ≥ 63.
+ * Trả value/10 khi >50 và /10 khớp mốc roll (±5%); ngược lại null (xử lý như cũ).
+ */
+const MAIN_IMPOSSIBLE_ABOVE = 50
+function restoreLostDecimal(key: SubstatKey, value: number): number | null {
+  if (value <= MAIN_IMPOSSIBLE_ABOVE) return null
+  const tenth = value / 10
+  const { offPct } = snapToRoll(key, tenth)
+  return offPct <= 0.05 ? tenth : null
+}
+
 function snapToRoll(stat: SubstatKey, raw: number): { value: number; offPct: number } {
   const rolls = SUBSTATS[stat].rolls
   let best = rolls[0]
@@ -308,6 +347,64 @@ interface Candidate {
   lineIndex: number
 }
 
+/**
+ * Số substat KỲ VỌNG theo level đọc được (mỗi mốc tune đã đạt = 1 substat mới). Mốc mở slot
+ * trùng prefix ở MỌI bậc sao (3★ [5,10,15] ⊂ 5★ [5,10,15,20,25]) nên dùng bảng 5★ mà không
+ * cần biết rarity — level 15 của 3★ (full) hay 5★ (giữa chừng) đều kỳ vọng đúng 3 sub.
+ * Level không đọc được → kỳ vọng đủ 5 (hành vi cũ, an toàn với ảnh thiếu dòng tên).
+ */
+export function expectedSubsAtLevel(level: number | undefined): number {
+  if (level === undefined) return 5
+  let n = 0
+  for (const l of TUNE_SLOT_LEVELS[5]) if (l <= level) n++
+  return n
+}
+
+/**
+ * Khôi phục DANH TÍNH draft bằng DB sau khi gộp frame (video) — gọi trên draft ĐÃ merge
+ * để hưởng field backfill từ mọi frame (set từ icon/text, cost, mảnh tên):
+ * - Tên thiếu hẳn nhưng biết CẢ set + cost và pool chỉ còn 1 echo → danh tính chắc chắn.
+ * - Tên đọc dở ("Nightm", cụt/lỗi OCR vượt ngưỡng fuzzy toàn cục) → fuzzy + PREFIX match
+ *   trong pool đã thu hẹp theo set/cost, chỉ nhận khi thắng RÕ ứng viên nhì (tránh đoán bừa
+ *   giữa các echo cùng tiền tố "Nightmare: …").
+ * Không sửa gì khi tên đã khớp DB hoặc không đủ bằng chứng.
+ */
+export function recoverDraft(d: EchoDraft): EchoDraft {
+  if (d.name && matchEchoInfo(d.name)) return d
+  const pool = ECHOES.filter(
+    (e) => (d.set ? e.sets.includes(d.set) : true) && (d.cost !== undefined ? e.cost === d.cost : true),
+  )
+  if (pool.length === 0) return d
+  let hit: EchoInfo | undefined
+  if (!d.name) {
+    if (d.set && d.cost !== undefined && pool.length === 1) hit = pool[0]
+  } else {
+    const key = normalizeLabel(d.name)
+    if (key.length >= 4) {
+      const scored = pool
+        .map((e) => {
+          const k = normalizeLabel(e.name)
+          // Prefix match bắt tên bị CỤT giữa chừng (frame chuyển cảnh): "nightm" vs
+          // "nightmareroseshroom".slice(0,6) = 0. Fuzzy đầy đủ bắt lỗi ký tự lẻ.
+          const dist = Math.min(levenshtein(key, k), levenshtein(key, k.slice(0, key.length)))
+          return { e, dist }
+        })
+        .sort((a, b) => a.dist - b.dist)
+      const best = scored[0]
+      const second = scored[1]
+      if (best.dist <= matchThreshold(key.length) && (!second || second.dist > best.dist)) hit = best.e
+    }
+  }
+  if (!hit) return d
+  return {
+    ...d,
+    name: hit.name,
+    cost: d.cost ?? hit.cost,
+    set: d.set ?? (hit.sets.length === 1 ? hit.sets[0] : undefined),
+    setCandidates: hit.sets,
+  }
+}
+
 export function parseEchoText(text: string): EchoDraft {
   const warnings: LocMessage[] = []
   const lines = text
@@ -317,10 +414,14 @@ export function parseEchoText(text: string): EchoDraft {
 
   const level = extractLevel(text)
   const ocrCost = extractCost(lines)
-  const rawName = extractName(lines)
+  const nameParts = extractName(lines)
+  const rawName = nameParts?.name
   // Tra echo DB theo tên: chuẩn hoá tên (sửa lỗi OCR nhỏ, khôi phục ':' bị strip),
-  // fallback cost khi thiếu dòng COST, gợi ý set khi echo chỉ thuộc 1 set
-  const info = rawName ? matchEchoInfo(rawName) : undefined
+  // fallback cost khi thiếu dòng COST, gợi ý set khi echo chỉ thuộc 1 set.
+  // Tên 1 dòng không khớp → thử bản ghép 2 dòng (tên dài bị UI wrap).
+  const info = rawName
+    ? matchEchoInfo(rawName) ?? (nameParts?.joined ? matchEchoInfo(nameParts.joined) : undefined)
+    : undefined
   const name = info?.name ?? rawName
   const cost = ocrCost ?? info?.cost
   if (ocrCost !== undefined && info && info.cost !== ocrCost) {
@@ -382,7 +483,9 @@ export function parseEchoText(text: string): EchoDraft {
         // % vượt hẳn mốc roll substat → main stat. FLAT vượt mốc thì KHÔNG phải main
         // (main luôn là %): đó là dòng stat cố định của panel echo (ATK 100/150, HP 2280) → bỏ qua.
         if (extracted.isPercent) {
-          candidates.push({ kind: 'main', mainKey: key as MainStatKey, value: extracted.value, lineIndex })
+          const restored = restoreLostDecimal(key, extracted.value)
+          if (restored !== null) candidates.push({ kind: 'sub', subKey: key, value: restored, lineIndex })
+          else candidates.push({ kind: 'main', mainKey: key as MainStatKey, value: extracted.value, lineIndex })
         }
       } else {
         candidates.push({ kind: 'sub', subKey: key, value: extracted.value, lineIndex })
@@ -393,7 +496,9 @@ export function parseEchoText(text: string): EchoDraft {
     const key = PCT_ONLY_AMBIGUOUS_KEY[family]!
     const maxRoll = SUBSTATS[key].rolls[SUBSTATS[key].rolls.length - 1]
     if (extracted.value > mainVsSubCutoff(key, maxRoll, level, cost)) {
-      candidates.push({ kind: 'main', mainKey: key as MainStatKey, value: extracted.value, lineIndex })
+      const restored = restoreLostDecimal(key, extracted.value)
+      if (restored !== null) candidates.push({ kind: 'sub', subKey: key, value: restored, lineIndex })
+      else candidates.push({ kind: 'main', mainKey: key as MainStatKey, value: extracted.value, lineIndex })
     } else {
       candidates.push({ kind: 'sub', subKey: key, value: extracted.value, lineIndex })
     }
@@ -450,9 +555,17 @@ export function parseEchoText(text: string): EchoDraft {
     return { mainStat: undefined, level, cost, name, set: sonataSet, setCandidates, substats: [], warnings: [{ key: 'ocrParse.noContent' }], confidence: 0 }
   }
 
+  // Điểm phần substat chấm theo KỲ VỌNG của level: echo dưới mốc tune đầu (+0..+4) KHÔNG có
+  // substat trong game — đọc ra 0 sub là ĐỦ, không phải thiếu. Đọc ra NHIỀU sub hơn kỳ vọng
+  // là mâu thuẫn (level misread hoặc dòng rác lọt lưới) → phần vượt không được cộng điểm.
+  const expectedSubs = expectedSubsAtLevel(level)
   let confidence = 0
   if (mainStat) confidence += 0.35
-  confidence += (Math.min(snapped.length, 5) / 5) * 0.45
+  if (expectedSubs === 0) {
+    if (snapped.length === 0) confidence += 0.45
+  } else {
+    confidence += (Math.min(snapped.length, expectedSubs) / expectedSubs) * 0.45
+  }
   if (unmatchedNumericLines === 0) confidence += 0.1
   if (warnings.length === 0) confidence += 0.1
   confidence = Math.max(0, Math.min(1, confidence))

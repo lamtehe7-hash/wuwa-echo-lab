@@ -32,13 +32,20 @@ async function getWorker(): Promise<Worker> {
       // + lang commit sẵn) — app chạy OFFLINE hoàn toàn, không gọi CDN jsdelivr. Đường dẫn
       // tương đối được tesseract resolvePaths đổi thành tuyệt đối theo location.href
       // (blob-worker importScripts cần URL tuyệt đối).
-      const assetBase = `${import.meta.env.BASE_URL}tesseract/`
-      const w = await createWorker('eng', undefined, {
-        workerPath: `${assetBase}worker.min.js`,
-        corePath: `${assetBase}core`,
-        langPath: `${assetBase}lang`,
-        logger: (m) => currentOnProgress?.({ status: m.status, progress: m.progress }),
-      })
+      // Node (tsx: scripts/ocr-test, *-ocr-benchmark): import.meta.env không tồn tại và
+      // worker.min.js/core là bản browser — dùng default của tesseract.js (worker_threads
+      // + langdata cache ./eng.traineddata ở gốc app, chạy script từ app/).
+      const logger = (m: { status: string; progress: number }) =>
+        currentOnProgress?.({ status: m.status, progress: m.progress })
+      const w =
+        typeof window === 'undefined'
+          ? await createWorker('eng', undefined, { logger })
+          : await createWorker('eng', undefined, {
+              workerPath: `${import.meta.env.BASE_URL}tesseract/worker.min.js`,
+              corePath: `${import.meta.env.BASE_URL}tesseract/core`,
+              langPath: `${import.meta.env.BASE_URL}tesseract/lang`,
+              logger,
+            })
       await w.setParameters({ tessedit_char_whitelist: CHAR_WHITELIST })
       return w
     })

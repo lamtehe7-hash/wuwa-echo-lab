@@ -2,14 +2,20 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
 import { describe, expect, it } from 'vitest'
+import { SET_ICON_SIGNATURES } from '../data/seticonSignatures'
 import type { ImageDataLike } from './preprocess'
 import {
   badgeSearchRect,
   classifyBadgeRegion,
+  classifySignature,
   detectSetFromImage,
   findBadgeCircle,
   findLevelWordBox,
   iconSignature,
+  MATCH_MAX_DISTANCE,
+  POOL_MATCH_MAX_DISTANCE,
+  POOL_MATCH_MIN_MARGIN,
+  sigDistance,
 } from './seticon'
 
 // Fixture: crop THẬT vùng icon set (76×76) từ frame video quay panel echo trong game —
@@ -68,5 +74,63 @@ describe('seticon: nhận sonata set từ icon tròn cạnh "+25"', () => {
 
   it('detectSetFromImage: không có từ "+NN" → null (không đoán bừa)', () => {
     expect(detectSetFromImage(flatImage(100, 100, 30), [])).toBeNull()
+  })
+})
+
+// ---- Margin-rule cho pool THU HẸP theo DB (cải tiến video 18/07) ----
+// Pool từ setCandidates đảm bảo set thật nằm trong pool → chấp nhận theo CÁCH BIỆT khi
+// distance 70–90 (nét mềm 1080p). Test dùng template thật + nhiễu ±c đều mỗi ô (distance
+// tới template gốc = ĐÚNG c) — các tiền đề data được assert tường minh để regen template
+// làm test fail to tiếng thay vì sai lặng lẽ.
+describe('seticon: classifySignature margin-rule pool hẹp', () => {
+  const A = 'song-of-feathered-trace'
+  const tplSig = (id: string): Uint8Array => {
+    const entries = SET_ICON_SIGNATURES.filter((s) => s.id === id)
+    expect(entries).toHaveLength(1) // test giả định 1 biến thể/set — thêm biến thể thì chọn set khác
+    const bin = atob(entries[0].b64)
+    const out = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+    return out
+  }
+  const shifted = (sig: Uint8Array, c: number): Uint8Array => {
+    const out = new Uint8Array(sig.length)
+    for (let i = 0; i < sig.length; i++) out[i] = sig[i] <= 255 - c ? sig[i] + c : sig[i] - c
+    return out
+  }
+  const aSig = tplSig(A)
+  // B = set xa A nhất trong template — vai "ứng viên nhì" của pool
+  const B = SET_ICON_SIGNATURES.filter((s) => s.id !== A)
+    .map((s) => ({ id: s.id, d: sigDistance(aSig, tplSig(s.id)) }))
+    .sort((x, y) => y.d - x.d)[0].id
+  const bSig = tplSig(B)
+
+  it('distance 70–90 nhưng margin lớn trong pool hẹp → NHẬN (trước đây ngưỡng cứng 70 loại oan)', () => {
+    const sig = shifted(aSig, 80)
+    expect(sigDistance(sig, aSig)).toBeCloseTo(80, 5)
+    expect(sigDistance(sig, bSig) - 80).toBeGreaterThanOrEqual(POOL_MATCH_MIN_MARGIN) // tiền đề data
+    const m = classifySignature(sig, [A, B])
+    expect(m?.setId).toBe(A)
+    // Không pool → luật chuẩn vẫn từ chối A ở distance 80 (>70)
+    expect(classifySignature(sig)?.setId).not.toBe(A)
+  })
+
+  it('distance vượt trần 90 → vẫn từ chối kể cả pool hẹp', () => {
+    const sig = shifted(aSig, 95)
+    expect(sigDistance(sig, aSig)).toBeCloseTo(95, 5)
+    expect(sigDistance(sig, bSig)).toBeGreaterThan(POOL_MATCH_MAX_DISTANCE) // tiền đề data
+    expect(classifySignature(sig, [A, B])).toBeNull()
+  })
+
+  it('frame mờ (các ứng viên phẳng nhau, margin nhỏ) → null như cũ', () => {
+    const mid = new Uint8Array(aSig.length)
+    for (let i = 0; i < mid.length; i++) mid[i] = Math.round((aSig[i] + bSig[i]) / 2)
+    expect(Math.abs(sigDistance(mid, aSig) - sigDistance(mid, bSig))).toBeLessThan(8) // tiền đề
+    expect(classifySignature(mid, [A, B])).toBeNull()
+  })
+
+  it('hằng số calibrate 18/07 khoá cứng (đổi phải đối chiếu diag video 1080p)', () => {
+    expect(MATCH_MAX_DISTANCE).toBe(70)
+    expect(POOL_MATCH_MAX_DISTANCE).toBe(90)
+    expect(POOL_MATCH_MIN_MARGIN).toBe(15)
   })
 })

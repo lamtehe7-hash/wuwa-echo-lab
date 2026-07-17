@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseEchoText } from './parse'
+import { expectedSubsAtLevel, matchEchoInfo, parseEchoText, recoverDraft } from './parse'
 
 // Fixture là text THẬT tesseract đọc từ video quay panel echo trong game (v3.5),
 // lấy qua scripts/video-ocr-benchmark.ts — có đủ 3 đặc sản của UI thật mà fixture
@@ -254,5 +254,167 @@ X ATK 52
     expect(d.cost).toBe(3)
     expect(d.substats).toContainEqual({ stat: 'atk', value: 50 })
     expect(d.substats.filter((s) => s.stat === 'atk')).toHaveLength(1)
+  })
+})
+
+// ---- Confidence theo KỲ VỌNG substat của level (cải tiến video 18/07) ----
+// Game mở slot substat theo mốc 5/10/15/20/25 — echo +0..+4 KHÔNG có substat nào để đọc.
+// Công thức cũ luôn chia subs/5 → echo +0 đọc đúng trọn vẹn vẫn bị chấm 0.35 (video 17/07:
+// 13 echo +0 dính "oan"). Nay chấm theo expectedSubsAtLevel(level).
+describe('parseEchoText — confidence biết level', () => {
+  it('expectedSubsAtLevel: mốc 5/10/15/20/25 (bảng 5★, trùng prefix mọi bậc sao)', () => {
+    expect(expectedSubsAtLevel(undefined)).toBe(5)
+    expect(expectedSubsAtLevel(0)).toBe(0)
+    expect(expectedSubsAtLevel(4)).toBe(0)
+    expect(expectedSubsAtLevel(5)).toBe(1)
+    expect(expectedSubsAtLevel(14)).toBe(2)
+    expect(expectedSubsAtLevel(15)).toBe(3)
+    expect(expectedSubsAtLevel(25)).toBe(5)
+  })
+
+  it('echo +0 (fixture từ video 17/07): 0 substat là ĐỦ — confidence trọn vẹn', () => {
+    const d = parseEchoText(`Bell-Borne Geochelone +0
+COST 4
+Healing Bonus 5.2%
+ATK 30`)
+    expect(d.level).toBe(0)
+    expect(d.mainStat).toBe('healingBonus')
+    expect(d.substats).toHaveLength(0) // "ATK 30" = dòng cố định cost-4 tại +0 (150×0.2)
+    expect(d.confidence).toBeCloseTo(1, 5)
+  })
+
+  it('echo +10: kỳ vọng 2 substat — đọc đủ 2 là trọn điểm phần sub', () => {
+    const d = parseEchoText(`Zzz Fake Echo +10
+COST 3
+(3 Havoc DMG Bonus 15.6%
+X ATK 52
++ Crit. DMG 17.4%
++ Energy Regen 8.4%`)
+    expect(d.level).toBe(10)
+    expect(d.mainStat).toBe('havocDmg')
+    expect(d.substats).toHaveLength(2)
+    expect(d.confidence).toBeCloseTo(1, 5)
+  })
+
+  it('echo +0 nhưng đọc RA substat (mâu thuẫn level/dòng rác) → confidence thấp để user soát', () => {
+    const d = parseEchoText(`Zzz Fake Echo +0
+COST 3
+Havoc DMG Bonus 6.0%
++ Crit. Rate 6.3%`)
+    expect(d.level).toBe(0)
+    expect(d.confidence).toBeCloseTo(0.55, 5) // 0.35 main + 0 sub (vượt kỳ vọng) + 0.1 + 0.1
+  })
+
+  it('level không đọc được → kỳ vọng đủ 5 (hành vi cũ, không hồi quy)', () => {
+    const d = parseEchoText(`Cost: 4
+Havoc DMG Bonus 30.0%
++ Crit. Rate 9.3%
++ ATK 7.9%`)
+    expect(d.level).toBeUndefined()
+    // 0.35 main + (2/5)×0.45 + 0.1 + 0.1 = 0.73
+    expect(d.confidence).toBeCloseTo(0.73, 5)
+  })
+})
+
+// ---- Khôi phục substat mất dấu thập phân (cải tiến video 18/07) ----
+// Text thô THẬT từ video 1080p: OCR nuốt dấu chấm ("6.9%" → "69%") → giá trị vượt ngưỡng
+// main→sub, sub bị đá thành "main thứ 2" rồi vứt (36/132 cluster dính multiMainStat).
+// Miền an toàn: main % thật ≤ 47.6 mọi cost; mốc-roll-sub ×10 luôn ≥ 63 — không giao nhau.
+describe('parseEchoText — khôi phục decimal bị nuốt', () => {
+  it('fixture thật f0714 (Glacio Drake): "Crit Rate 69%" → sub critRate 6.9, không multiMainStat', () => {
+    const d = parseEchoText(`Glacio Drake +25
+COST 1 B Os
+HP 22.8%
+Y HP 2280
++ Heavy Attack DMG Bonus 10.9%
++ Crit. DMG - 17.4%
++ Crit Rate 69%
++ Resonance LiberationDMG Bonus 8.6%
++ Basic Attack DMG Bonus 8.6%`)
+    expect(d.mainStat).toBe('hpPct')
+    expect(d.substats).toHaveLength(5)
+    expect(d.substats).toContainEqual({ stat: 'critRate', value: 6.9 })
+    expect(d.warnings.some((w) => w.key === 'ocrParse.multiMainStat')).toBe(false)
+  })
+
+  it('fixture thật f1188 (Inferno Rider): "ATK i 94%" → sub atkPct 9.4; double-crit vẫn hợp lệ', () => {
+    const d = parseEchoText(`Inferno Rider - +25
+COST 4 BB 0A s-
+Crit. Rate 22.0%
+W ATK 150
++ Crit. DMG 13.8%
++ DEF 12.8%
++ Crit. Rate 6.9%
++ Resonance LiberationDMG Bonus 9.4%
++ ATK i 94%`)
+    expect(d.mainStat).toBe('critRate') // main 22.0 đứng trước, giữ nguyên vai main
+    expect(d.substats).toHaveLength(5)
+    expect(d.substats).toContainEqual({ stat: 'atkPct', value: 9.4 })
+    expect(d.substats).toContainEqual({ stat: 'critRate', value: 6.9 }) // double-crit: main + sub cùng họ
+    expect(d.warnings.some((w) => w.key === 'ocrParse.multiMainStat')).toBe(false)
+  })
+
+  it('main THẬT giá trị lớn không bị đổi vai: "Crit. DMG 44.0%" (≤50) vẫn là main', () => {
+    const d = parseEchoText(`Zzz Fake Echo +25
+COST 4
+Crit. DMG 44.0%
++ ATK 7.9%`)
+    expect(d.mainStat).toBe('critDmg')
+  })
+
+  it('giá trị >50 nhưng /10 KHÔNG khớp mốc roll → giữ nguyên đường cũ (main candidate)', () => {
+    // 220 = main critRate 22.0 mất dấu chấm: 22 không phải mốc roll sub → không restore,
+    // vẫn thành main candidate (đúng bản chất — nó LÀ main)
+    const d = parseEchoText(`Zzz Fake Echo +25
+COST 4
+Crit. Rate 220%
++ ATK 7.9%`)
+    expect(d.mainStat).toBe('critRate')
+    expect(d.substats.some((s) => s.stat === 'critRate')).toBe(false)
+  })
+})
+
+// ---- Khôi phục danh tính bằng DB (cải tiến video 18/07) ----
+// Video 17/07: tên dài wrap 2 dòng làm extractName chỉ lấy nửa cuối ("Leviathan") → mất pool
+// set; skin "Phantom: X" không có trong DB game8; tên cụt từ frame chuyển cảnh không khớp fuzzy.
+describe('recoverDraft + tên 2 dòng + Phantom', () => {
+  it('tên wrap 2 dòng ("Reminiscence: Threnodian -" ⏎ "Leviathan +0") → khớp DB đủ tên + setCandidates', () => {
+    const d = parseEchoText(`Reminiscence: Threnodian -
+Leviathan +0
+COST 4
+Healing Bonus 5.2%
+ATK 30`)
+    expect(d.name).toBe('Reminiscence: Threnodian - Leviathan')
+    expect(d.setCandidates).toEqual(['flamewings-shadow', 'thread-of-severed-fate'])
+    expect(d.level).toBe(0)
+  })
+
+  it('"Phantom: X" là skin cosmetic — map về echo gốc trong DB', () => {
+    expect(matchEchoInfo('Phantom Impermanence Heron')?.name).toBe('Impermanence Heron')
+    expect(matchEchoInfo('Phantom Crownless')?.name).toBe('Crownless')
+  })
+
+  it('recoverDraft: thiếu tên nhưng set+cost chốt pool đúng 1 echo → điền danh tính chắc chắn', () => {
+    const d = recoverDraft({ mainStat: 'critDmg', level: 25, cost: 4, set: 'tidebreaking-courage', substats: [], warnings: [], confidence: 0.5 })
+    expect(d.name).toBe('Dragon of Dirge')
+    expect(d.setCandidates).toContain('tidebreaking-courage')
+  })
+
+  it('recoverDraft: tên CỤT ("Nightmare Rose") khớp PREFIX duy nhất trong pool set+cost', () => {
+    const d = recoverDraft({ name: 'Nightmare Rose', mainStat: 'havocDmg', level: 25, cost: 3, set: 'thread-of-severed-fate', substats: [], warnings: [], confidence: 0.5 })
+    expect(d.name).toBe('Nightmare: Roseshroom')
+  })
+
+  it('recoverDraft: prefix MƠ HỒ (nhiều "Nightmare: …" cùng pool) → giữ nguyên, không đoán bừa', () => {
+    const d = recoverDraft({ name: 'Nightmare', mainStat: 'critRate', level: 25, cost: 4, substats: [], warnings: [], confidence: 0.5 })
+    expect(d.name).toBe('Nightmare')
+  })
+
+  it('recoverDraft: tên đã khớp DB hoặc thiếu bằng chứng → no-op', () => {
+    const matched = recoverDraft({ name: 'Impermanence Heron', mainStat: 'critRate', level: 25, cost: 4, substats: [], warnings: [], confidence: 1 })
+    expect(matched.name).toBe('Impermanence Heron')
+    // Thiếu tên + chỉ biết cost (pool rộng) → không điền
+    const vague = recoverDraft({ mainStat: 'critRate', level: 25, cost: 4, substats: [], warnings: [], confidence: 0.5 })
+    expect(vague.name).toBeUndefined()
   })
 })

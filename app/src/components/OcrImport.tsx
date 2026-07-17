@@ -5,10 +5,22 @@ import { SONATA_BY_ID, SONATA_SETS } from '../data/sonata'
 import { echoDisplayName } from '../data/echoIndex'
 import { MAX_SUBSTATS } from '../data/substats'
 import { recognizeImageWithBoxes, terminateOcrEngine, type OcrProgress } from '../ocr/engine'
-import { parseEchoText, type EchoDraft } from '../ocr/parse'
+import { parseEchoText, recoverDraft, type EchoDraft } from '../ocr/parse'
 import { fileToPreprocessedCanvas, normalizeRect, type Rect } from '../ocr/preprocess'
 import { detectSetFromCanvas } from '../ocr/seticon'
-import { captureFrame, frameTimestamps, loadVideo, mergeDrafts, releaseVideo, seekFrame } from '../ocr/video'
+import {
+  captureFrame,
+  frameSharpness,
+  frameTimestamps,
+  loadVideo,
+  MAX_FRAMES,
+  mergeDrafts,
+  pickSharpestPerWindow,
+  releaseVideo,
+  seekFrame,
+  SHARP_OVERSAMPLE,
+  type FrameSharpness,
+} from '../ocr/video'
 import { newId } from '../store'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
@@ -184,7 +196,7 @@ export default function OcrImport({ onAdd }: Props) {
           const match = detectSetFromCanvas(colorCanvas, words, draft.setCandidates)
           if (match) draft = { ...draft, set: match.setId }
         }
-        setResults((prev) => [...prev, draftToItem(file.name, draft)])
+        setResults((prev) => [...prev, draftToItem(file.name, recoverDraft(draft))])
       } catch (err) {
         setResults((prev) => [
           ...prev,
@@ -226,7 +238,25 @@ export default function OcrImport({ onAdd }: Props) {
     setRunning(true)
     setVideoSummary(null)
     cancelRef.current = false
-    const times = frameTimestamps(video.el.duration, stepSec)
+    // Pass 1 (rẻ, KHÔNG OCR): lấy mẫu dày gấp SHARP_OVERSAMPLE, đo độ nét vùng crop từng frame
+    // → mỗi cửa sổ stepSec chỉ OCR frame NÉT nhất (loại frame trúng lúc cuộn/chuyển cảnh —
+    // nguồn chính của substat thiếu + icon set nhoè trên video quay nhanh).
+    const rawTimes = frameTimestamps(video.el.duration, stepSec / SHARP_OVERSAMPLE, MAX_FRAMES * SHARP_OVERSAMPLE)
+    const cands: FrameSharpness[] = []
+    for (let i = 0; i < rawTimes.length; i++) {
+      if (cancelRef.current || !mountedRef.current) break
+      try {
+        await seekFrame(video.el, rawTimes[i])
+        cands.push({ time: rawTimes[i], sharpness: frameSharpness(video.el, crop ?? undefined) })
+      } catch {
+        // frame lỗi seek → bỏ qua ứng viên này
+      }
+      if (i % 10 === 0) {
+        setProgress({ file: video.name, index: i, total: rawTimes.length, p: { status: t('ocr.sharpScan'), progress: (i + 1) / rawTimes.length } })
+      }
+    }
+    // Pass 2: OCR như cũ trên các frame đã chọn (fallback nhịp thưa cũ nếu pass 1 không đo được gì)
+    const times = cands.length > 0 ? pickSharpestPerWindow(cands, stepSec) : frameTimestamps(video.el.duration, stepSec)
     const drafts: EchoDraft[] = []
     let scanned = 0
     for (let i = 0; i < times.length; i++) {
@@ -253,10 +283,11 @@ export default function OcrImport({ onAdd }: Props) {
     }
     // Gộp các frame của cùng một echo (trùng tuyệt đối + bản đọc thiếu/misread main) → 1 draft tốt nhất.
     // Kết quả chỉ hiện sau khi quét xong để tránh echo ma từ frame chuyển cảnh.
+    // recoverDraft SAU merge: hưởng field backfill từ mọi frame (set/cost) để cứu tên đọc dở qua DB.
     const merged = mergeDrafts(drafts)
     setResults((prev) => [
       ...prev,
-      ...merged.map((m) => draftToItem(t('ocr.videoDraftLabel', { name: video.name, frames: m.frames }), m.draft)),
+      ...merged.map((m) => draftToItem(t('ocr.videoDraftLabel', { name: video.name, frames: m.frames }), recoverDraft(m.draft))),
     ])
     setProgress(null)
     setRunning(false)

@@ -15,6 +15,13 @@ const N = SET_ICON_SIG_SIZE
 export const MATCH_MAX_DISTANCE = 70
 /** Cách biệt tối thiểu với set khác gần nhì — dưới ngưỡng này coi như mơ hồ, trả null */
 export const MATCH_MIN_MARGIN = 8
+/** Pool THU HẸP theo DB (setCandidates từ tên echo): set thật CHẮC CHẮN nằm trong pool nên
+ *  quyết bằng CÁCH BIỆT được — không còn rủi ro "set thiếu template match ké". Nét mềm video
+ *  1080p đẩy distance set đúng lên ~72–87 (vượt ngưỡng 70) nhưng vẫn bỏ xa set nhì 23–44 điểm;
+ *  frame mờ thật sự thì các ứng viên phẳng nhau (margin ≤7) → vẫn bị chặn. Calibrate 18/07
+ *  trên 12 frame chẩn đoán video 1080p thật (diag-seticon). */
+export const POOL_MATCH_MAX_DISTANCE = 90
+export const POOL_MATCH_MIN_MARGIN = 15
 
 function luminance(data: Uint8ClampedArray, i: number): number {
   return 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
@@ -263,9 +270,13 @@ export function classifySignature(sig: Uint8Array, candidates?: string[]): SetIc
       secondD = d
     }
   }
-  if (!bestId || bestD > MATCH_MAX_DISTANCE) return null
-  if (bySet.size > 1 && secondD - bestD < MATCH_MIN_MARGIN) return null
-  return { setId: bestId, distance: bestD, margin: secondD - bestD }
+  if (!bestId) return null
+  const margin = secondD - bestD
+  const standardOk = bestD <= MATCH_MAX_DISTANCE && (bySet.size <= 1 || margin >= MATCH_MIN_MARGIN)
+  // Pool thu hẹp ≥2 ứng viên: nhận thêm theo margin-rule (xem chú thích POOL_MATCH_*)
+  const pooledOk = pool !== null && bySet.size > 1 && bestD <= POOL_MATCH_MAX_DISTANCE && margin >= POOL_MATCH_MIN_MARGIN
+  if (!standardOk && !pooledOk) return null
+  return { setId: bestId, distance: bestD, margin }
 }
 
 /**

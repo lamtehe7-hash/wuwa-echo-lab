@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { EchoDraft } from './parse'
-import { MAX_FRAMES, draftSignature, frameTimestamps, mergeDrafts } from './video'
+import { MAX_FRAMES, draftSignature, frameTimestamps, mergeDrafts, pickSharpestPerWindow, sharpnessScore } from './video'
 
 function draft(overrides: Partial<EchoDraft>): EchoDraft {
   return { mainStat: 'critRate', level: 25, substats: [], warnings: [], confidence: 1, ...overrides }
@@ -19,6 +19,58 @@ describe('frameTimestamps', () => {
   it('duration không hợp lệ (NaN/0) → mảng rỗng', () => {
     expect(frameTimestamps(NaN, 1)).toEqual([])
     expect(frameTimestamps(0, 1)).toEqual([])
+  })
+  it('maxFrames tuỳ chọn nới trần cho pass lấy-mẫu-dày (mặc định vẫn MAX_FRAMES)', () => {
+    expect(frameTimestamps(10_000, 0.2, MAX_FRAMES * 3).length).toBe(MAX_FRAMES * 3)
+  })
+})
+
+// ---- Chọn frame nét (cải tiến video 18/07) ----
+describe('sharpnessScore + pickSharpestPerWindow', () => {
+  const image = (w: number, h: number, px: (x: number, y: number) => number) => {
+    const data = new Uint8ClampedArray(w * h * 4)
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4
+      data[i] = data[i + 1] = data[i + 2] = px(x, y)
+      data[i + 3] = 255
+    }
+    return { data, width: w, height: h }
+  }
+
+  it('ảnh có biên sắc (caro) nét hơn hẳn gradient mượt; ảnh phẳng = 0', () => {
+    const checker = image(24, 24, (x, y) => ((x + y) % 2 ? 255 : 0))
+    const smooth = image(24, 24, (x) => Math.round((x / 23) * 255))
+    const flat = image(24, 24, () => 128)
+    expect(sharpnessScore(checker)).toBeGreaterThan(sharpnessScore(smooth))
+    expect(sharpnessScore(smooth)).toBeGreaterThan(0)
+    expect(sharpnessScore(flat)).toBe(0)
+  })
+
+  it('mỗi cửa sổ giữ đúng mốc nét nhất, kết quả theo thứ tự thời gian', () => {
+    const picked = pickSharpestPerWindow(
+      [
+        { time: 0.0, sharpness: 5 },
+        { time: 0.2, sharpness: 9 }, // cửa sổ [0, 0.5): nét nhất
+        { time: 0.4, sharpness: 7 },
+        { time: 0.6, sharpness: 1 }, // cửa sổ [0.5, 1): duy nhất
+        { time: 1.2, sharpness: 3 },
+        { time: 1.0, sharpness: 8 }, // cửa sổ [1, 1.5): nét nhất (dù đưa vào sau)
+      ],
+      0.5,
+    )
+    expect(picked).toEqual([0.2, 0.6, 1.0])
+  })
+
+  it('mảng rỗng → rỗng; windowSec quá nhỏ bị chặn dưới 0.2', () => {
+    expect(pickSharpestPerWindow([], 0.5)).toEqual([])
+    const picked = pickSharpestPerWindow(
+      [
+        { time: 0.0, sharpness: 1 },
+        { time: 0.1, sharpness: 2 },
+      ],
+      0.01,
+    )
+    expect(picked).toEqual([0.1]) // cùng cửa sổ 0.2s → giữ 1
   })
 })
 

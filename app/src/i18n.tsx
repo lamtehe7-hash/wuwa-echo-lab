@@ -454,6 +454,7 @@ const DICT: Record<string, Entry> = {
   'ocr.filesSelected': { vi: 'Đã chọn {n} ảnh', en: '{n} images selected' },
   'ocr.clearFiles': { vi: 'bỏ chọn', en: 'clear' },
   'ocr.starting': { vi: 'đang khởi động…', en: 'starting…' },
+  'ocr.sharpScan': { vi: 'đang chọn frame nét…', en: 'picking sharp frames…' },
   'ocr.modeImage': { vi: 'Ảnh', en: 'Images' },
   'ocr.modeVideo': { vi: 'Video (beta)', en: 'Video (beta)' },
   'ocr.preprocessToggle': { vi: 'Tiền xử lý ảnh (phóng to + nhị phân hoá) — tắt nếu kết quả tệ hơn', en: 'Preprocess image (upscale + binarize) — turn off if results get worse' },

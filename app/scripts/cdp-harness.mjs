@@ -3,7 +3,7 @@
 //
 // Dùng:
 //   import { launch } from './cdp-harness.mjs'
-//   (script nằm NGOÀI app/ phải import dạng file:///E:/Claude/WuWa%20Echo/app/scripts/cdp-harness.mjs
+//   (script nằm NGOÀI app/ phải import dạng file:///E:/Claude/02_Tools/WuWa%20Echo/app/scripts/cdp-harness.mjs
 //    — ESM Windows không nhận path chữ-ổ-đĩa, gotcha HANDOVER §5)
 //   const h = await launch()                       // preview phải chạy sẵn (port 4173)
 //   h.check('demo', await h.clickByText('Dữ liệu demo'))

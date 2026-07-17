@@ -13,7 +13,7 @@ GitHub Actions hỗ trợ cả hai với tài khoản có Pages). Đặt tên re
 
 ## 2. Khởi tạo git ở máy local
 
-Mở terminal tại thư mục gốc project (`e:\Claude\WuWa Echo`):
+Mở terminal tại thư mục gốc project (`e:\Claude\02_Tools\WuWa Echo`):
 
 ```bash
 git init

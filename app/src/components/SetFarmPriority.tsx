@@ -21,25 +21,38 @@ export default function SetFarmPriority({ profiles }: { profiles: CharacterProfi
         🗺 {t('farm.title')}
         <span className="ml-2 text-xs font-normal text-slate-500">{t('farm.subtitle')}</span>
       </summary>
-      <ul className="mt-2 space-y-1 text-xs">
-        {rows.map(({ def, beneficiaries }) => (
-          <li
-            key={def.id}
-            className="flex flex-wrap items-center gap-1.5"
-            title={beneficiaries.slice(0, 5).map((b) => b.profile.name).join(' · ')}
-          >
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: def.element ? ELEMENT_COLOR[def.element] : '#64748b' }}
-            />
-            <span className="font-medium text-slate-200">{def.name}</span>
-            {/* Không icon ⭐: không có legend giải thích trong khối này (nguyên tắc app: icon luôn kèm chú giải) */}
-            <span className="text-slate-500">
-              — {t('farm.row', { n: beneficiaries.length, name: beneficiaries[0].profile.name })}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {/* P1 (ui-redesign): bảng 3 cột thay chuỗi "— Hợp N nhân vật · tốt nhất: X" lặp — căn thẳng,
+          thấy ngay set ưu tiên (rows đã sort theo số người cần); số Cần ≥2 tô amber = ưu tiên cao */}
+      <table className="mt-2 w-full text-left text-xs">
+        <thead>
+          <tr className="text-[11px] uppercase tracking-wide text-slate-500">
+            <th className="py-1 pr-2 font-medium">{t('farm.colSet')}</th>
+            <th className="w-14 px-2 text-right font-medium">{t('farm.colNeed')}</th>
+            <th className="pl-2 font-medium">{t('farm.colBest')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ def, beneficiaries }) => (
+            <tr
+              key={def.id}
+              className="border-t border-slate-800/60"
+              title={beneficiaries.slice(0, 5).map((b) => b.profile.name).join(' · ')}
+            >
+              <td className="py-1 pr-2">
+                <span
+                  className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle"
+                  style={{ backgroundColor: def.element ? ELEMENT_COLOR[def.element] : '#64748b' }}
+                />
+                <span className="font-medium text-slate-200">{def.name}</span>
+              </td>
+              <td className={`px-2 text-right font-mono tabular-nums ${beneficiaries.length >= 2 ? 'font-semibold text-amber-300' : 'text-slate-300'}`}>
+                {beneficiaries.length}
+              </td>
+              <td className="pl-2 text-slate-300">{beneficiaries[0].profile.name}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </details>
   )
 }

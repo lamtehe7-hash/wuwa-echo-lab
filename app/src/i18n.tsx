@@ -202,6 +202,10 @@ const DICT: Record<string, Entry> = {
   'farm.title': { vi: 'Ưu tiên farm set', en: 'Set farming priority' },
   'farm.subtitle': { vi: 'Set nào nên farm tiếp cho cả đội hình — không cần có sẵn trong kho.', en: 'Which sets are worth farming next for your whole roster — no inventory needed.' },
   'farm.row': { vi: 'Hợp {n} nhân vật · tốt nhất: {name}', en: 'Good for {n} characters · best: {name}' },
+  // P1 (ui-redesign): header bảng 3 cột (farm.row vẫn dùng trong tooltip FarmingBacklog)
+  'farm.colSet': { vi: 'Set', en: 'Set' },
+  'farm.colNeed': { vi: 'Cần', en: 'Need' },
+  'farm.colBest': { vi: 'Tốt nhất cho', en: 'Best for' },
   // F12 (task 61): Farming Backlog — tồn kho vs nhu cầu
   'backlog.title': { vi: 'Tồn kho vs nhu cầu farm', en: 'Stock vs farming need' },
   'backlog.subtitle': { vi: 'Đối chiếu echo đang có với nhu cầu ở trên — set nào nên dừng farm.', en: 'Match echoes you own against the demand above — which sets you can stop farming.' },

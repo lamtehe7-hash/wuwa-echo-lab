@@ -12,6 +12,7 @@ import { rateSubstat } from '../engine/substatRating'
 import { useFmtN, useT, useTMessage } from '../i18n'
 import BestOwnerBadge from './BestOwnerBadge'
 import EchoCard from './EchoCard'
+import { IconBan, IconGrid, IconInfo, IconList, IconLock, IconPencil, IconSearch, IconTrash } from './icons'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import ScoreBadge from './ScoreBadge'
 import SubstatLegend from './SubstatLegend'
@@ -59,20 +60,11 @@ const VERDICT_ACTIVE: Record<string, string> = {
 
 const VERDICTS = ['keep-tuning', 'done', 'usable', 'trash'] as const
 
-/** K4 (ui-redesign): icon "ban" cho cờ Bỏ — KHÔNG dùng 🗑 (nhầm với xoá thật);
- *  SVG stroke currentColor nên tint được theo state (emoji thì không — gotcha task 64) */
-function BanIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      className="inline-block align-[-3px]" aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="m5.6 5.6 12.8 12.8" />
-    </svg>
-  )
-}
+/** K3/C1 (ui-redesign): icon-button 34px desktop / 44px mobile — hit-target đạt chuẩn,
+ *  icon SVG ăn currentColor nên state tint được (emoji thì không — gotcha task 64).
+ *  aria-label GIỮ NGUYÊN chuỗi (hợp đồng với e2e — dò startsWith('Khoá')/('Đánh dấu Bỏ')). */
+const ICON_BTN = 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[7px] border sm:h-[34px] sm:w-[34px]'
+const ICON_BTN_IDLE = 'border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-300'
 const VIEW_KEY = 'wuwa-inv-view'
 const LEGEND_KEY = 'wuwa-inv-legend'
 const SORT_KEYS = ['score', 'rv', 'level', 'new'] as const
@@ -194,13 +186,17 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
       {/* Thanh công cụ kho: search + lọc + sort (nằm NGOÀI vùng cuộn ngang của bảng) */}
       <div className="mb-1 space-y-1.5 border-b border-slate-800 p-1 pb-2 text-xs">
         <div className="flex flex-wrap items-center gap-1.5">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('inv.search')}
-            aria-label={t('inv.search')}
-            className="min-w-36 flex-1 rounded border border-slate-700 bg-slate-800 px-2 py-1"
-          />
+          {/* K3/C2: icon search trong ô tìm (mock toolbar) */}
+          <span className="relative min-w-36 flex-1">
+            <IconSearch size={14} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t('inv.search')}
+              aria-label={t('inv.search')}
+              className="w-full rounded border border-slate-700 bg-slate-800 py-1 pl-7 pr-2"
+            />
+          </span>
           <select className={selCls} value={setF} onChange={(e) => setSetF(e.target.value)} aria-label={t('inv.allSets')}>
             <option value="">{t('inv.allSets')}</option>
             {setOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -227,9 +223,9 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                 title={t(v === 'table' ? 'inv.viewTable' : 'inv.viewGrid')}
                 aria-label={t(v === 'table' ? 'inv.viewTable' : 'inv.viewGrid')}
                 aria-pressed={view === v}
-                className={`px-2 py-1 ${view === v ? 'bg-sky-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+                className={`flex h-[34px] w-[34px] items-center justify-center ${view === v ? 'bg-sky-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
                 onClick={() => changeView(v)}
-              >{v === 'table' ? '▤' : '▦'}</button>
+              >{v === 'table' ? <IconList /> : <IconGrid />}</button>
             ))}
           </span>
         </div>
@@ -265,7 +261,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
             className={`ml-auto rounded border border-slate-700 px-2 py-1 ${legendOpen ? 'bg-slate-800 text-slate-300' : 'text-slate-500 hover:bg-slate-800'}`}
             aria-pressed={legendOpen}
             onClick={toggleLegend}
-          >? {t('inv.legendToggle')}</button>
+          ><IconInfo size={13} className="mr-1 inline align-[-2px]" />{t('inv.legendToggle')}</button>
           <span className="text-slate-500">{t('inv.count', { shown: rows.length, total: echoes.length })}</span>
         </div>
         {view === 'table' && selCount > 0 && (
@@ -322,28 +318,32 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                   {t(`ranking.verdict.${advice.verdict}`)}
                   {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}
                 </span>
-                <span className="shrink-0">
-                  {/* 🔒 là emoji → CSS color KHÔNG đổi màu glyph (gotcha task 64) — trạng thái
-                      active phải bằng NỀN+ring như AnchorToggle; inactive mờ bằng opacity */}
+                <span className="flex shrink-0 items-center gap-1">
+                  {/* K3/C1/C2: icon-button chuẩn hit-target — aria-label giữ nguyên chuỗi cho e2e */}
                   <button
-                    className={`mr-1 rounded px-0.5 ${r.echo.lock ? 'bg-amber-500/30 ring-1 ring-amber-500/70' : 'opacity-40 hover:opacity-100'}`}
+                    className={`${ICON_BTN} ${r.echo.lock ? 'border-amber-600 bg-amber-500/20 text-amber-300' : ICON_BTN_IDLE}`}
                     title={t('inv.flagLock')} aria-label={t('inv.flagLock')} aria-pressed={!!r.echo.lock}
                     onClick={() => onToggleFlag(r.echo.id, 'lock')}
-                  >🔒</button>
+                  ><IconLock /></button>
                   <button
-                    className={`mr-2 rounded px-0.5 ${r.echo.trash ? 'bg-rose-500/30 text-rose-300 ring-1 ring-rose-500/70' : 'opacity-40 hover:opacity-100'}`}
+                    className={`${ICON_BTN} ${r.echo.trash ? 'border-rose-600 bg-rose-500/20 text-rose-300' : ICON_BTN_IDLE}`}
                     title={t('inv.flagTrashTip')} aria-label={t('inv.flagTrashTip')} aria-pressed={!!r.echo.trash}
                     onClick={() => onToggleFlag(r.echo.id, 'trash')}
-                  ><BanIcon /></button>
-                  <button className="mr-2 text-slate-500 hover:text-sky-300" onClick={() => onEdit(r.echo)}>{t('ranking.edit')}</button>
-                  {/* K4: divider tách cụm cờ (đảo được) khỏi xoá thật */}
-                  <span className="mx-1 inline-block h-3.5 w-px bg-slate-800 align-middle" aria-hidden />
+                  ><IconBan /></button>
                   <button
-                    className="text-slate-600 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-30"
+                    className={`${ICON_BTN} ${ICON_BTN_IDLE} hover:text-sky-300`}
+                    title={t('ranking.editTip')} aria-label={t('ranking.edit')}
+                    onClick={() => onEdit(r.echo)}
+                  ><IconPencil /></button>
+                  {/* K4: divider tách cụm cờ (đảo được) khỏi xoá thật */}
+                  <span className="mx-0.5 inline-block h-[22px] w-px bg-slate-800" aria-hidden />
+                  <button
+                    className={`${ICON_BTN} ${ICON_BTN_IDLE} hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-30`}
                     disabled={!!r.echo.lock}
-                    title={r.echo.lock ? t('inv.lockedNoDelete') : undefined}
+                    title={r.echo.lock ? t('inv.lockedNoDelete') : t('ranking.delete')}
+                    aria-label={t('ranking.delete')}
                     onClick={() => onDelete(r.echo.id)}
-                  >{t('ranking.delete')}</button>
+                  ><IconTrash /></button>
                 </span>
               </div>
             </div>
@@ -443,26 +443,33 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                       </td>
                     )}
                     <td className="whitespace-nowrap text-right">
-                      {/* 🔒 emoji → trạng thái bằng NỀN+ring, không dùng text-color (gotcha task 64) */}
-                      <button
-                        className={`mr-1 rounded px-0.5 text-xs ${r.echo.lock ? 'bg-amber-500/30 ring-1 ring-amber-500/70' : 'opacity-40 hover:opacity-100'}`}
-                        title={t('inv.flagLock')} aria-label={t('inv.flagLock')} aria-pressed={!!r.echo.lock}
-                        onClick={() => onToggleFlag(r.echo.id, 'lock')}
-                      >🔒</button>
-                      <button
-                        className={`mr-2 rounded px-0.5 text-xs ${r.echo.trash ? 'bg-rose-500/30 text-rose-300 ring-1 ring-rose-500/70' : 'opacity-40 hover:opacity-100'}`}
-                        title={t('inv.flagTrashTip')} aria-label={t('inv.flagTrashTip')} aria-pressed={!!r.echo.trash}
-                        onClick={() => onToggleFlag(r.echo.id, 'trash')}
-                      ><BanIcon /></button>
-                      <button className="mr-2 text-xs text-slate-500 hover:text-sky-300" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>{t('ranking.edit')}</button>
-                      {/* K4: divider tách cụm cờ (đảo được) khỏi xoá thật; xoá có toast "Hoàn tác", echo khoá thì chặn */}
-                      <span className="mx-1 inline-block h-3.5 w-px bg-slate-800 align-middle" aria-hidden />
-                      <button
-                        className="text-xs text-slate-600 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-30"
-                        disabled={!!r.echo.lock}
-                        title={r.echo.lock ? t('inv.lockedNoDelete') : undefined}
-                        onClick={() => onDelete(r.echo.id)}
-                      >{t('ranking.delete')}</button>
+                      {/* K3/C1/C2: icon-button 34/44px — aria-label giữ nguyên chuỗi (e2e dò
+                          startsWith 'Khoá' / 'Đánh dấu Bỏ' / === 'xoá'); xoá có toast Hoàn tác */}
+                      <span className="inline-flex items-center gap-1">
+                        <button
+                          className={`${ICON_BTN} ${r.echo.lock ? 'border-amber-600 bg-amber-500/20 text-amber-300' : ICON_BTN_IDLE}`}
+                          title={t('inv.flagLock')} aria-label={t('inv.flagLock')} aria-pressed={!!r.echo.lock}
+                          onClick={() => onToggleFlag(r.echo.id, 'lock')}
+                        ><IconLock /></button>
+                        <button
+                          className={`${ICON_BTN} ${r.echo.trash ? 'border-rose-600 bg-rose-500/20 text-rose-300' : ICON_BTN_IDLE}`}
+                          title={t('inv.flagTrashTip')} aria-label={t('inv.flagTrashTip')} aria-pressed={!!r.echo.trash}
+                          onClick={() => onToggleFlag(r.echo.id, 'trash')}
+                        ><IconBan /></button>
+                        <button
+                          className={`${ICON_BTN} ${ICON_BTN_IDLE} hover:text-sky-300`}
+                          title={t('ranking.editTip')} aria-label={t('ranking.edit')}
+                          onClick={() => onEdit(r.echo)}
+                        ><IconPencil /></button>
+                        <span className="mx-0.5 inline-block h-[22px] w-px bg-slate-800" aria-hidden />
+                        <button
+                          className={`${ICON_BTN} ${ICON_BTN_IDLE} hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-30`}
+                          disabled={!!r.echo.lock}
+                          title={r.echo.lock ? t('inv.lockedNoDelete') : t('ranking.delete')}
+                          aria-label={t('ranking.delete')}
+                          onClick={() => onDelete(r.echo.id)}
+                        ><IconTrash /></button>
+                      </span>
                     </td>
                   </tr>
                 )

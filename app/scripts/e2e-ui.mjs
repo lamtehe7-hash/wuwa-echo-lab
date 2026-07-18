@@ -160,7 +160,7 @@ await sleep(400)
 check('tab-inventory', await clickByText('Kho Echo'))
 await sleep(250)
 check('click-delete', await evaluate(`(() => {
-  const b = [...document.querySelectorAll('tbody button')].find((x) => x.textContent === 'xoá')
+  const b = [...document.querySelectorAll('tbody button')].find((x) => (x.getAttribute('aria-label') || '') === 'xoá')
   if (!b) return false
   b.click(); return true
 })()`))
@@ -254,7 +254,7 @@ check('locked-delete-disabled', await evaluate(`(() => {
   const rows = [...document.querySelectorAll('tbody tr')]
   return rows.some((tr) => {
     const lock = [...tr.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('Khoá'))
-    const del = [...tr.querySelectorAll('button')].find((b) => b.textContent === 'xoá')
+    const del = [...tr.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '') === 'xoá')
     return lock?.getAttribute('aria-pressed') === 'true' && del?.disabled
   })
 })()`))
@@ -275,7 +275,7 @@ check('inventory-10-final', await bodyHas('Kho: 10 echo'))
 // dọn cờ để screenshot cuối sạch
 await evaluate(`(() => { const b = [...document.querySelectorAll('tbody button')].find((x) => x.getAttribute('aria-pressed') === 'true' && (x.getAttribute('aria-label') || '').startsWith('Khoá')); if (b) b.click(); return true })()`)
 await sleep(150)
-await evaluate(`(() => { const b = [...document.querySelectorAll('tbody button')].find((x) => x.getAttribute('aria-pressed') === 'true' && (x.getAttribute('aria-label') || '').startsWith('Loại')); if (b) b.click(); return true })()`)
+await evaluate(`(() => { const b = [...document.querySelectorAll('tbody button')].find((x) => x.getAttribute('aria-pressed') === 'true' && (x.getAttribute('aria-label') || '').startsWith('Đánh dấu Bỏ')); if (b) b.click(); return true })()`)
 await sleep(150)
 
 const shot = await send('Page.captureScreenshot', { format: 'png' })

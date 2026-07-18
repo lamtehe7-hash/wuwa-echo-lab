@@ -104,7 +104,8 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
         <p className="text-slate-300">{t('cleanup.preview', { n: matches.length })}</p>
         {/* dòng khoá TÁCH RIÊNG + nhạt/nhỏ hơn (góp ý designer): đây là TỔNG echo khoá trong kho, không
             phải "trong N có M khoá" — tránh đọc gộp */}
-        {lockedCount > 0 && <p className="text-[10px] text-slate-500">🔒 {t('cleanup.lockedKept', { m: lockedCount })}</p>}
+        {/* C3: thông tin ảnh hưởng quyết định ≥12px */}
+        {lockedCount > 0 && <p className="text-xs text-slate-500">🔒 {t('cleanup.lockedKept', { m: lockedCount })}</p>}
 
         {matches.length > 0 && (
           <ul className="max-h-64 space-y-1 overflow-y-auto rounded border border-slate-800 bg-slate-950/40 p-1.5">

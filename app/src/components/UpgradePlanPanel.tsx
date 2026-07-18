@@ -67,7 +67,7 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
               <span className="text-slate-400">Tuner</span>
             </span>
           </label>
-          <p className="text-[11px] text-slate-500">{t('upgrade.budgetRule')}</p>
+          <p className="text-xs text-slate-500">{t('upgrade.budgetRule')}</p>
         </div>
 
         {budget > 0 && (
@@ -81,7 +81,7 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
               return (
                 <li key={r.echo.id} className={dimmed ? 'opacity-50' : ''}>
                   {budget > 0 && i === cutoff && (
-                    <p className="mb-1 text-center text-[10px] text-amber-400">
+                    <p className="mb-1 text-center text-xs text-amber-400">
                       {t('upgrade.budgetCutoff', { left: leftover })}
                     </p>
                   )}

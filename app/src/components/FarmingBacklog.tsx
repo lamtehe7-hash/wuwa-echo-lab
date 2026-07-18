@@ -34,12 +34,13 @@ function Row({ r }: { r: SetBacklogRow }) {
         className="h-2 w-2 shrink-0 rounded-full"
         style={{ backgroundColor: r.def.element ? ELEMENT_COLOR[r.def.element] : '#64748b' }}
       />
+      {/* C3 (ui-redesign): số liệu quyết định (chip status, đếm, demand) ≥12px — 10px chỉ cho phụ chú */}
       <span className="min-w-0 truncate font-medium text-slate-200">{r.def.name}</span>
-      <span className={`rounded px-1.5 py-0.5 text-[10px] ${st.chip}`}>{t(st.key)}</span>
+      <span className={`rounded px-1.5 py-0.5 text-xs ${st.chip}`}>{t(st.key)}</span>
       <span className="ml-auto flex shrink-0 items-center gap-1.5">
         {r.demand > 0 ? (
           <>
-            <span className="w-12 text-right font-mono text-[10px] tabular-nums text-slate-500">
+            <span className="w-12 text-right font-mono text-xs tabular-nums text-slate-400">
               {r.goodOwned}/{r.target}
             </span>
             <span className="block h-1 w-20 overflow-hidden rounded-full bg-slate-800" aria-hidden>
@@ -47,9 +48,9 @@ function Row({ r }: { r: SetBacklogRow }) {
             </span>
           </>
         ) : (
-          <span className="text-[10px] text-slate-500">{t('backlog.surplusRow', { owned: r.owned })}</span>
+          <span className="text-xs text-slate-500">{t('backlog.surplusRow', { owned: r.owned })}</span>
         )}
-        <span className="w-16 text-right text-[10px] text-slate-500">
+        <span className="w-16 text-right text-xs text-slate-500">
           {r.demand > 0 ? t('backlog.demand', { n: r.demand }) : '—'}
         </span>
       </span>
@@ -78,11 +79,11 @@ export default function FarmingBacklog({ rows }: { rows: SetBacklogRow[] }) {
 
       {/* Lộ công thức target: "0/10" cạnh "35 nhân vật" dễ hiểu lầm nếu không nói mốc là ~2 mảnh/người
           (góp ý designer task 61) */}
-      <p className="mt-2 text-[10px] text-slate-500">{t('backlog.help')}</p>
+      <p className="mt-2 text-xs text-slate-500">{t('backlog.help')}</p>
 
       {farm.length > 0 && (
         <>
-          <p className="mt-2 px-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400/80">{t('backlog.groupFarm')}</p>
+          <p className="mt-2 px-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-400/80">{t('backlog.groupFarm')}</p>
           <ul className="mt-1 space-y-1 text-xs">
             {farm.map((r) => (
               <Row key={r.def.id} r={r} />
@@ -92,7 +93,7 @@ export default function FarmingBacklog({ rows }: { rows: SetBacklogRow[] }) {
       )}
       {stop.length > 0 && (
         <>
-          <p className="mt-2 px-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">{t('backlog.groupStop')}</p>
+          <p className="mt-2 px-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-400/80">{t('backlog.groupStop')}</p>
           <ul className="mt-1 space-y-1 text-xs">
             {stop.map((r) => (
               <Row key={r.def.id} r={r} />

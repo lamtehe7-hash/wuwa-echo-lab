@@ -253,7 +253,8 @@ const DICT: Record<string, Entry> = {
   'triage.orderWorst': { vi: 'Tệ trước', en: 'Worst first' },
   'triage.orderNewest': { vi: 'Mới trước', en: 'Newest first' },
   'triage.title': { vi: 'Duyệt lần lượt', en: 'Review queue' },
-  'triage.progress': { vi: 'Đang duyệt {i}/{n}', en: 'Reviewing {i}/{n}' },
+  // P5 (ui-redesign): tách label khỏi số đếm (số render to riêng)
+  'triage.progressLabel': { vi: 'Đang duyệt', en: 'Reviewing' },
   'triage.exit': { vi: 'Thoát', en: 'Exit' },
   'triage.suggestTrash': { vi: '— ứng viên bỏ', en: '— exclude candidate' },
   'triage.keep': { vi: 'Giữ', en: 'Keep' },

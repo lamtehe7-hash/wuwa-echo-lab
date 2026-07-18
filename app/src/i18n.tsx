@@ -33,6 +33,8 @@ const DICT: Record<string, Entry> = {
   'tabs.import': { vi: 'Import', en: 'Import' },
   'importTab.jsonTitle': { vi: '📄 Sao lưu / khôi phục JSON', en: '📄 JSON backup / restore' },
   'scanner.title': { vi: '📥 Nhập từ scanner cộng đồng (wuwa-ocr / Kamera)', en: '📥 Import from community scanner (wuwa-ocr / Kamera)' },
+  // I3 (ui-redesign): phụ đề thấy cả khi panel đóng — người có scanner biết đây là đường nhanh
+  'scanner.subtitle': { vi: 'nhanh nhất nếu bạn chơi trên PC', en: 'fastest route if you play on PC' },
   'scanner.hint': { vi: 'Dán JSON (hoặc chọn file) do scanner echo xuất ra: wuwa-ocr / wuwa.build (ParsedEcho[]), WuWa Inventory Kamera (echoes.json), hoặc file JSON của chính tool này. Tự nhận dạng format, chuẩn hoá stat/set và snap mốc roll.', en: 'Paste JSON (or pick a file) exported by an echo scanner: wuwa-ocr / wuwa.build (ParsedEcho[]), WuWa Inventory Kamera (echoes.json), or this tool\'s own JSON. Format is auto-detected; stats/sets are normalized and rolls snapped.' },
   'scanner.or': { vi: 'hoặc dán ↓', en: 'or paste ↓' },
   'scanner.fmtApp': { vi: 'JSON của tool này', en: 'this tool\'s JSON' },

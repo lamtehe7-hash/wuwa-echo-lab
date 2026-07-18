@@ -29,6 +29,8 @@ const DICT: Record<string, Entry> = {
   // ── Tabs (điều hướng chính) ──
   'tabs.inventory': { vi: 'Kho Echo', en: 'Inventory' },
   'tabs.optimize': { vi: 'Tối ưu', en: 'Optimize' },
+  // C4 (ui-redesign): tab Kế hoạch gom 5 panel (nâng cấp/backlog/farm set/dọn kho/đã ghim)
+  'tabs.plan': { vi: 'Kế hoạch', en: 'Planner' },
   'tabs.roster': { vi: 'Đội hình', en: 'Team' },
   'tabs.import': { vi: 'Import', en: 'Import' },
   'importTab.jsonTitle': { vi: '📄 Sao lưu / khôi phục JSON', en: '📄 JSON backup / restore' },

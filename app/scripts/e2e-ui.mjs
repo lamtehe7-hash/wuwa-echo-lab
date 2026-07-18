@@ -217,6 +217,13 @@ check('ocr-panel', await bodyHas('Import từ ảnh'))
 check('json-card', await bodyHas('Sao lưu / khôi phục JSON'))
 check('hash-import', (await evaluate('location.hash')).startsWith('#import'), await evaluate('location.hash'))
 
+// 7b) C4 (ui-redesign): tab Kế hoạch — 5 panel kế hoạch gom về 1 màn 2 cột
+check('tab-plan', await clickByText('Kế hoạch'))
+await sleep(250)
+check('plan-cleanup', await bodyHas('Dọn kho theo luật'))
+check('plan-upgrade', await bodyHas('Kế hoạch nâng cấp'))
+check('hash-plan', (await evaluate('location.hash')).startsWith('#plan'), await evaluate('location.hash'))
+
 // 8) Tab Đội hình
 check('tab-roster', await clickByText('Đội hình'))
 await sleep(250)

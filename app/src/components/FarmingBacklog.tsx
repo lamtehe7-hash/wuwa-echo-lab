@@ -1,5 +1,6 @@
 import type { SetBacklogRow, BacklogStatus } from '../engine/insights'
 import { ELEMENT_COLOR } from '../data/elementColors'
+import { IconPackage } from './icons'
 import { usePanelOpen } from './usePanelOpen'
 import { useT } from '../i18n'
 
@@ -68,7 +69,8 @@ export default function FarmingBacklog({ rows }: { rows: SetBacklogRow[] }) {
   return (
     <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
-        📦 {t('backlog.title')}
+        {/* C4/C2: icon màu nhấn riêng (amber) thay emoji */}
+        <IconPackage size={15} className="mr-1 inline align-[-2px] text-amber-400" />{t('backlog.title')}
         <span className="ml-2 text-xs font-normal text-slate-500">{t('backlog.subtitle')}</span>
         {stopCount > 0 && (
           <span className="ml-2 rounded bg-emerald-950/40 px-1.5 py-0.5 text-[10px] font-normal text-emerald-400">

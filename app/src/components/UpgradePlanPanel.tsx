@@ -3,6 +3,7 @@ import type { Echo } from '../types'
 import { tunerBudgetPlan, type UpgradeQueueRow } from '../engine/insights'
 import BestOwnerBadge from './BestOwnerBadge'
 import EchoLine from './EchoLine'
+import { IconTrendingUp } from './icons'
 import { usePanelOpen } from './usePanelOpen'
 import { useFmtN, useT } from '../i18n'
 
@@ -43,7 +44,8 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
   return (
     <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
-        📈 {t('upgrade.planTitle')}
+        {/* C4/C2: icon màu nhấn riêng (emerald) thay emoji */}
+        <IconTrendingUp size={15} className="mr-1 inline align-[-2px] text-emerald-400" />{t('upgrade.planTitle')}
         <span className="ml-2 text-xs font-normal text-slate-500">
           {t('inv.count', { shown: shown.length, total: rows.length })}
         </span>

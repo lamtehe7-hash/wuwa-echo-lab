@@ -3,6 +3,7 @@ import type { CharacterProfile, Echo } from '../types'
 import type { OwnerFit } from '../engine/insights'
 import { CLEANUP_DEFAULTS, cleanupMatches, type CleanupRule, type CleanupRuleType } from '../engine/cleanup'
 import EchoLine from './EchoLine'
+import { IconBrush } from './icons'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import { usePanelOpen } from './usePanelOpen'
 import { useT, useTMessage } from '../i18n'
@@ -60,7 +61,8 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
   return (
     <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
-        🧹 {t('cleanup.title')}
+        {/* C4/C2: icon màu nhấn riêng (rose) thay emoji */}
+        <IconBrush size={15} className="mr-1 inline align-[-2px] text-rose-400" />{t('cleanup.title')}
         <span className="ml-2 text-xs font-normal text-slate-500">{t('cleanup.subtitle')}</span>
       </summary>
 

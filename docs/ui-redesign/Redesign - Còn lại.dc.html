@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/wuwaecho-0517ce60-685f-4ffa-aba2-5a06ed0673ca/styles.css">
+  <style>
+    body { margin:0; background:#020617; }
+    a { color:#7dd3fc; } a:hover { color:#38bdf8; }
+    .btn:focus-visible { outline:2px solid #0ea5e9; outline-offset:2px; }
+    .kbd { font-family:ui-monospace,monospace; font-size:10px; background:#0b1220; border:1px solid #334155; border-bottom-width:2px; border-radius:4px; padding:1px 5px; color:#cbd5e1; }
+  </style>
+</helmet>
+<div style="min-height:100vh; background:#020617; color:#e2e8f0; font-family:ui-sans-serif, system-ui, -apple-system, sans-serif;">
+  <div style="max-width:1200px; margin:0 auto; padding:36px 24px 96px; display:flex; flex-direction:column; gap:44px;">
+
+    <header style="display:flex; flex-direction:column; gap:8px; border-bottom:1px solid #1e293b; padding-bottom:20px;">
+      <div style="font-family:ui-monospace, monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#64748b;">Redesign mock · phần còn lại của lộ trình</div>
+      <h1 style="margin:0; font-size:24px; font-weight:700; color:#f1f5f9; letter-spacing:-0.01em;">K5 · K7 · P5 · B2 · B5 · C4</h1>
+      <p style="margin:0; font-size:13px; color:#94a3b8; max-width:78ch; text-wrap:pretty;">Đích hình ảnh cho các mục Sprint/dài hạn còn lại. Các mục quick-win còn lại (nowrap, min-width, localStorage, chuẩn hoá i18n) đã đủ rõ bằng chữ trong README.</p>
+    </header>
+
+    <!-- ===== K7 · Grid bulk-select ===== -->
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; align-items:center; gap:10px;"><span style="font-family:ui-monospace,monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; color:#a78bfa;">K7</span><h2 style="margin:0; font-size:15px; font-weight:600; color:#f1f5f9;">Grid view — chọn nhiều &amp; ước tính refund</h2></div>
+      <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; border-bottom:1px solid #1e293b; background:rgba(159,18,57,.12);">
+          <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+            <span style="color:#fda4af;">Đã chọn 2</span>
+            <span style="color:#64748b;">·</span>
+            <span style="color:#94a3b8;">Hoàn lại ~ <span style="font-family:ui-monospace,monospace; color:#cbd5e1;">62.400 EXP</span> + <span style="font-family:ui-monospace,monospace; color:#cbd5e1;">2×5★</span> Tuner</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" style="background:transparent; border:1px solid #334155; border-radius:7px; padding:6px 12px; color:#94a3b8; font-size:12px; cursor:pointer;">Bỏ chọn</button>
+            <button class="btn" style="background:#9f1239; border:0; border-radius:7px; padding:6px 12px; color:#fff; font-size:12px; font-weight:600; cursor:pointer;">Xoá 2 echo</button>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:14px;">
+          <div style="position:relative; border:2px solid #0ea5e9; border-radius:10px; background:#0b1324; padding:12px;">
+            <span style="position:absolute; top:8px; left:8px; width:20px; height:20px; border-radius:5px; background:#0ea5e9; display:grid; place-items:center;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+            <div style="text-align:right; font-size:11px; font-family:ui-monospace,monospace; color:#fb7185;">D · 4.3</div>
+            <div style="margin-top:14px; font-size:13px; font-weight:600; color:#cbd5e1;">Sagittario</div>
+            <div style="font-size:11px; color:#64748b;">cost 1 · 5★ +25 · Freezing Frost</div>
+            <div style="margin-top:8px; font-size:12px; font-family:ui-monospace,monospace; color:#fb7185;">DEF% ✗</div>
+          </div>
+          <div style="position:relative; border:2px solid #0ea5e9; border-radius:10px; background:#0b1324; padding:12px;">
+            <span style="position:absolute; top:8px; left:8px; width:20px; height:20px; border-radius:5px; background:#0ea5e9; display:grid; place-items:center;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+            <div style="text-align:right; font-size:11px; font-family:ui-monospace,monospace; color:#fb7185;">D · 6.1</div>
+            <div style="margin-top:14px; font-size:13px; font-weight:600; color:#cbd5e1;">Roseshroom</div>
+            <div style="font-size:11px; color:#64748b;">cost 1 · 3★ +10 · Havoc Eclipse</div>
+            <div style="margin-top:8px; font-size:12px; font-family:ui-monospace,monospace; color:#64748b;">ATK% ~</div>
+          </div>
+          <div style="position:relative; border:1px solid #1e293b; border-radius:10px; background:#0b1324; padding:12px;">
+            <span style="position:absolute; top:8px; left:8px; width:20px; height:20px; border-radius:5px; background:transparent; border:1.5px solid #475569;"></span>
+            <div style="text-align:right; font-size:11px; font-family:ui-monospace,monospace; color:#fbbf24;">S · 41.8</div>
+            <div style="margin-top:14px; font-size:13px; font-weight:600; color:#f1f5f9;">Dreamless</div>
+            <div style="font-size:11px; color:#64748b;">cost 4 · 5★ +25 · Havoc Eclipse</div>
+            <div style="margin-top:8px; font-size:12px; font-family:ui-monospace,monospace; color:#34d399;">Crit Rate% ✓</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:#94a3b8; border:1px solid #1e293b; border-radius:6px; padding:8px 12px; background:rgba(15,23,42,.6);">Checkbox góc trên-trái mỗi card (long-press trên mobile) · card chọn có ring sky · cùng thanh refund như table view.</div>
+    </section>
+
+    <!-- ===== P5 · Triage keycap + undo ===== -->
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; align-items:center; gap:10px;"><span style="font-family:ui-monospace,monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; color:#a78bfa;">P5</span><h2 style="margin:0; font-size:15px; font-weight:600; color:#f1f5f9;">Triage — phím tắt hiện rõ &amp; undo</h2></div>
+      <div style="max-width:520px; display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:13px; color:#cbd5e1;">Đang duyệt</span>
+            <span style="font-family:ui-monospace,monospace; font-size:15px; color:#f1f5f9; font-weight:600;">3<span style="color:#64748b;">/12</span></span>
+            <span style="width:120px; height:5px; border-radius:999px; background:#1e293b; overflow:hidden;"><span style="display:block; width:25%; height:100%; background:#0ea5e9;"></span></span>
+          </div>
+          <span style="font-size:12px; color:#64748b; cursor:pointer;">✕ Thoát</span>
+        </div>
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:16px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="width:44px; height:44px; border-radius:999px; background:#1e293b; border:1px solid #334155;"></span>
+            <div><div style="font-size:15px; font-weight:600; color:#f1f5f9;">Tempest Mephis</div><div style="font-size:12px; color:#64748b;">cost 3 · 5★ +15 · Void Thunder · <span style="color:#fb7185;">RV 41%</span></div></div>
+          </div>
+          <div style="margin-top:14px; padding-top:14px; border-top:1px solid #1e293b; display:flex; gap:8px;">
+            <button class="btn" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:rgba(2,132,199,.12); border:1px solid #0369a1; border-radius:9px; padding:10px; color:#7dd3fc; font-size:13px; font-weight:600; cursor:pointer;">Giữ <span class="kbd">G</span></button>
+            <button class="btn" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:1px solid #334155; border-radius:9px; padding:10px; color:#fcd34d; font-size:13px; font-weight:600; cursor:pointer;">Khoá <span class="kbd">K</span></button>
+            <button class="btn" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:1px solid #334155; border-radius:9px; padding:10px; color:#fb7185; font-size:13px; font-weight:600; cursor:pointer;">Loại <span class="kbd">L</span></button>
+            <button class="btn" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:1px solid #334155; border-radius:9px; padding:10px; color:#94a3b8; font-size:13px; font-weight:600; cursor:pointer;">Sửa <span class="kbd">S</span></button>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; border:1px solid #9f1239; background:rgba(159,18,57,.15); border-radius:9px; padding:9px 12px;">
+          <span style="font-size:12px; color:#fda4af;">Đã đánh dấu Loại <strong style="color:#fff;">Lorelei</strong></span>
+          <div style="display:flex; align-items:center; gap:10px;"><span style="font-size:11px; color:#64748b; font-family:ui-monospace,monospace;">5s</span><button class="btn" style="background:transparent; border:1px solid #fb7185; border-radius:6px; padding:4px 12px; color:#fda4af; font-size:12px; font-weight:600; cursor:pointer;">Hoàn tác</button></div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:#94a3b8; border:1px solid #1e293b; border-radius:6px; padding:8px 12px; background:rgba(15,23,42,.6);">Keycap G·K·L·S ngay trên nút · toast undo 5 giây sau mỗi Loại · tiến độ "3/12" phóng to + thanh %.</div>
+    </section>
+
+    <!-- ===== B2 · CharacterPicker ===== -->
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; align-items:center; gap:10px;"><span style="font-family:ui-monospace,monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; color:#a78bfa;">B2</span><h2 style="margin:0; font-size:15px; font-weight:600; color:#f1f5f9;">CharacterPicker — control chính rõ, tên không tràn</h2></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <span style="font-family:ui-monospace,monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#fb7185; border:1px solid rgba(244,63,94,.35); border-radius:999px; padding:3px 10px; width:max-content;">Trước</span>
+          <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; padding:14px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; background:transparent; border:1px solid #334155; border-radius:6px; padding:5px 10px; color:#cbd5e1;"><span style="width:8px;height:8px;border-radius:999px;background:#a855f7;"></span>Camellya ▾</span>
+            <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px;">
+              <span style="font-size:11px; border:1px solid #334155; border-radius:5px; padding:3px 7px; color:#cbd5e1;">Xiangli Yao</span>
+              <span style="font-size:11px; border:1px solid #334155; border-radius:5px; padding:3px 7px; color:#cbd5e1;">Generic: Crit DPS (Liberation)</span>
+              <span style="font-size:11px; border:1px solid #334155; border-radius:5px; padding:3px 7px; color:#cbd5e1;">The Shorekeeper</span>
+            </div>
+            <p style="font-size:11px; color:#64748b; margin:10px 0 0;">Nút như tag phụ; tên dài wrap tràn lệch.</p>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <span style="font-family:ui-monospace,monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#34d399; border:1px solid rgba(52,211,153,.35); border-radius:999px; padding:3px 10px; width:max-content;">Sau</span>
+          <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; padding:14px;">
+            <button class="btn" style="width:100%; display:flex; align-items:center; justify-content:space-between; background:#0b1324; border:1px solid #334155; border-radius:8px; padding:10px 12px; cursor:pointer;">
+              <span style="display:flex; align-items:center; gap:9px;"><span style="width:11px;height:11px;border-radius:999px;background:#a855f7;"></span><span style="font-size:14px; color:#f1f5f9; font-weight:600;">Camellya</span><span style="font-size:11px; color:#fbbf24; border:1px solid rgba(245,158,11,.4); border-radius:4px; padding:1px 6px;">DPS · Havoc</span></span>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+            <div style="margin-top:10px; border:1px solid #1e293b; border-radius:8px; overflow:hidden;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; ">
+                <span style="display:flex; align-items:center; gap:7px; padding:8px 10px; border-bottom:1px solid #1e293b; border-right:1px solid #1e293b; min-width:0;"><span style="width:8px;height:8px;border-radius:999px;background:#c084fc;flex-shrink:0;"></span><span style="font-size:12px; color:#cbd5e1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Xiangli Yao">Xiangli Yao</span></span>
+                <span style="display:flex; align-items:center; gap:7px; padding:8px 10px; border-bottom:1px solid #1e293b; min-width:0;"><span style="width:8px;height:8px;border-radius:999px;background:#38bdf8;flex-shrink:0;"></span><span style="font-size:12px; color:#cbd5e1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="The Shorekeeper">The Shorekeeper</span></span>
+                <span style="display:flex; align-items:center; gap:7px; padding:8px 10px; border-right:1px solid #1e293b; min-width:0;"><span style="width:8px;height:8px;border-radius:999px;background:#64748b;flex-shrink:0;"></span><span style="font-size:12px; color:#94a3b8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Generic: Crit DPS (Liberation)">Generic: Crit DPS (Lib…)</span></span>
+                <span style="display:flex; align-items:center; gap:7px; padding:8px 10px; min-width:0;"><span style="width:8px;height:8px;border-radius:999px;background:#f59e0b;flex-shrink:0;"></span><span style="font-size:12px; color:#cbd5e1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Changli">Changli</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:#94a3b8; border:1px solid #1e293b; border-radius:6px; padding:8px 12px; background:rgba(15,23,42,.6);">Nút to kèm role + dot nguyên tố · dropdown grid cột cố định, tên <span style="color:#cbd5e1;">truncate + title</span> thay vì wrap.</div>
+    </section>
+
+    <!-- ===== B5 · StatBreakdown ===== -->
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; align-items:center; gap:10px;"><span style="font-family:ui-monospace,monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; color:#a78bfa;">B5</span><h2 style="margin:0; font-size:15px; font-weight:600; color:#f1f5f9;">StatBreakdown — hết scroll ngang</h2></div>
+      <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; overflow:hidden;">
+        <div style="padding:10px 14px; border-bottom:1px solid #1e293b; font-size:13px; font-weight:600; color:#e2e8f0;">Chỉ số cuối theo nguồn</div>
+        <div style="display:grid; grid-template-columns:1.4fr repeat(4,1fr); font-size:12px;">
+          <span style="padding:8px 14px; color:#64748b; border-bottom:1px solid #1e293b;">Chỉ số</span>
+          <span style="padding:8px 10px; text-align:right; color:#64748b; border-bottom:1px solid #1e293b;">Base</span>
+          <span style="padding:8px 10px; text-align:right; color:#64748b; border-bottom:1px solid #1e293b;">Echo</span>
+          <span style="padding:8px 10px; text-align:right; color:#64748b; border-bottom:1px solid #1e293b;" title="Vũ khí + Forte + Buff">Khác ⓘ</span>
+          <span style="padding:8px 14px; text-align:right; color:#94a3b8; border-bottom:1px solid #1e293b;">= Tổng</span>
+
+          <span style="padding:7px 14px; color:#cbd5e1;">Crit Rate%</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#64748b;">5.0</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#7dd3fc;">52.6</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#64748b;">—</span><span style="padding:7px 14px; text-align:right; font-family:ui-monospace,monospace; color:#f1f5f9;">57.6</span>
+          <span style="padding:7px 14px; color:#cbd5e1;">Crit DMG%</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#64748b;">150.0</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#7dd3fc;">63.6</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#94a3b8;">16.0</span><span style="padding:7px 14px; text-align:right; font-family:ui-monospace,monospace; color:#f1f5f9;">229.6</span>
+          <span style="padding:7px 14px; color:#cbd5e1;">ATK%</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#64748b;">—</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#7dd3fc;">78.4</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#94a3b8;">12.0</span><span style="padding:7px 14px; text-align:right; font-family:ui-monospace,monospace; color:#f1f5f9;">90.4</span>
+        </div>
+      </div>
+      <div style="font-size:12px; color:#94a3b8; border:1px solid #1e293b; border-radius:6px; padding:8px 12px; background:rgba(15,23,42,.6);">Gộp Vũ khí+Forte+Buff → cột "Khác" có tooltip tách nguồn · panel full-width khi mở · header "= Tổng" đủ chỗ, không scroll ngang.</div>
+    </section>
+
+    <!-- ===== C4 · Planning 2-col + K5 header sort ===== -->
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; align-items:center; gap:10px;"><span style="font-family:ui-monospace,monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; color:#a78bfa;">C4 · K5</span><h2 style="margin:0; font-size:15px; font-weight:600; color:#f1f5f9;">Khu kế hoạch 2 cột + header sort</h2></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; padding:12px; display:flex; align-items:center; gap:10px;"><span style="width:28px;height:28px;border-radius:7px;background:rgba(52,211,153,.14);display:grid;place-items:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg></span><span style="font-size:13px; font-weight:600; color:#e2e8f0;">Kế hoạch nâng cấp</span><span style="margin-left:auto; font-size:11px; color:#64748b;">3 echo ▾</span></div>
+          <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; padding:12px; display:flex; align-items:center; gap:10px;"><span style="width:28px;height:28px;border-radius:7px;background:rgba(245,158,11,.14);display:grid;place-items:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></span><span style="font-size:13px; font-weight:600; color:#e2e8f0;">Tồn kho vs nhu cầu farm</span><span style="margin-left:auto; font-size:11px; color:#64748b;">2 dừng ▾</span></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; padding:12px; display:flex; align-items:center; gap:10px;"><span style="width:28px;height:28px;border-radius:7px;background:rgba(56,189,248,.14);display:grid;place-items:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"></path><path d="M9 22h6"></path><path d="M5 3h14l-1 9a6 6 0 0 1-12 0Z"></path></svg></span><span style="font-size:13px; font-weight:600; color:#e2e8f0;">Nhân vật đã ghim bộ</span><span style="margin-left:auto; font-size:11px; color:#64748b;">2 ▾</span></div>
+          <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; padding:12px; display:flex; align-items:center; gap:10px;"><span style="width:28px;height:28px;border-radius:7px;background:rgba(167,139,250,.14);display:grid;place-items:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg></span><span style="font-size:13px; font-weight:600; color:#e2e8f0;">Ưu tiên farm set</span><span style="margin-left:auto; font-size:11px; color:#64748b;">5 set ▾</span></div>
+        </div>
+      </div>
+      <div style="border:1px solid #1e293b; border-radius:10px; background:#0f172a; overflow:hidden;">
+        <div style="display:grid; grid-template-columns:1.6fr auto auto; gap:12px; padding:9px 14px; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#64748b;">
+          <span>Echo</span>
+          <span style="display:inline-flex; align-items:center; gap:4px; color:#7dd3fc; cursor:pointer;">Điểm <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"></path></svg></span>
+          <span style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">Level <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path><path d="m6 15 6-6 6 6" opacity=".35"></path></svg></span>
+        </div>
+        <div style="display:grid; grid-template-columns:1.6fr auto auto; gap:12px; padding:9px 14px; border-top:1px solid rgba(30,41,59,.6); font-size:12px; align-items:center;"><span style="color:#cbd5e1;">Dreamless</span><span style="text-align:right; font-family:ui-monospace,monospace; color:#fbbf24;">41.8</span><span style="text-align:right; font-family:ui-monospace,monospace; color:#94a3b8;">+25</span></div>
+        <div style="display:grid; grid-template-columns:1.6fr auto auto; gap:12px; padding:9px 14px; border-top:1px solid rgba(30,41,59,.6); font-size:12px; align-items:center;"><span style="color:#cbd5e1;">Tempest Mephis</span><span style="text-align:right; font-family:ui-monospace,monospace; color:#7dd3fc;">34.1</span><span style="text-align:right; font-family:ui-monospace,monospace; color:#94a3b8;">+15</span></div>
+      </div>
+      <div style="font-size:12px; color:#94a3b8; border:1px solid #1e293b; border-radius:6px; padding:8px 12px; background:rgba(15,23,42,.6);">C4: 2 cột theo tần suất dùng, mỗi panel một icon màu nhấn (đi cùng C2) · K5: header click-to-sort với mũi tên chiều (cột đang sort tô sky).</div>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

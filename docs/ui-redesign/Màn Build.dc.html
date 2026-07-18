@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/wuwaecho-0517ce60-685f-4ffa-aba2-5a06ed0673ca/styles.css">
+  <style>
+    body { margin:0; background:#020617; }
+    a { color:#7dd3fc; } a:hover { color:#38bdf8; }
+    .btn:focus-visible { outline:2px solid #0ea5e9; outline-offset:2px; }
+    .rng { -webkit-appearance:none; appearance:none; height:4px; border-radius:999px; background:#1e293b; outline:none; }
+    .rng::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:999px; background:#38bdf8; border:2px solid #0f172a; cursor:pointer; }
+  </style>
+</helmet>
+<div style="min-height:100vh; background:#020617; color:#e2e8f0; font-family:ui-sans-serif, system-ui, -apple-system, sans-serif;">
+  <div style="max-width:1120px; margin:0 auto; padding:28px 24px 96px; display:flex; flex-direction:column; gap:18px;">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:17px; font-weight:700; color:#f1f5f9;">WuWaEcho</span>
+        <nav style="display:flex; gap:2px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:3px;">
+          <span style="font-size:13px; color:#94a3b8; padding:5px 12px; border-radius:6px;">Kho</span>
+          <span style="font-size:13px; color:#94a3b8; padding:5px 12px; border-radius:6px;">Kế hoạch</span>
+          <span style="font-size:13px; color:#fff; background:#0369a1; padding:5px 12px; border-radius:6px;">Build</span>
+          <span style="font-size:13px; color:#94a3b8; padding:5px 12px; border-radius:6px;">Import</span>
+        </nav>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:3px; border-bottom:1px solid #1e293b; padding-bottom:14px;">
+      <h1 style="margin:0; font-size:22px; font-weight:700; color:#f1f5f9; letter-spacing:-0.01em;">Build</h1>
+      <p style="margin:0; font-size:13px; color:#64748b;">Chọn nhân vật, tinh chỉnh chỉ số nền &amp; trọng số, giải bộ echo tối ưu.</p>
+    </div>
+
+    <!-- top row: picker / build editor / weights -->
+    <div style="display:grid; grid-template-columns:300px 1fr 1fr; gap:16px; align-items:start;">
+
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <!-- B2 picker -->
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:12px;">
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; margin-bottom:8px;">Nhân vật</div>
+          <button class="btn" style="width:100%; display:flex; align-items:center; justify-content:space-between; background:#0b1324; border:1px solid #334155; border-radius:8px; padding:10px 12px; cursor:pointer;">
+            <span style="display:flex; align-items:center; gap:9px;"><span style="width:11px;height:11px;border-radius:999px;background:#a855f7;"></span><span style="font-size:14px; color:#f1f5f9; font-weight:600;">Camellya</span><span style="font-size:11px; color:#fbbf24; border:1px solid rgba(245,158,11,.4); border-radius:4px; padding:1px 6px;">DPS · Havoc</span></span>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+        </div>
+        <!-- MainEchoHint -->
+        <div style="border:1px solid rgba(180,83,9,.4); border-radius:12px; background:rgba(69,26,3,.25); padding:12px;">
+          <div style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#fcd34d;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"></path><path d="m6.3 6.3 2.9 2.9"></path><path d="M2 12h4"></path><circle cx="12" cy="14" r="6"></circle></svg>Echo chủ lực gợi ý</div>
+          <div style="margin-top:8px; font-size:12px; color:#cbd5e1;">Ưu tiên <strong style="color:#e2e8f0;">Dreamless</strong> (cost 4) — bộ Havoc Eclipse, main Crit Rate%.</div>
+          <div style="margin-top:6px; font-size:11px; color:#64748b;">Bạn đang có: Dreamless ✓ · Impermanence Heron ✓</div>
+        </div>
+      </div>
+
+      <!-- B3 build editor: labels on top -->
+      <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:14px;">
+        <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:12px;">Chỉ số nền <span style="font-size:11px; color:#64748b; font-weight:400;">(vũ khí · base · buff)</span></div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <label style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:11px; color:#64748b;">Vũ khí</span><select style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#cbd5e1; font-size:13px;"><option>— không chọn —</option></select></label>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+            <label style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:11px; color:#64748b; display:flex; align-items:center; gap:4px;">Base ATK <span title="Chỉ số gốc nhân vật, chưa gồm echo" style="width:13px;height:13px;border-radius:999px;border:1px solid #475569;display:inline-grid;place-items:center;font-size:9px;color:#64748b;">i</span></span><input value="450" style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#e2e8f0; font-size:13px; font-family:ui-monospace,monospace;" /></label>
+            <label style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:11px; color:#64748b;">Base HP</span><input placeholder="—" style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#94a3b8; font-size:13px; font-family:ui-monospace,monospace;" /></label>
+            <label style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:11px; color:#64748b;">Base DEF</span><input placeholder="—" style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#94a3b8; font-size:13px; font-family:ui-monospace,monospace;" /></label>
+          </div>
+          <p style="margin:2px 0 0; font-size:11px; color:#64748b;">Base ATK 450 · CR nền +0.0 · CD nền +16.0 (chưa gồm echo).</p>
+        </div>
+      </div>
+
+      <!-- B1 weights -->
+      <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <span style="font-size:13px; font-weight:600; color:#e2e8f0;">Trọng số — Camellya</span>
+          <span style="font-size:11px; color:#64748b; border:1px solid #334155; border-radius:6px; padding:3px 8px;">Preset: Crit Basic ▾</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <div style="display:flex; align-items:center; gap:10px;"><span title="Crit Rate%" style="width:52px; font-size:12px; font-family:ui-monospace,monospace; color:#e2e8f0;">CR%</span><input class="rng" type="range" min="0" max="1" step="0.05" value="1" style="flex:1;" /><span style="width:34px; text-align:right; font-size:12px; font-family:ui-monospace,monospace; color:#7dd3fc;">1.0</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><span title="Crit DMG%" style="width:52px; font-size:12px; font-family:ui-monospace,monospace; color:#e2e8f0;">CD%</span><input class="rng" type="range" min="0" max="1" step="0.05" value="1" style="flex:1;" /><span style="width:34px; text-align:right; font-size:12px; font-family:ui-monospace,monospace; color:#7dd3fc;">1.0</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><span title="ATK%" style="width:52px; font-size:12px; font-family:ui-monospace,monospace; color:#e2e8f0;">ATK%</span><input class="rng" type="range" min="0" max="1" step="0.05" value="0.75" style="flex:1;" /><span style="width:34px; text-align:right; font-size:12px; font-family:ui-monospace,monospace; color:#7dd3fc;">0.75</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><span title="Basic Attack DMG%" style="width:52px; font-size:12px; font-family:ui-monospace,monospace; color:#e2e8f0;">Basic%</span><input class="rng" type="range" min="0" max="1" step="0.05" value="0.75" style="flex:1;" /><span style="width:34px; text-align:right; font-size:12px; font-family:ui-monospace,monospace; color:#7dd3fc;">0.75</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><span title="Element DMG% (đúng hệ)" style="width:52px; font-size:12px; font-family:ui-monospace,monospace; color:#e2e8f0;">Elem%</span><input class="rng" type="range" min="0" max="1" step="0.05" value="0.85" style="flex:1;" /><span style="width:34px; text-align:right; font-size:12px; font-family:ui-monospace,monospace; color:#7dd3fc;">0.85</span></div>
+        </div>
+        <button class="btn" style="margin-top:12px; width:100%; background:transparent; border:1px dashed #334155; border-radius:7px; padding:7px; color:#94a3b8; font-size:12px; cursor:pointer;">Hiện 8 stat trọng số 0 ▾</button>
+      </div>
+    </div>
+
+    <!-- loadout result -->
+    <div style="border:1px solid rgba(6,95,70,.5); border-radius:12px; background:rgba(6,78,59,.12); padding:16px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div style="font-size:14px; font-weight:600; color:#6ee7b7;">Bộ echo tối ưu — layout 4-3-3-1-1 <span style="color:#34d399;">(cost 12)</span></div>
+        <div style="display:flex; align-items:baseline; gap:8px;"><span style="font-size:12px; color:#34d399; background:rgba(6,95,70,.4); border-radius:4px; padding:2px 7px;">▲ +8.4</span><span style="font-family:ui-monospace,monospace; font-size:20px; color:#a7f3d0;">103.7</span></div>
+      </div>
+      <div style="margin-top:6px; font-size:12px; color:#94a3b8;">Substat 79.4 · set bonus 12 · ER từ echo 11.6% · Set: Havoc Eclipse ×4, Moonlit Clouds ×1</div>
+      <div style="margin-top:8px; font-size:12px; color:#64748b;">⚔ Damage tương đối: <span style="color:#cbd5e1; font-family:ui-monospace,monospace;">×5.71</span></div>
+      <div style="margin-top:14px; display:grid; grid-template-columns:repeat(5,1fr); gap:10px;">
+        <div style="border:1px solid #1e293b; border-radius:9px; background:#0b1324; padding:10px;"><div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:12px; font-weight:600; color:#f1f5f9;">Dreamless</span><span style="font-size:10px; font-family:ui-monospace,monospace; color:#fbbf24;">41.8</span></div><div style="margin-top:3px; font-size:10px; color:#64748b;">Crit Rate% ✓</div></div>
+        <div style="border:1px solid #1e293b; border-radius:9px; background:#0b1324; padding:10px;"><div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:12px; font-weight:600; color:#f1f5f9;">Imperm. Heron</span><span style="font-size:10px; font-family:ui-monospace,monospace; color:#7dd3fc;">27.3</span></div><div style="margin-top:3px; font-size:10px; color:#64748b;">Havoc DMG% ✓</div></div>
+        <div style="border:1px solid #1e293b; border-radius:9px; background:#0b1324; padding:10px;"><div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:12px; font-weight:600; color:#f1f5f9;">Autopuppet</span><span style="font-size:10px; font-family:ui-monospace,monospace; color:#94a3b8;">11.9</span></div><div style="margin-top:3px; font-size:10px; color:#fb7185;">Energy Regen% ✗</div></div>
+        <div style="border:1px solid #1e293b; border-radius:9px; background:#0b1324; padding:10px;"><div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:12px; font-weight:600; color:#f1f5f9;">Zig Zag</span><span style="font-size:10px; font-family:ui-monospace,monospace; color:#7dd3fc;">21.8</span></div><div style="margin-top:3px; font-size:10px; color:#64748b;">ATK% ✓</div></div>
+        <div style="border:1px solid #1e293b; border-radius:9px; background:#0b1324; padding:10px;"><div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:12px; font-weight:600; color:#f1f5f9;">Roseshroom</span><span style="font-size:10px; font-family:ui-monospace,monospace; color:#94a3b8;">11.7</span></div><div style="margin-top:3px; font-size:10px; color:#64748b;">ATK% ✓</div></div>
+      </div>
+      <div style="margin-top:14px; display:flex; gap:8px;">
+        <button class="btn" style="white-space:nowrap; display:flex; align-items:center; gap:6px; background:transparent; border:1px solid #334155; border-radius:7px; padding:7px 12px; color:#cbd5e1; font-size:12px; cursor:pointer;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path><path d="M12 15V3"></path></svg>Xuất ảnh PNG</button>
+        <button class="btn" style="white-space:nowrap; display:flex; align-items:center; gap:6px; background:rgba(2,132,199,.12); border:1px solid #0369a1; border-radius:7px; padding:7px 12px; color:#7dd3fc; font-size:12px; cursor:pointer;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h12l-3-3m0 6 3-3"></path><path d="M3 12a9 9 0 1 0 9-9"></path></svg>Đặt làm bộ hiện tại</button>
+      </div>
+    </div>
+
+    <!-- B5 stat breakdown -->
+    <div style="display:grid; grid-template-columns:3fr 2fr; gap:16px; align-items:start;">
+      <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; overflow:hidden;">
+        <div style="padding:10px 14px; border-bottom:1px solid #1e293b; font-size:13px; font-weight:600; color:#e2e8f0;">Chỉ số cuối theo nguồn</div>
+        <div style="display:grid; grid-template-columns:1.4fr repeat(4,1fr); font-size:12px;">
+          <span style="padding:8px 14px; color:#64748b; border-bottom:1px solid #1e293b;">Chỉ số</span><span style="padding:8px 10px; text-align:right; color:#64748b; border-bottom:1px solid #1e293b;">Base</span><span style="padding:8px 10px; text-align:right; color:#64748b; border-bottom:1px solid #1e293b;">Echo</span><span style="padding:8px 10px; text-align:right; color:#64748b; border-bottom:1px solid #1e293b;" title="Vũ khí + Forte + Buff">Khác ⓘ</span><span style="padding:8px 14px; text-align:right; color:#94a3b8; border-bottom:1px solid #1e293b;">= Tổng</span>
+          <span style="padding:7px 14px; color:#cbd5e1;">Crit Rate%</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#64748b;">5.0</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#7dd3fc;">52.6</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#64748b;">—</span><span style="padding:7px 14px; text-align:right; font-family:ui-monospace,monospace; color:#f1f5f9;">57.6</span>
+          <span style="padding:7px 14px; color:#cbd5e1;">Crit DMG%</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#64748b;">150.0</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#7dd3fc;">63.6</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#94a3b8;">16.0</span><span style="padding:7px 14px; text-align:right; font-family:ui-monospace,monospace; color:#f1f5f9;">229.6</span>
+          <span style="padding:7px 14px; color:#cbd5e1;">ATK%</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#64748b;">—</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#7dd3fc;">78.4</span><span style="padding:7px 10px; text-align:right; font-family:ui-monospace,monospace; color:#94a3b8;">12.0</span><span style="padding:7px 14px; text-align:right; font-family:ui-monospace,monospace; color:#f1f5f9;">90.4</span>
+        </div>
+      </div>
+      <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:14px;">
+        <div style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#e2e8f0;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>Chi phí hoàn thiện bộ</div>
+        <div style="margin-top:10px; font-size:12px; color:#94a3b8;">Còn thiếu <span style="font-family:ui-monospace,monospace; color:#cbd5e1;">10 Tuner</span> · <span style="font-family:ui-monospace,monospace; color:#cbd5e1;">9.240 EXP</span></div>
+        <div style="margin-top:10px; display:flex; align-items:center; gap:8px; font-size:12px; color:#94a3b8;">≈ <span style="font-family:ui-monospace,monospace; color:#7dd3fc;">3 ngày</span> (nghẽn: Tuner)</div>
+      </div>
+    </div>
+
+    <p style="margin:2px 0 0; font-size:12px; color:#475569; text-align:center;">Đích thiết kế màn Build · gộp B1 · B2 · B3 · B4 · B5 · C3 · C6.</p>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

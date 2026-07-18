@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/wuwaecho-0517ce60-685f-4ffa-aba2-5a06ed0673ca/styles.css">
+  <style>
+    body { margin:0; background:#020617; }
+    a { color:#7dd3fc; } a:hover { color:#38bdf8; }
+    .btn:focus-visible { outline:2px solid #0ea5e9; outline-offset:2px; }
+  </style>
+</helmet>
+<div style="min-height:100vh; background:#020617; color:#e2e8f0; font-family:ui-sans-serif, system-ui, -apple-system, sans-serif;">
+  <div style="max-width:1120px; margin:0 auto; padding:28px 24px 96px; display:flex; flex-direction:column; gap:18px;">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:17px; font-weight:700; color:#f1f5f9;">WuWaEcho</span>
+        <nav style="display:flex; gap:2px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:3px;">
+          <span style="font-size:13px; color:#94a3b8; padding:5px 12px; border-radius:6px;">Kho</span>
+          <span style="font-size:13px; color:#94a3b8; padding:5px 12px; border-radius:6px;">Kế hoạch</span>
+          <span style="font-size:13px; color:#94a3b8; padding:5px 12px; border-radius:6px;">Build</span>
+          <span style="font-size:13px; color:#fff; background:#0369a1; padding:5px 12px; border-radius:6px;">Import</span>
+        </nav>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:3px; border-bottom:1px solid #1e293b; padding-bottom:14px;">
+      <h1 style="margin:0; font-size:22px; font-weight:700; color:#f1f5f9; letter-spacing:-0.01em;">Import echo</h1>
+      <p style="margin:0; font-size:13px; color:#64748b;">Nạp kho từ ảnh, scanner cộng đồng, file JSON, hoặc nhập tay. <span style="color:#94a3b8;">① Nạp → ② Chọn nhân vật → ③ Tìm bộ tối ưu.</span></p>
+    </div>
+
+    <!-- I1 OCR dropzone (primary) -->
+    <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="display:inline-flex; border:1px solid #334155; border-radius:6px; overflow:hidden;"><span style="font-size:13px; background:#0369a1; color:#fff; padding:6px 14px;">Ảnh</span><span style="font-size:13px; color:#94a3b8; padding:6px 14px; border-left:1px solid #334155;">Video</span></span>
+          <span style="font-size:14px; font-weight:600; color:#f1f5f9;">Import từ ảnh (OCR trên máy)</span>
+        </div>
+        <span style="font-size:11px; color:#64748b;">beta · <a href="#">cách chụp tốt nhất</a></span>
+      </div>
+      <div class="btn" tabindex="0" style="border:2px dashed #334155; border-radius:12px; background:rgba(2,132,199,.06); padding:40px 16px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; cursor:pointer;">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v13"></path></svg>
+        <div style="font-size:15px; color:#e2e8f0; font-weight:600;">Thả ảnh panel echo vào đây</div>
+        <div style="font-size:12px; color:#64748b;">hoặc <span style="color:#7dd3fc;">Ctrl+V</span> dán ảnh vừa chụp · <span style="color:#7dd3fc;">bấm để chọn file</span></div>
+        <div style="font-size:11px; color:#475569;">Tốt nhất: screenshot tiếng Anh, 1920×1080 · OCR chạy trên máy, không upload</div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8;"><span style="width:14px;height:14px;background:#38bdf8;border-radius:3px;"></span>Tiền xử lý ảnh (phóng to + nhị phân hoá)</label>
+        <span style="font-size:11px; color:#64748b; border:1px solid #334155; border-radius:6px; padding:4px 9px; cursor:pointer;">Yêu cầu ảnh ▾</span>
+      </div>
+    </div>
+
+    <!-- secondary lanes -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+
+      <!-- I3 scanner + JSON -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:14px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="width:30px;height:30px;border-radius:8px;background:rgba(56,189,248,.14);display:grid;place-items:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path></svg></span>
+            <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#f1f5f9;">Nhập từ scanner cộng đồng</div><div style="font-size:11px; color:#64748b;">nhanh nhất nếu bạn chơi trên PC (wuwa-ocr / Kamera)</div></div>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+          </div>
+        </div>
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:14px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="width:30px;height:30px;border-radius:8px;background:rgba(148,163,184,.14);display:grid;place-items:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path></svg></span>
+            <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#f1f5f9;">Import JSON</div><div style="font-size:11px; color:#64748b;">khôi phục kho từ file backup đã export</div></div>
+            <button class="btn" style="background:transparent; border:1px solid #334155; border-radius:6px; padding:5px 11px; color:#cbd5e1; font-size:12px; cursor:pointer;">Chọn file</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- manual EchoForm -->
+      <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:14px;">
+        <div style="font-size:14px; font-weight:600; color:#f1f5f9; margin-bottom:12px;">Thêm echo thủ công</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <label style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:11px; color:#64748b;">Sonata set</span><select style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#cbd5e1; font-size:13px;"><option>Havoc Eclipse</option></select></label>
+          <label style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:11px; color:#64748b;">Tên echo (tuỳ chọn)</span><input placeholder="vd: Dreamless" style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#e2e8f0; font-size:13px;" /></label>
+          <label style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:11px; color:#64748b;">Cost</span><select style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#cbd5e1; font-size:13px;"><option>4</option></select></label>
+          <label style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:11px; color:#64748b;">Main stat</span><select style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#cbd5e1; font-size:13px;"><option>Crit Rate% (max 22%)</option></select></label>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+          <span style="font-size:12px; color:#64748b;">Substat (0/5)</span>
+          <button class="btn" style="background:transparent; border:0; color:#7dd3fc; font-size:12px; cursor:pointer;">+ thêm dòng</button>
+        </div>
+        <button class="btn" style="margin-top:12px; width:100%; background:#0369a1; border:0; border-radius:8px; padding:9px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">Lưu echo vào kho</button>
+      </div>
+    </div>
+
+    <p style="margin:2px 0 0; font-size:12px; color:#475569; text-align:center;">Đích thiết kế màn Import · gộp I1 · I2 · I3 · I4 · C6 — dropzone làm mặt tiền, scanner có phụ đề, cảnh báo beta gập gọn.</p>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

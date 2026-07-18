@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/wuwaecho-0517ce60-685f-4ffa-aba2-5a06ed0673ca/styles.css">
+  <style>
+    body { margin:0; background:#020617; }
+    a { color:#7dd3fc; } a:hover { color:#38bdf8; }
+    .btn:focus-visible { outline:2px solid #0ea5e9; outline-offset:2px; }
+  </style>
+</helmet>
+<div style="min-height:100vh; background:#020617; color:#e2e8f0; font-family:ui-sans-serif, system-ui, -apple-system, sans-serif;">
+  <div style="max-width:1200px; margin:0 auto; padding:36px 24px 96px; display:flex; flex-direction:column; gap:32px;">
+
+    <header style="display:flex; flex-direction:column; gap:8px; border-bottom:1px solid #1e293b; padding-bottom:20px;">
+      <div style="font-family:ui-monospace, monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#64748b;">Redesign mock · màn Kho echo</div>
+      <h1 style="margin:0; font-size:24px; font-weight:700; color:#f1f5f9; letter-spacing:-0.01em;">Kho echo — trước &amp; sau</h1>
+      <p style="margin:0; font-size:13px; color:#94a3b8; max-width:74ch; text-wrap:pretty;">Bản "Sau" là đích thiết kế để tích hợp vào <span style="font-family:ui-monospace, monospace; color:#cbd5e1;">app/src/components/RankingTable.tsx</span>. Xử lý: <span style="color:#cbd5e1;">K1</span> nhãn nhóm filter · <span style="color:#cbd5e1;">K2</span> chip verdict giữ màu · <span style="color:#cbd5e1;">K3/C1</span> hit target lớn · <span style="color:#cbd5e1;">K4</span> tách "Bỏ" khỏi "Xoá" · <span style="color:#cbd5e1;">K8</span> chip chấm-theo · <span style="color:#cbd5e1;">C2</span> icon SVG · <span style="color:#cbd5e1;">C3</span> sàn chữ 12px · <span style="color:#cbd5e1;">C6</span> focus ring.</p>
+    </header>
+
+    <!-- ============ TRƯỚC ============ -->
+    <section style="display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-family:ui-monospace, monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#fb7185; border:1px solid rgba(244,63,94,.35); border-radius:999px; padding:3px 10px;">Trước</span>
+        <span style="font-size:12px; color:#64748b;">hiện trạng — hàng hành động chật, hai "Tất cả", chip active mất màu</span>
+      </div>
+      <div style="border:1px solid #1e293b; border-radius:10px; overflow:hidden; background:#0f172a;">
+        <div style="padding:8px; border-bottom:1px solid #1e293b; display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:12px;">
+            <input placeholder="Tìm theo tên echo / set..." style="flex:1; min-width:150px; background:#1e293b; border:1px solid #334155; border-radius:4px; padding:5px 8px; color:#e2e8f0; font-size:12px;" />
+            <span style="background:#1e293b; border:1px solid #334155; border-radius:4px; padding:5px 8px; color:#cbd5e1;">Mọi set ▾</span>
+            <span style="background:#1e293b; border:1px solid #334155; border-radius:4px; padding:5px 8px; color:#cbd5e1;">Mọi main ▾</span>
+            <span style="background:#1e293b; border:1px solid #334155; border-radius:4px; padding:5px 8px; color:#cbd5e1;">Sắp xếp: Điểm ▾</span>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:12px;">
+            <span style="background:#0369a1; color:#fff; border-radius:4px; padding:4px 8px;">Tất cả</span>
+            <span style="border:1px solid #334155; color:#94a3b8; border-radius:4px; padding:4px 8px;">Cost 4</span>
+            <span style="border:1px solid #334155; color:#94a3b8; border-radius:4px; padding:4px 8px;">Cost 3</span>
+            <span style="border:1px solid #334155; color:#94a3b8; border-radius:4px; padding:4px 8px;">Cost 1</span>
+            <span style="width:1px; height:16px; background:#1e293b;"></span>
+            <span style="background:#0369a1; color:#fff; border-radius:4px; padding:4px 8px;">Tất cả</span>
+            <span style="border:1px solid #334155; color:#34d399; border-radius:4px; padding:4px 8px;">Tune tiếp</span>
+            <span style="border:1px solid #334155; color:#7dd3fc; border-radius:4px; padding:4px 8px;">Hoàn tất</span>
+            <span style="border:1px solid #334155; color:#fb7185; border-radius:4px; padding:4px 8px;">Bỏ</span>
+          </div>
+        </div>
+        <div style="padding:10px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #1e293b;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:28px; height:28px; border-radius:999px; background:#1e293b; border:1px solid #334155;"></span>
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-size:13px; color:#e2e8f0; font-weight:500;">Dreamless</span>
+              <span style="font-size:11px; color:#64748b;">cost 4 · 5★ +25 · Havoc Eclipse</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:2px; font-size:12px; color:#64748b;">
+            <span style="opacity:.4;">🔒</span>
+            <span style="opacity:.4;">🗑</span>
+            <span style="color:#64748b;">sửa</span>
+            <span style="color:#475569;">xóa</span>
+          </div>
+        </div>
+        <div style="padding:10px 12px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:28px; height:28px; border-radius:999px; background:#1e293b; border:1px solid #334155;"></span>
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-size:13px; color:#e2e8f0; font-weight:500;">Tempest Mephis</span>
+              <span style="font-size:11px; color:#64748b;">cost 3 · 5★ +15 · Void Thunder</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:2px; font-size:12px; color:#64748b;">
+            <span style="opacity:.4;">🔒</span>
+            <span style="opacity:.4;">🗑</span>
+            <span style="color:#64748b;">sửa</span>
+            <span style="color:#475569;">xóa</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SAU ============ -->
+    <section style="display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-family:ui-monospace, monospace; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#34d399; border:1px solid rgba(52,211,153,.35); border-radius:999px; padding:3px 10px;">Sau</span>
+        <span style="font-size:12px; color:#64748b;">đích thiết kế</span>
+      </div>
+
+      <div style="border:1px solid #1e293b; border-radius:10px; overflow:hidden; background:#0f172a;">
+        <!-- Toolbar -->
+        <div style="padding:12px; border-bottom:1px solid #1e293b; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+            <div style="position:relative; flex:1; min-width:180px;">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:9px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input placeholder="Tìm theo tên echo / set…" style="width:100%; box-sizing:border-box; background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px 7px 30px; color:#e2e8f0; font-size:13px;" />
+            </div>
+            <select style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#cbd5e1; font-size:13px;"><option>Mọi set</option></select>
+            <select style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#cbd5e1; font-size:13px;"><option>Mọi main stat</option></select>
+            <!-- K8: chip chấm-theo -->
+            <button class="btn" style="display:flex; align-items:center; gap:7px; background:rgba(2,132,199,.12); border:1px solid #0369a1; border-radius:6px; padding:6px 10px; color:#7dd3fc; font-size:13px; cursor:pointer;">
+              <span style="width:8px; height:8px; border-radius:999px; background:#a855f7;"></span>
+              Chấm theo: <strong style="color:#e0f2fe;">Camellya</strong>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+            <span style="display:inline-flex; border:1px solid #334155; border-radius:6px; overflow:hidden;">
+              <button class="btn" title="Bảng" aria-pressed="true" style="width:34px; height:34px; display:grid; place-items:center; background:#0369a1; border:0; color:#fff; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+              <button class="btn" title="Lưới" aria-pressed="false" style="width:34px; height:34px; display:grid; place-items:center; background:transparent; border:0; border-left:1px solid #334155; color:#94a3b8; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg></button>
+            </span>
+          </div>
+          <!-- K1: nhãn nhóm · K2: verdict giữ màu -->
+          <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center;">
+            <div style="display:flex; align-items:center; gap:7px;">
+              <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b;">Cost</span>
+              <button class="btn" style="background:#0369a1; color:#fff; border:0; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">Tất cả</button>
+              <button class="btn" style="background:transparent; color:#94a3b8; border:1px solid #334155; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">4</button>
+              <button class="btn" style="background:transparent; color:#94a3b8; border:1px solid #334155; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">3</button>
+              <button class="btn" style="background:transparent; color:#94a3b8; border:1px solid #334155; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">1</button>
+            </div>
+            <span style="width:1px; height:20px; background:#1e293b;"></span>
+            <div style="display:flex; align-items:center; gap:7px;">
+              <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b;">Tư vấn</span>
+              <button class="btn" style="background:transparent; color:#94a3b8; border:1px solid #334155; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">Tất cả</button>
+              <button class="btn" style="background:rgba(16,185,129,.16); color:#6ee7b7; border:1px solid #059669; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">Tune tiếp</button>
+              <button class="btn" style="background:transparent; color:#7dd3fc; border:1px solid #334155; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">Hoàn tất</button>
+              <button class="btn" style="background:transparent; color:#fbbf24; border:1px solid #334155; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">Tạm dùng</button>
+              <button class="btn" style="background:transparent; color:#fb7185; border:1px solid #334155; border-radius:6px; padding:5px 11px; font-size:13px; cursor:pointer;">Bỏ</button>
+            </div>
+            <span style="margin-left:auto; font-size:12px; color:#64748b;">3 / 24 echo</span>
+          </div>
+        </div>
+
+        <!-- Rows -->
+        <div style="display:flex; flex-direction:column;">
+
+          <div style="display:grid; grid-template-columns:1fr auto; gap:12px; padding:12px; border-bottom:1px solid rgba(30,41,59,.6); align-items:center;">
+            <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+              <span style="width:34px; height:34px; border-radius:999px; background:#1e293b; border:1px solid #334155; flex-shrink:0;"></span>
+              <div style="display:flex; flex-direction:column; gap:3px; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:14px; color:#f1f5f9; font-weight:600;">Dreamless</span>
+                  <span style="font-size:12px; font-family:ui-monospace,monospace; color:#fbbf24; background:rgba(180,83,9,.2); border-radius:4px; padding:1px 6px;">S · 41.8</span>
+                  <span style="font-size:12px; color:#6ee7b7;">Hoàn tất</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#64748b;">
+                  <span style="display:flex; align-items:center; gap:5px;"><span style="width:7px;height:7px;border-radius:999px;background:#a855f7;"></span>Havoc Eclipse</span>
+                  <span>cost 4 · 5★ +25</span>
+                  <span style="color:#34d399;">Crit Rate% ✓</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:x; gap:10px; font-size:12px; font-family:ui-monospace,monospace;">
+                  <span><span style="color:#64748b;">CD</span> <span style="color:#34d399; font-weight:600;">21%</span></span>
+                  <span><span style="color:#64748b;">CR</span> <span style="color:#38bdf8;">8.7%</span></span>
+                  <span><span style="color:#64748b;">ATK%</span> <span style="color:#38bdf8;">10.9%</span></span>
+                  <span><span style="color:#64748b;">Basic</span> <span style="color:#94a3b8;">9.4%</span></span>
+                </div>
+              </div>
+            </div>
+            <!-- K3/K4/C1/C2: hành động lớn, icon SVG, tách nhóm -->
+            <div style="display:flex; align-items:center; gap:4px;">
+              <button class="btn" title="Khoá — chặn xoá" aria-pressed="false" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#64748b; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>
+              <button class="btn" title="Đánh dấu Bỏ — không tính khi gán bộ, không xoá" aria-pressed="false" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#64748b; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m5.6 5.6 12.8 12.8"></path></svg></button>
+              <button class="btn" title="Sửa" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#94a3b8; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>
+              <span style="width:1px; height:22px; background:#1e293b; margin:0 3px;"></span>
+              <button class="btn" title="Xoá vĩnh viễn" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#64748b; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg></button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr auto; gap:12px; padding:12px; border-bottom:1px solid rgba(30,41,59,.6); align-items:center;">
+            <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+              <span style="width:34px; height:34px; border-radius:999px; background:#1e293b; border:1px solid #334155; flex-shrink:0;"></span>
+              <div style="display:flex; flex-direction:column; gap:3px; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:14px; color:#f1f5f9; font-weight:600;">Tempest Mephis</span>
+                  <span style="font-size:12px; font-family:ui-monospace,monospace; color:#7dd3fc; background:rgba(3,105,161,.25); border-radius:4px; padding:1px 6px;">A · 34.1</span>
+                  <span style="font-size:12px; color:#6ee7b7;">Tune tiếp <span style="color:#64748b;">→ kỳ vọng 41</span></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#64748b;">
+                  <span style="display:flex; align-items:center; gap:5px;"><span style="width:7px;height:7px;border-radius:999px;background:#c084fc;"></span>Void Thunder</span>
+                  <span>cost 3 · 5★ +15</span>
+                  <span style="color:#34d399;">Electro DMG% ✓</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:12px; font-family:ui-monospace,monospace;">
+                  <span><span style="color:#64748b;">CR</span> <span style="color:#38bdf8;">7.5%</span></span>
+                  <span><span style="color:#64748b;">CD</span> <span style="color:#38bdf8;">13.8%</span></span>
+                  <span><span style="color:#64748b;">ER</span> <span style="color:#94a3b8;">8.4%</span></span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <button class="btn" title="Khoá — chặn xoá" aria-pressed="false" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#64748b; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>
+              <button class="btn" title="Đánh dấu Bỏ — không tính khi gán bộ, không xoá" aria-pressed="false" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#64748b; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m5.6 5.6 12.8 12.8"></path></svg></button>
+              <button class="btn" title="Sửa" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#94a3b8; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>
+              <span style="width:1px; height:22px; background:#1e293b; margin:0 3px;"></span>
+              <button class="btn" title="Xoá vĩnh viễn" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#64748b; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg></button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr auto; gap:12px; padding:12px; align-items:center; background:rgba(2,6,23,.4);">
+            <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+              <span style="width:34px; height:34px; border-radius:999px; background:#1e293b; border:1px solid #334155; flex-shrink:0;"></span>
+              <div style="display:flex; flex-direction:column; gap:3px; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:14px; color:#cbd5e1; font-weight:600;">Sagittario</span>
+                  <span style="font-size:12px; font-family:ui-monospace,monospace; color:#fb7185; background:rgba(159,18,57,.25); border-radius:4px; padding:1px 6px;">D · 4.3</span>
+                  <span style="font-size:12px; color:#fb7185;">Bỏ</span>
+                  <span style="font-size:11px; color:#64748b; border:1px solid #334155; border-radius:4px; padding:0 6px;">đã đánh dấu Bỏ</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#64748b;">
+                  <span style="display:flex; align-items:center; gap:5px;"><span style="width:7px;height:7px;border-radius:999px;background:#38bdf8;"></span>Freezing Frost</span>
+                  <span>cost 1 · 5★ +25</span>
+                  <span style="color:#fb7185;">DEF% ✗</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <button class="btn" title="Khoá — chặn xoá" aria-pressed="false" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#64748b; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>
+              <button class="btn" title="Bỏ đánh dấu" aria-pressed="true" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:rgba(159,18,57,.25); border:1px solid #9f1239; color:#fb7185; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m5.6 5.6 12.8 12.8"></path></svg></button>
+              <button class="btn" title="Sửa" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#94a3b8; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>
+              <span style="width:1px; height:22px; background:#1e293b; margin:0 3px;"></span>
+              <button class="btn" title="Xoá vĩnh viễn" style="width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:transparent; border:1px solid #334155; color:#fb7185; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg></button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:12px; color:#94a3b8;">
+        <span style="border:1px solid #1e293b; border-radius:6px; padding:6px 10px; background:rgba(15,23,42,.6);"><strong style="color:#cbd5e1;">Icon 34px</strong> vùng chạm ≥ chuẩn (K3/C1)</span>
+        <span style="border:1px solid #1e293b; border-radius:6px; padding:6px 10px; background:rgba(15,23,42,.6);"><strong style="color:#cbd5e1;">Ban ⃠</strong> = Bỏ · <strong style="color:#cbd5e1;">Thùng rác</strong> = Xoá, cách nhau bằng vạch (K4)</span>
+        <span style="border:1px solid #1e293b; border-radius:6px; padding:6px 10px; background:rgba(15,23,42,.6);">Verdict chip giữ màu emerald/sky/amber/rose khi active (K2)</span>
+        <span style="border:1px solid #1e293b; border-radius:6px; padding:6px 10px; background:rgba(15,23,42,.6);">Bấm tab để thấy focus ring sky (C6)</span>
+      </div>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -101,6 +101,9 @@ const DICT: Record<string, Entry> = {
   'inv.viewTable': { vi: 'Xem dạng bảng', en: 'Table view' },
   'inv.viewGrid': { vi: 'Xem dạng lưới card', en: 'Card grid view' },
   'inv.flagLock': { vi: 'Khoá — không xoá được (kể cả hàng loạt), solver vẫn dùng', en: 'Lock — cannot be deleted (incl. bulk), solver still uses it' },
+  // K5 (ui-redesign): sort bằng header bảng
+  'ranking.colLevel': { vi: 'Level', en: 'Level' },
+  'inv.sortByCol': { vi: 'Bấm để sắp xếp / đảo chiều', en: 'Click to sort / flip direction' },
   // K8 (ui-redesign): toolbar kho nhắc đang chấm điểm theo nhân vật nào
   'inv.scoringFor': { vi: 'Chấm theo:', en: 'Scoring for:' },
   // K6 (ui-redesign): nút ẩn/hiện chú giải substat

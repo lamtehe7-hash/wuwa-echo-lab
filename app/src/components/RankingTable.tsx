@@ -84,6 +84,16 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
   const [mainF, setMainF] = useState<'' | MainStatKey>('')
   const [verdictF, setVerdictF] = useState<string>('')
   const [sortKey, setSortKey] = useState<SortKey>('score')
+  // K5 (ui-redesign): chiều sort — header Điểm/Level bấm được, bấm lại đảo chiều; select giữ cho
+  // grid/mobile (đổi key qua select reset về desc)
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
+  const headerSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))
+    else {
+      setSortKey(k)
+      setSortDir('desc')
+    }
+  }
   // Bảng cho power-user (Fribbels) ⇄ lưới card trực quan (GO) — research/ui-ux.md §3.2.
   // Nhớ lựa chọn; lần đầu: màn hẹp mặc định lưới (bảng phải cuộn ngang trên mobile).
   const [view, setView] = useState<'table' | 'grid'>(() => {
@@ -128,14 +138,16 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
     let list = rankEchoes(filtered, profile).map((r) => ({ r, advice: tuneAdvice(r.echo, profile) }))
     if (verdictF) list = list.filter((x) => x.advice.verdict === verdictF)
     if (excludedOnly) list = list.filter((x) => x.r.echo.trash)
-    if (sortKey === 'rv') list = [...list].sort((a, b) => echoRv(b.r.echo) - echoRv(a.r.echo))
-    else if (sortKey === 'level') list = [...list].sort((a, b) => b.r.echo.level - a.r.echo.level)
+    // K5: dir=1 desc (mặc định) / -1 asc — score dùng thứ tự rank sẵn nên asc là reverse
+    const dir = sortDir === 'asc' ? -1 : 1
+    if (sortKey === 'rv') list = [...list].sort((a, b) => dir * (echoRv(b.r.echo) - echoRv(a.r.echo)))
+    else if (sortKey === 'level') list = [...list].sort((a, b) => dir * (b.r.echo.level - a.r.echo.level))
     else if (sortKey === 'new') {
       const order = new Map(echoes.map((e, i) => [e.id, i])) // thứ tự thêm vào kho
-      list = [...list].sort((a, b) => (order.get(b.r.echo.id) ?? 0) - (order.get(a.r.echo.id) ?? 0))
-    }
+      list = [...list].sort((a, b) => dir * ((order.get(b.r.echo.id) ?? 0) - (order.get(a.r.echo.id) ?? 0)))
+    } else if (sortDir === 'asc') list = [...list].reverse()
     return list
-  }, [echoes, profile, q, costF, setF, mainF, verdictF, excludedOnly, sortKey])
+  }, [echoes, profile, q, costF, setF, mainF, verdictF, excludedOnly, sortKey, sortDir])
 
   // Chọn hàng loạt (chỉ chế độ bảng): echo khoá không chọn được
   const selectableIds = rows.filter((x) => !x.r.echo.lock).map((x) => x.r.echo.id)
@@ -205,7 +217,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
             <option value="">{t('inv.allMains')}</option>
             {mainOptions.map((k) => <option key={k} value={k}>{MAINSTAT_LABELS[k]}</option>)}
           </select>
-          <select className={selCls} value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} aria-label={t('inv.sortScore')}>
+          <select className={selCls} value={sortKey} onChange={(e) => { setSortKey(e.target.value as SortKey); setSortDir('desc') }} aria-label={t('inv.sortScore')}>
             {SORT_KEYS.map((k) => <option key={k} value={k}>{t(SORT_LABEL_KEY[k])}</option>)}
           </select>
           {/* K8: điểm/tư vấn phụ thuộc nhân vật đang chọn — nhắc ngay tại toolbar + đổi được tại chỗ */}
@@ -367,7 +379,23 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                 <th className="pr-2">{t('ranking.colEcho')}</th>
                 <th className="pr-2">{t('ranking.colMain')}</th>
                 <th className="pr-2">{t('ranking.colSubstat')}</th>
-                <th className="pr-2 text-right">{t('ranking.colScore')}</th>
+                {/* K5: header sort với mũi tên chiều — cột đang sort tô sky */}
+                <th className="pr-2 text-right">
+                  <button
+                    type="button"
+                    title={t('inv.sortByCol')}
+                    className={`inline-flex items-center gap-0.5 hover:text-slate-300 ${sortKey === 'score' ? 'text-sky-400' : ''}`}
+                    onClick={() => headerSort('score')}
+                  >{t('ranking.colScore')}{sortKey === 'score' && <span aria-hidden>{sortDir === 'desc' ? '▼' : '▲'}</span>}</button>
+                </th>
+                <th className="pr-2 text-right">
+                  <button
+                    type="button"
+                    title={t('inv.sortByCol')}
+                    className={`inline-flex items-center gap-0.5 hover:text-slate-300 ${sortKey === 'level' ? 'text-sky-400' : ''}`}
+                    onClick={() => headerSort('level')}
+                  >{t('ranking.colLevel')}{sortKey === 'level' && <span aria-hidden>{sortDir === 'desc' ? '▼' : '▲'}</span>}</button>
+                </th>
                 <th className="pr-2">{t('ranking.colAdvice')}</th>
                 {bestOwners && <th className="pr-2">{t('ranking.colBestOwner')}</th>}
                 <th />
@@ -406,7 +434,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                         >{echoDisplayName(r.echo)}</button>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
-                        <span>cost {r.echo.cost} · {r.echo.rarity}★ +{r.echo.level} · {SONATA_BY_ID[r.echo.set]?.name}</span>
+                        <span>cost {r.echo.cost} · {r.echo.rarity}★ · {SONATA_BY_ID[r.echo.set]?.name}</span>
                         <PinnedByBadge owners={pinsOf(r.echo.id)} variant="chip" />
                       </div>
                     </td>
@@ -433,6 +461,8 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                     <td className="pr-2 text-right">
                       <ScoreBadge r={r} profile={profile} />
                     </td>
+                    {/* K5: cột Level riêng (meta bỏ "+25" — hết lặp) */}
+                    <td className="pr-2 pt-1.5 text-right font-mono text-xs tabular-nums text-slate-400">+{r.echo.level}</td>
                     <td className={`pr-2 text-xs ${VERDICT_CLS[advice.verdict]}`} title={tm(advice.reason)}>
                       {t(`ranking.verdict.${advice.verdict}`)}
                       {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}

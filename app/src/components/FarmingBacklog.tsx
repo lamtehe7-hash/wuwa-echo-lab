@@ -25,28 +25,32 @@ function Row({ r }: { r: SetBacklogRow }) {
       ? `${t('backlog.rowTip', { owned: r.owned, good: r.goodOwned })} · ${t('farm.row', { n: r.demand, name: r.topDemander ?? '—' })}`
       : t('backlog.rowTip', { owned: r.owned, good: r.goodOwned })
 
+  // P4 (ui-redesign): cụm goodOwned/target + bar + demand gom vào 1 cột PHẢI bề rộng cố định
+  // (w-12 / w-20 / w-16) → bar thẳng cột giữa các dòng, so sánh được; bar nới w-10 → w-20
   return (
     <li className="flex flex-wrap items-center gap-1.5" title={tip}>
       <span
         className="h-2 w-2 shrink-0 rounded-full"
         style={{ backgroundColor: r.def.element ? ELEMENT_COLOR[r.def.element] : '#64748b' }}
       />
-      <span className="font-medium text-slate-200">{r.def.name}</span>
+      <span className="min-w-0 truncate font-medium text-slate-200">{r.def.name}</span>
       <span className={`rounded px-1.5 py-0.5 text-[10px] ${st.chip}`}>{t(st.key)}</span>
-      {r.demand > 0 ? (
-        <span className="flex items-center gap-1">
-          <span className="font-mono text-[10px] text-slate-500">
-            {r.goodOwned}/{r.target}
-          </span>
-          <span className="block h-1 w-10 overflow-hidden rounded-full bg-slate-800" aria-hidden>
-            <span className="block h-full" style={{ width: `${pct}%`, backgroundColor: st.bar }} />
-          </span>
+      <span className="ml-auto flex shrink-0 items-center gap-1.5">
+        {r.demand > 0 ? (
+          <>
+            <span className="w-12 text-right font-mono text-[10px] tabular-nums text-slate-500">
+              {r.goodOwned}/{r.target}
+            </span>
+            <span className="block h-1 w-20 overflow-hidden rounded-full bg-slate-800" aria-hidden>
+              <span className="block h-full" style={{ width: `${pct}%`, backgroundColor: st.bar }} />
+            </span>
+          </>
+        ) : (
+          <span className="text-[10px] text-slate-500">{t('backlog.surplusRow', { owned: r.owned })}</span>
+        )}
+        <span className="w-16 text-right text-[10px] text-slate-500">
+          {r.demand > 0 ? t('backlog.demand', { n: r.demand }) : '—'}
         </span>
-      ) : (
-        <span className="text-[10px] text-slate-500">{t('backlog.surplusRow', { owned: r.owned })}</span>
-      )}
-      <span className="ml-auto text-[10px] text-slate-500">
-        {r.demand > 0 ? t('backlog.demand', { n: r.demand }) : '—'}
       </span>
     </li>
   )

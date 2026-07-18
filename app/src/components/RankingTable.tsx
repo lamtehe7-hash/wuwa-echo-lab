@@ -189,12 +189,15 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
+          {/* K1 (ui-redesign): nhãn nhóm trước mỗi cụm chip — 2 nút "Tất cả" (Cost/Tư vấn) hết dính nhau */}
+          <span className="text-[11px] uppercase tracking-wide text-slate-500">{t('inv.groupCost')}</span>
           {[null, 4, 3, 1].map((c) => (
             <button key={String(c)} type="button" className={chip(costF === c)} onClick={() => setCostF(c)}>
               {c === null ? t('app.all') : t('app.costFilter', { c })}
             </button>
           ))}
           <span className="mx-1 h-4 w-px bg-slate-800" aria-hidden />
+          <span className="text-[11px] uppercase tracking-wide text-slate-500">{t('inv.groupVerdict')}</span>
           <button type="button" className={chip(verdictF === '')} onClick={() => setVerdictF('')}>{t('app.all')}</button>
           {VERDICTS.map((v) => (
             <button

@@ -88,6 +88,9 @@ const DICT: Record<string, Entry> = {
   'inv.search': { vi: 'Tìm theo tên echo / set…', en: 'Search echo / set name…' },
   'inv.allSets': { vi: 'Mọi set', en: 'All sets' },
   'inv.allMains': { vi: 'Mọi main stat', en: 'All main stats' },
+  // K1 (ui-redesign): nhãn nhóm cho 2 cụm chip filter — hết cảnh 2 nút "Tất cả" liền kề không phân biệt
+  'inv.groupCost': { vi: 'Cost', en: 'Cost' },
+  'inv.groupVerdict': { vi: 'Tư vấn', en: 'Advice' },
   'inv.sortScore': { vi: 'Sắp xếp: Điểm', en: 'Sort: Score' },
   'inv.sortRv': { vi: 'Sắp xếp: RV', en: 'Sort: RV' },
   'inv.sortLevel': { vi: 'Sắp xếp: Level', en: 'Sort: Level' },

@@ -17,6 +17,8 @@ app/public/tesseract/core/
 # Doc nội bộ (context bàn giao giữa các phiên Claude) — không đẩy lên GitHub
 PROJECT_TASK.md
 HANDOVER.md
+HANDOVER_ARCH.md
+HANDOVER_GOTCHAS.md
 ARCHIVE_INTERNAL.md
 REVIEW_2026-07-16.md
 REVIEW_2026-07-16-batch68-74.md

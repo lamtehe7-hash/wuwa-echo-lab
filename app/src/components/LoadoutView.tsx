@@ -117,17 +117,19 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
         ))}
       </div>
       {result.note.map((n, i) => <p key={i} className="text-xs text-amber-400">⚠ {tm(n)}</p>)}
+      {/* B4 (ui-redesign): whitespace-nowrap — cột hẹp thì CẢ NÚT xuống dòng (flex-wrap),
+          không gãy chữ bên trong nút */}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+          className="whitespace-nowrap rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
           title={t('loadout.exportTip')}
           onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet)}
         >{t('loadout.exportPng')}</button>
         {onPin && (
           <button
             type="button"
-            className="rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
+            className="whitespace-nowrap rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
             onClick={onPin}
           >{t('equip.pin')}</button>
         )}

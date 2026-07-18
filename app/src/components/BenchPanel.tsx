@@ -271,18 +271,19 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
 
           {result && <StatBreakdown echoes={filled} profile={profile} ctx={ctx} activeSet={activeSet} defaultOpen={false} />}
 
+          {/* B4 (ui-redesign): whitespace-nowrap như LoadoutView — nút không gãy chữ ở cột hẹp */}
           <div className="flex flex-wrap gap-2">
             {result && (
               <>
                 <button
                   type="button"
-                  className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+                  className="whitespace-nowrap rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
                   title={t('loadout.exportTip')}
                   onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet)}
                 >{t('loadout.exportPng')}</button>
                 <button
                   type="button"
-                  className="rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
+                  className="whitespace-nowrap rounded border border-sky-800 px-2 py-1 text-xs text-sky-300 hover:bg-sky-950/60"
                   onClick={() => onPin(filled.map((x) => x.id))}
                 >{t('equip.pin')}</button>
               </>

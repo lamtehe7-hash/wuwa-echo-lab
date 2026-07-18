@@ -49,16 +49,23 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
       <div className="mt-2 space-y-2 text-xs">
         <p className="text-slate-500">{t('upgrade.planSubtitle')}</p>
 
-        <label className="flex flex-wrap items-center gap-2 text-slate-400">
-          {t('upgrade.budgetLabel')}
-          <input
-            type="number" min={0} step={10} value={budgetRaw}
-            aria-label={t('upgrade.budgetLabel')}
-            onChange={(e) => setBudgetRaw(e.target.value)}
-            className="w-24 rounded border border-slate-700 bg-slate-800 px-2 py-1"
-          />
-          <span className="text-[10px] text-slate-500">{t('upgrade.budgetHelp')}</span>
-        </label>
+        {/* P3 (ui-redesign): ô ngân sách có đơn vị + luật lọc 5★ in rõ ngay dưới */}
+        <div className="space-y-1">
+          <label className="flex flex-wrap items-center gap-2 text-slate-400">
+            {t('upgrade.budgetLabel')}
+            <span className="flex items-center gap-1.5">
+              <input
+                type="number" min={0} step={10} value={budgetRaw}
+                aria-label={t('upgrade.budgetLabel')}
+                onChange={(e) => setBudgetRaw(e.target.value)}
+                className="w-24 rounded border border-slate-700 bg-slate-800 px-2 py-1"
+              />
+              {/* đơn vị — thuật ngữ game, không dịch (như ROLE_BADGE) */}
+              <span className="text-slate-400">Tuner</span>
+            </span>
+          </label>
+          <p className="text-[11px] text-slate-500">{t('upgrade.budgetRule')}</p>
+        </div>
 
         {budget > 0 && (
           <p className="text-emerald-400">{t('upgrade.budgetResult', { k: cutoff, gain: gainSum.toFixed(1) })}</p>

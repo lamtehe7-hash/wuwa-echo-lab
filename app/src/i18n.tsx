@@ -364,7 +364,8 @@ const DICT: Record<string, Entry> = {
   'upgrade.planSubtitle': { vi: 'Nhóm theo bậc (Tuner khoá bậc), trong bậc xếp theo điểm tăng mỗi Tuner — đổ EXP/Tuner vào đây trước.', en: 'Grouped by rarity (Tuners are rarity-locked), ranked by points per Tuner within each tier — invest here first.' },
   'upgrade.rowCost': { vi: '{exp} EXP · {tuners} Tuner', en: '{exp} EXP · {tuners} Tuner' },
   'upgrade.budgetLabel': { vi: 'Tuner 5★ đang có', en: '5★ Tuners on hand' },
-  'upgrade.budgetHelp': { vi: 'Chỉ tính echo 5★ (Tuner đúng bậc).', en: 'Only counts 5★ echoes (Tuners are rarity-locked).' },
+  // P3 (ui-redesign): luật lọc in rõ NGAY DƯỚI ô ngân sách (trước là hint nhỏ cạnh ô)
+  'upgrade.budgetRule': { vi: 'Có ngân sách → danh sách chỉ xét echo 5★ (Tuner khoá bậc).', en: 'With a budget set, the list only considers 5★ echoes (Tuners are rarity-locked).' },
   'upgrade.budgetResult': { vi: 'Đủ tune {k} echo · tổng +{gain} điểm', en: 'Enough to tune {k} echoes · total +{gain} pts' },
   'upgrade.budgetCutoff': { vi: '── hết ngân sách, còn dư {left} Tuner ──', en: '── budget ends here, {left} Tuners left ──' },
   'buildcost.title': { vi: 'Chi phí hoàn thiện bộ', en: 'Cost to finish this build' },

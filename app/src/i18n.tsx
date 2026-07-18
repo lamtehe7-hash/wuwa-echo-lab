@@ -421,6 +421,9 @@ const DICT: Record<string, Entry> = {
   'statbd.weapon': { vi: 'Vũ khí', en: 'Weapon' },
   'statbd.forte': { vi: 'Forte', en: 'Forte' },
   'statbd.echo': { vi: 'Echo', en: 'Echo' },
+  // B5 (ui-redesign): cột gộp Vũ khí+Forte+Buff
+  'statbd.other': { vi: 'Khác', en: 'Other' },
+  'statbd.otherTip': { vi: 'Gộp Vũ khí + Forte + Buff — rê chuột lên từng ô để xem tách nguồn.', en: 'Weapon + Forte + Buff combined — hover a cell for the per-source split.' },
   'statbd.buff': { vi: 'Buff', en: 'Buff' },
   'statbd.total': { vi: 'Tổng', en: 'Total' },
   'statbd.capped': { vi: 'Đã chạm trần 100%', en: 'Capped at 100%' },

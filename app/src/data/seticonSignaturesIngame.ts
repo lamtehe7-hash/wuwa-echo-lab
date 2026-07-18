@@ -1,5 +1,5 @@
 // FILE SINH TỰ ĐỘNG — đừng sửa tay. Chạy lại: npx tsx scripts/gen-seticon-ingame.mts "<dir screenshot>"
-// Biến thể chữ ký set-icon từ BADGE IN-GAME THẬT (screenshot kho 1080p 18/07/2026, 31 set) —
+// Biến thể chữ ký set-icon từ BADGE IN-GAME THẬT (screenshot kho 1080p 18/07/2026, 33 set) —
 // gộp với template game8 (seticonSignatures.ts) trong seticon.ts templates(). Đổi pipeline seticon → regen.
 
 import type { SetIconSignature } from './seticonSignatures'
@@ -18,6 +18,7 @@ export const SET_ICON_SIGNATURES_INGAME: SetIconSignature[] = [
   { id: 'gusts-of-welkin', b64: 'AAAQeND6+tB4EAAAAB+29f/////6sR8AEMZ9cv////+XWMYQeOUfeP/q9f+cFct40LYvy7ZjPtXBAKzQ+ssvxra2p6ySAKz6+uUkfdX//7Z4Oer60P/BKknq9X0arP/QeP//5S+x1RrL//94EMb//9V9h6z//8YQAB/G///Bxv//xh8AAAAQeND6+tB4EAAA' },
   { id: 'halo-of-starry-radiance', b64: 'AAAABgcAAAAAAAAAAAAAAAAGc2MMAAAADgwcVXGS26qYgGdVFQw5/5VzMQBJeMi/HAAHpEcASVUAB6R4RwAAklUehupJOf9VVQAAklWS///tav9VOQAAklUYnv9hOcgrBwAAW/gkEg4ATpIAAAAAAMZtAAAkxnMAAAYAAFXIgIDbgAAAAAAAAABDtv9zDgAA' },
   { id: 'havoc-eclipse', b64: 'AAAFFQA+4NuXKgAAAB8QAD6cBSQkFRAAEC8KAAoaAAAAABUAYxAAACqSkpKSPgAFrAAAAEn///+Xlz4A1QAAAEn///85p20A4AoAAEn61bYal20A0CQAAEnVAAAAnF4AeP8kAAAf29vbPgAVEMZEAAAAAAAAAE4qAB+s29CCAAAAbSoAAAAQcsvgtnJJFQAA' },
+  { id: 'heart-of-evils-purge', b64: 'AAAAACvKyisAAAAAAAAAAID//7Y3AAAAAAAAADdtba3RdgAAABtJktvbiRuJ/7YkANv//////4BA////1f///2oraoBA////1f//lXV1VVWq////AOT/tlK//////+RtADe/9nYuUm1tZDcAAAAAZNvkkkkkAAAAAAAAADe//+RJAAAAAAAAAACA/4oAAAAA' },
   { id: 'lamp-of-nether-road', b64: 'AAAQeKFJfdB4EAAAAABJscsVof+SjR8AEEkAL6yC9ZcAtsYQeLEvAB/VnAAAwf94odvBHwAAAB9ExtvBSXL/1QAAALv6KhqcfaH1nAAAAAC7XsH60P+XAB+7AAAA2//QeJIAAET6uwAAtv94EKe2wcZE+ru2730QAB/G/9sk////fRUAAAAQeMGc+tB4EAAA' },
   { id: 'law-of-harmony', b64: 'AAAAAAAAY8w5AAAAAAAAAABz8/9VAAAAAAAAAJLnyHW820MAAAAAAG2AW8z/vSsAAAAAABaA5///SQAAAAAAFcz/////5kcJAAAzv///nIDc//9NAACK//+eEgBJ4v/TAABQ4f/nW4PV+Od8FgAAN8z/////vSsAAAAAACyY8/+YJAAAAAAJDgkAHCsHAAAA' },
   { id: 'lingering-tunes', b64: 'AG3///9JAFX///+AALD//5UkACuk//+4AJLxtnEeACOG//94AJLVJP9tAID///9VAHOxJP/n1er///9Vam1VEoDb///bgIAr43MAAACS7f/IKwYA8ZIAAAAAkv///yQAqtuqsNVVMar//7w5OfP//7hDAE7C//+VAID/+SMAAABD//+VAAdmLAAAAAAHM5IJ' },
@@ -25,6 +26,7 @@ export const SET_ICON_SIGNATURES_INGAME: SetIconSignature[] = [
   { id: 'molten-rift', b64: 'AAAAVUk9+chzDAAAAAAATi8Qh///rB8AAApJSUk0FZLv/7EQCkT//++cAADb//+HaP///3IAAAC7///lyP//hiQAAADO////////hlVVW4Dt////6v/////////////6tv/////////////QKmP//////////7YvAC9th5Kh4JKSfT4AAAAGBgAemAAAAAAA' },
   { id: 'moonlit-clouds', b64: 'AAAAQNv/jgAAAAAABwcAgP//lQAAAAAAAAAAK7zqQAAAAAAABwA96v+/8XmV1dXVKwBJ/////5JqgICAKwBJ/////5JHVVVVAABJ/////5JAVVVVDgdJ/////5IjKysrKzkxqqqqqmGOqqqqADk9AAAAAAAAAAAAAAA3IwAAAAAAAAAAAAAAAEMcHAAAAAAA' },
   { id: 'pact-of-neonlight-leap', b64: 'AAAAADPgXAoAAAAAVV6AgNWIu5mAgF5V/+aAgGYAGoCAgOazmcwAAABmGgAAAMxmZswAIszVszwAiO5eZswArdYKCqMAzP8zZswAAEf1uAoAzP8zVfeqGrtEmaoJ1YAJGpndEQAAAE1m/2YAADP/kREAABrmuzwAABFe5rOAoruREQAAAAAAKVzg4FwKAAAA' },
+  { id: 'reel-of-spliced-memories', b64: 'AAAOK0Sq3G8rDgAAM1WO99Vjo933jlVNd+pxRAAAlbvuv//mM/hqAABV4///gONEM/+OCTyqzcz3cdUAM/+jIrvxYzzdXNUAEY6VAACO1e7/gNUAAFWqAABA1f//1dUAAE7xgAAAqv8z1bgAABzN1TwOh6rE1RwAAAArov+qgOa7MgAAAAAAEWa/qmYRAAAA' },
   { id: 'rejuvenating-glow', b64: 'AAAAADP/zAAAAAAAAAAAAL//9yMAAAAAAAAAANX//ysAAAAAAAAAANX//ysAAAAAMzMzPeb//4A9MzMp///////////////d///////////////mwv/////////////Mo//mcO7//4BmZmZSmf94ANX//ysAAAAAPNUHANX//ysAAAAACikAAIj/4BEAAAAA' },
   { id: 'rite-of-gilded-revelation', b64: 'AAAAAAAAGgAiAAAAAAAAAAkiAAAAMwAAAAAAABFegGYAABoAAACIswkATe7VAABmAAAAM8wAADP/zAAAAAAA3cwAADP/7iIAACJv95EAEXf/iAAAgMRVRAAau///AABVAAAAIsz397MJAAlVAAAAAGZmAAAAAGYJAAAAAAAAAAAAGgAAAAAAAAAiAFUaAAAA' },
   { id: 'sierra-gale', b64: 'ACkKAAAAAAAACtYzKfXWAAAAAAAArf8z1v9cAAAAAAAAUv8z/9YKHwDMrQApM////9YK4D3r6z3rXP////8zzADMKQDMZv//UvVcowAAAADMXP8zAK3/1goAACnW/9YpAArW/60AKfX/1goAAAAAuNYKCszMCgAAAAAACtbW1lIAAAAAAAAAACnW1goAAAAA' },

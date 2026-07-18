@@ -45,6 +45,15 @@ export const VERDICT_CLS: Record<string, string> = {
   trash: 'text-rose-400',
 }
 
+// K2 (ui-redesign): chip verdict ACTIVE giữ màu ngữ nghĩa (không đổi sang sky —
+// sky-700 chỉ dành cho chip "Tất cả" trung tính)
+const VERDICT_ACTIVE: Record<string, string> = {
+  'keep-tuning': 'bg-emerald-600/20 text-emerald-300 border-emerald-600',
+  done: 'bg-sky-600/20 text-sky-300 border-sky-600',
+  usable: 'bg-amber-600/20 text-amber-300 border-amber-600',
+  trash: 'bg-rose-600/20 text-rose-300 border-rose-600',
+}
+
 const VERDICTS = ['keep-tuning', 'done', 'usable', 'trash'] as const
 const VIEW_KEY = 'wuwa-inv-view'
 const SORT_KEYS = ['score', 'rv', 'level', 'new'] as const
@@ -203,7 +212,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
             <button
               key={v}
               type="button"
-              className={`rounded px-2 py-1 ${verdictF === v ? 'bg-sky-700 text-white' : `border border-slate-700 hover:bg-slate-800 ${VERDICT_CLS[v]}`}`}
+              className={`rounded border px-2 py-1 ${verdictF === v ? VERDICT_ACTIVE[v] : `border-slate-700 hover:bg-slate-800 ${VERDICT_CLS[v]}`}`}
               onClick={() => setVerdictF(v)}
             >{t(`ranking.verdict.${v}`)}</button>
           ))}

@@ -127,7 +127,8 @@ const DICT: Record<string, Entry> = {
   'empty.demoTitle': { vi: '🎲 Dữ liệu demo', en: '🎲 Demo data' },
   'empty.demoDesc': { vi: 'Nạp 10 echo mẫu để khám phá tính năng trước.', en: 'Load 10 sample echoes to explore the features first.' },
   'empty.steps': { vi: '① Nạp kho → ② Chọn nhân vật → ③ Tìm bộ 5 tối ưu', en: '① Load inventory → ② Pick a character → ③ Find the best 5-set' },
-  'empty.manualHint': { vi: 'Hoặc nhập tay từng echo bằng form "Thêm echo" bên cạnh.', en: 'Or add echoes manually with the "Add echo" form on the side.' },
+  // I4 (ui-redesign): nút mở form nhập tay — không giả định vị trí form trong copy
+  'empty.manualLink': { vi: 'Hoặc nhập tay từng echo →', en: 'Or add echoes manually →' },
 
   // ── App ──
   'app.subtitle': { vi: 'bản 3.5 · dữ liệu lưu trong trình duyệt', en: 'v3.5 · data stored in your browser' },

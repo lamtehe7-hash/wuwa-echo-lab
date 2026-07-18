@@ -424,11 +424,15 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const invCount = t('app.inventoryCount', { n: echoes.length, c4: stats[4], c3: stats[3], c1: stats[1] })
 
   const empty = echoes.length === 0
+  // I4 (ui-redesign): "nhập tay" từ EmptyState — mở layout Kho thật (có form) dù kho trống,
+  // vì EmptyState THAY cả layout nên form "Thêm echo" không tồn tại lúc đó
+  const [showManual, setShowManual] = useState(false)
   const emptyState = (
     <EmptyState
       onOcr={() => setTab('import')}
       onImportJson={() => fileRef.current?.click()}
       onDemo={() => replaceInventory(DEMO_ECHOES)}
+      onManual={() => { setShowManual(true); setTab('inventory') }}
     />
   )
 
@@ -488,7 +492,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
         ))}
       </nav>
 
-      {tab === 'inventory' && (empty ? emptyState : (
+      {tab === 'inventory' && (empty && !showManual ? emptyState : (
         <div className="space-y-3">
         {triageActive ? (
           // F4 (task 63): view duyệt lần lượt thay chỗ CleanupPanel + bảng (KHÔNG modal — "Sửa" mở EchoEditModal đè lên)

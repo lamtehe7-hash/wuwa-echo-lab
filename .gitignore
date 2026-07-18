@@ -30,3 +30,10 @@ Test Input/
 
 # Script verify CDP theo tung task (ephemeral, quy uoc KHONG commit - PROJECT_TASK.md)
 app/scripts/verify-task*.mjs
+
+# design-sync (claude.ai/design): script staging + build output + state may (KHONG commit)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules

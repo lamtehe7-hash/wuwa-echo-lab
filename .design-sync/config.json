@@ -1,0 +1,24 @@
+{
+  "projectId": "0517ce60-685f-4ffa-aba2-5a06ed0673ca",
+  "pkg": "app",
+  "globalName": "WuWaEcho",
+  "shape": "package",
+  "readmeHeader": ".design-sync/conventions.md",
+  "buildCmd": "npm run build",
+  "entry": "app/dist-lib/index.js",
+  "srcDir": "src/components",
+  "extraEntries": ["./src/design-sync-entry.ts"],
+  "cssEntry": "dist/assets/index-DmYrtUvG.css",
+  "overrides": {
+    "BestOwnerBadge": { "cardMode": "single", "primaryStory": "CellPopoverOpen" },
+    "CharacterPicker": { "cardMode": "column" },
+    "InfoTip": { "cardMode": "column" },
+    "ScoreBadge": { "cardMode": "single", "primaryStory": "BreakdownOpen" },
+    "SetPicker": { "cardMode": "column" },
+    "ToastProvider": { "cardMode": "single", "primaryStory": "ToastStack" }
+  },
+  "provider": {
+    "component": "I18nProvider",
+    "inner": { "component": "ToastProvider" }
+  }
+}

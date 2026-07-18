@@ -393,6 +393,8 @@ const DICT: Record<string, Entry> = {
   'build.title': { vi: 'Chỉ số nền (vũ khí · base · buff)', en: 'Base stats (weapon · base · buff)' },
   'build.tip': { vi: 'Nạp vũ khí + base nhân vật + Forte + buff để mode Damage tính CRIT THẬT (base 5% + vũ khí + forte + echo + buff) và tối ưu đúng cán cân CR/CD.', en: 'Feed weapon + character base + Forte + buffs so Damage mode uses REAL crit (base 5% + weapon + forte + echo + buff) and optimizes the right CR/CD balance.' },
   'build.weapon': { vi: 'Vũ khí', en: 'Weapon' },
+  // B3 (ui-redesign): giải thích dấu ★ cạnh ô base của chỉ số scale
+  'build.baseAtkTip': { vi: '★ = chỉ số damage của nhân vật scale theo (suy từ trọng số). Ô nhập dùng để override base L90 khi số trong DB lệch bản game.', en: "★ marks the stat this character's damage scales with (derived from weights). Type a value to override the L90 base if the DB is outdated." },
   'build.weaponNone': { vi: 'không chọn', en: 'none' },
   'build.buffs': { vi: 'Buff có điều kiện (giả định active):', en: 'Conditional buffs (assumed active):' },
   'build.summary': { vi: 'Base {scale} {base} · CR nền +{cr} · CD nền +{cd} (chưa gồm echo)', en: 'Base {scale} {base} · base CR +{cr} · base CD +{cd} (echoes not included)' },

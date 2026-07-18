@@ -25,6 +25,7 @@ import { newId } from '../store'
 import { useT, useTMessage } from '../i18n'
 import EchoCard from './EchoCard'
 import EchoFields, { type EchoFieldsValue } from './EchoFields'
+import { IconImage } from './icons'
 import { useToast } from './Toast'
 
 // Import từ ảnh/video (beta): OCR client-side bằng tesseract.js, passive-only — user tự
@@ -346,7 +347,13 @@ export default function OcrImport({ onAdd }: Props) {
     >
       <div>
         <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-semibold text-slate-300">{t('ocr.title')}</div>
+          {/* I2 bản P2: "beta" thu thành chip; yêu cầu ảnh chi tiết gập Ở KHU CHỌN ẢNH — 1 điểm mở
+              duy nhất (góp ý designer). Giữ nguyên cụm "Import từ ảnh" (hợp đồng e2e). */}
+          <div className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-300">
+            <IconImage size={15} className="text-sky-400" />
+            {t('ocr.title')}
+            <span className="rounded border border-amber-500/40 px-1.5 text-[10px] font-normal text-amber-400">beta</span>
+          </div>
           <div className="flex gap-1 text-xs">
             {(['image', 'video'] as const).map((m) => (
               <button
@@ -358,15 +365,6 @@ export default function OcrImport({ onAdd }: Props) {
             ))}
           </div>
         </div>
-        {/* I2 (ui-redesign): cảnh báo beta 1 dòng, phần dài gấp trong <details> — summary inline
-            (marker native mất khi inline → affordance = gạch chấm, gotcha §5 HANDOVER) */}
-        <div className="text-xs text-amber-500/90">
-          {t('ocr.helpShort')}{' '}
-          <details className="inline-block align-baseline">
-            <summary className="inline cursor-pointer text-amber-400 underline decoration-dotted">{t('ocr.helpMore')}</summary>
-            <span className="mt-1 block max-w-prose text-amber-500/80">{t('ocr.helpDetail')}</span>
-          </details>
-        </div>
       </div>
 
       <label className="flex items-center gap-1.5 text-xs text-slate-400">
@@ -376,18 +374,36 @@ export default function OcrImport({ onAdd }: Props) {
 
       {mode === 'image' && (
         <div className="space-y-1.5">
+          {/* I1 (ui-redesign): dropzone viền đứt làm MẶT TIỀN — kéo-thả / Ctrl+V / bấm chọn gộp 1
+              vùng; input native ẩn (logic paste + drop đã có sẵn ở panel). role=button + Enter/Space
+              cho bàn phím; sáng viền sky khi đang kéo file vào panel. */}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addImages(e.target.files ?? [])
+              e.target.value = '' // cộng dồn vào hàng chờ — số lượng hiện ở dòng dưới, không dựa vào label của input
+            }}
+          />
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={t('ocr.dropTitle')}
+            className={`flex w-full cursor-pointer flex-col items-center gap-1 rounded-lg border-2 border-dashed px-3 py-6 text-center text-xs ${
+              dragOver ? 'border-sky-500 bg-sky-950/30' : 'border-slate-700 bg-slate-900/40 hover:border-sky-600 hover:bg-slate-900/70'
+            }`}
+            onClick={() => inputRef.current?.click()}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current?.click() } }}
+          >
+            <IconImage size={22} className="text-slate-500" />
+            <span className="text-sm font-medium text-slate-300">{t('ocr.dropTitle')}</span>
+            <span className="text-slate-400">{t('ocr.dropHint')}</span>
+            <span className="text-slate-500">{t('ocr.dropBest')}</span>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="text-xs text-slate-400"
-              onChange={(e) => {
-                addImages(e.target.files ?? [])
-                e.target.value = '' // cộng dồn vào hàng chờ — số lượng hiện ở dòng dưới, không dựa vào label của input
-              }}
-            />
             {running ? (
               <button
                 type="button"
@@ -426,7 +442,11 @@ export default function OcrImport({ onAdd }: Props) {
               )}
             </div>
           )}
-          <p className="text-xs text-slate-500">{t('ocr.pasteHint')}</p>
+          {/* I2 bản P2: yêu cầu ảnh đầy đủ gập 1 chỗ duy nhất (pasteHint cũ đã nằm trong dropzone) */}
+          <details>
+            <summary className="cursor-pointer text-xs text-slate-500">{t('ocr.reqTitle')}</summary>
+            <p className="mt-1 max-w-prose text-xs text-slate-500">{t('ocr.helpDetail')}</p>
+          </details>
         </div>
       )}
 

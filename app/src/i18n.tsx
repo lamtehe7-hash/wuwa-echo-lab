@@ -479,19 +479,18 @@ const DICT: Record<string, Entry> = {
   },
 
   // ── OcrImport ──
-  'ocr.title': { vi: '📷 Import từ ảnh (beta)', en: '📷 Import from image (beta)' },
-  // I2 (ui-redesign): cảnh báo beta 1 dòng + "chi tiết" mở rộng — hết chiếm mặt tiền panel
-  'ocr.helpShort': {
-    vi: 'Beta — tốt nhất với screenshot panel echo tiếng Anh 1920×1080; luôn kiểm tra lại trước khi lưu.',
-    en: 'Beta — best with English echo-panel screenshots at 1920×1080; always double-check before saving.',
-  },
-  'ocr.helpMore': { vi: 'chi tiết', en: 'details' },
+  // I2 bản P2 (ui-redesign): "beta" thành chip; cụm "Import từ ảnh" GIỮ NGUYÊN (hợp đồng e2e)
+  'ocr.title': { vi: 'Import từ ảnh (OCR trên máy)', en: 'Import from image (on-device OCR)' },
+  // I1 (ui-redesign): dropzone làm mặt tiền
+  'ocr.dropTitle': { vi: 'Thả ảnh panel echo vào đây', en: 'Drop echo-panel screenshots here' },
+  'ocr.dropHint': { vi: 'hoặc Ctrl+V dán ảnh vừa chụp · bấm để chọn file', en: 'or Ctrl+V a fresh screenshot · click to browse' },
+  'ocr.dropBest': { vi: 'Tốt nhất: screenshot tiếng Anh 1920×1080 · OCR chạy trên máy, không upload', en: 'Best: English screenshots at 1920×1080 · OCR runs locally, nothing is uploaded' },
+  'ocr.reqTitle': { vi: 'Yêu cầu ảnh', en: 'Image requirements' },
   'ocr.helpDetail': {
     vi: 'Tool tự nhận tên echo (dòng "+25") và sonata set (icon tròn cạnh "+25", hoặc chữ trong mục "Sonata Effect" nếu có trong ảnh). OCR có thể đọc sai — đối chiếu kết quả trước khi lưu.',
     en: 'The echo name ("+25" line) and sonata set (round icon next to "+25", or the "Sonata Effect" text when visible) are detected automatically. OCR can misread — review results before saving.',
   },
   'ocr.run': { vi: 'Chạy OCR ({n} ảnh)', en: 'Run OCR ({n} images)' },
-  'ocr.pasteHint': { vi: 'Mẹo: Ctrl+V dán ảnh vừa chụp (Win+Shift+S), hoặc kéo-thả ảnh vào panel này.', en: 'Tip: Ctrl+V to paste a fresh screenshot (Win+Shift+S), or drag & drop images onto this panel.' },
   'ocr.filesSelected': { vi: 'Đã chọn {n} ảnh', en: '{n} images selected' },
   'ocr.clearFiles': { vi: 'bỏ chọn', en: 'clear' },
   'ocr.starting': { vi: 'đang khởi động…', en: 'starting…' },

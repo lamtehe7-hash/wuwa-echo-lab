@@ -276,7 +276,8 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
           ><IconInfo size={13} className="mr-1 inline align-[-2px]" />{t('inv.legendToggle')}</button>
           <span className="text-slate-500">{t('inv.count', { shown: rows.length, total: echoes.length })}</span>
         </div>
-        {view === 'table' && selCount > 0 && (
+        {/* K7: thanh chọn/refund dùng CHUNG cho cả bảng lẫn lưới */}
+        {selCount > 0 && (
           <div className="space-y-1 rounded border border-rose-900/60 bg-rose-950/20 px-2 py-1.5">
             {/* F9 (task 58 + review 16/07 #6): nhắc hoàn tài nguyên TRƯỚC khi bấm xoá (toast là
                 quá muộn) — SỐ THẬT của lựa chọn qua recycleRefund, chỉ hiện khi có gì để hoàn */}
@@ -307,10 +308,30 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
       ) : view === 'grid' ? (
         <div className="grid items-start gap-2 p-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {rows.map(({ r, advice }) => (
-            <div key={r.echo.id} className={r.echo.trash ? 'opacity-50' : ''}>
+            <div key={r.echo.id} className={`relative ${r.echo.trash ? 'opacity-50' : ''}`}>
+              {/* K7: checkbox chọn hàng loạt góc trên-trái (echo khoá không chọn được); label đệm
+                  đủ hit-target 44/36px, stopPropagation để bấm không mở modal Sửa */}
+              {!r.echo.lock && (
+                <label
+                  className="absolute left-0 top-0 z-10 flex h-11 w-11 cursor-pointer items-start p-1.5 sm:h-9 sm:w-9"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    aria-label={t('inv.selectRow')}
+                    checked={selected.has(r.echo.id)}
+                    onChange={() => toggleRow(r.echo.id)}
+                    className="h-4 w-4 accent-sky-500"
+                  />
+                </label>
+              )}
               {/* div (không phải button) để chân card chứa được ScoreBadge (button popover);
                   bấm card = sửa (ScoreBadge tự stopPropagation), đường bàn phím là nút "sửa" bên dưới */}
-              <div className="cursor-pointer" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>
+              <div
+                className={`cursor-pointer ${selected.has(r.echo.id) && !r.echo.lock ? 'rounded-lg ring-2 ring-sky-500' : ''}`}
+                title={t('ranking.editTip')}
+                onClick={() => onEdit(r.echo)}
+              >
                 <EchoCard
                   echo={r.echo}
                   compact

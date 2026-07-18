@@ -483,7 +483,7 @@ const DICT: Record<string, Entry> = {
   'ocr.title': { vi: 'Import từ ảnh (OCR trên máy)', en: 'Import from image (on-device OCR)' },
   // I1 (ui-redesign): dropzone làm mặt tiền
   'ocr.dropTitle': { vi: 'Thả ảnh panel echo vào đây', en: 'Drop echo-panel screenshots here' },
-  'ocr.dropHint': { vi: 'hoặc Ctrl+V dán ảnh vừa chụp · bấm để chọn file', en: 'or Ctrl+V a fresh screenshot · click to browse' },
+  'ocr.dropHint': { vi: 'hoặc Ctrl+V dán ảnh vừa chụp · bấm để chọn file (chọn được nhiều ảnh cùng lúc)', en: 'or Ctrl+V a fresh screenshot · click to browse (multiple images at once supported)' },
   'ocr.dropBest': { vi: 'Tốt nhất: screenshot tiếng Anh 1920×1080 · OCR chạy trên máy, không upload', en: 'Best: English screenshots at 1920×1080 · OCR runs locally, nothing is uploaded' },
   'ocr.reqTitle': { vi: 'Yêu cầu ảnh', en: 'Image requirements' },
   'ocr.helpDetail': {

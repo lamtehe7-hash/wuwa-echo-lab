@@ -70,8 +70,9 @@ export default function BuildEditor({ profile, override, activeSet, onChange }: 
       <div className="grid grid-cols-3 gap-2">
         {(['atk', 'hp', 'def'] as const).map((k) => (
           <label key={k} className="flex flex-col gap-0.5 text-[11px] text-slate-400">
-            {/* B3: ★ (chỉ số scale) có InfoTip giải thích — hover-only title là anti-pattern H6 */}
-            <span className={`flex items-center ${r.scaling === k ? 'text-emerald-300' : ''}`}>
+            {/* B3: ★ (chỉ số scale) có InfoTip giải thích — hover-only title là anti-pattern H6.
+                min-h-5 = chiều cao nút ⓘ (text-sm) — 3 hàng nhãn bằng nhau kẻo input cột có ★ tụt xuống */}
+            <span className={`flex min-h-5 items-center ${r.scaling === k ? 'text-emerald-300' : ''}`}>
               Base {SCALE_LABEL[k]}{r.scaling === k ? ' ★' : ''}
               {r.scaling === k && <InfoTip label={t('build.baseAtkTip')}>{t('build.baseAtkTip')}</InfoTip>}
             </span>

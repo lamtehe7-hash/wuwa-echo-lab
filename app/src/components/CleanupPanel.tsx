@@ -17,6 +17,13 @@ const RULE_LABEL: Record<CleanupRuleType, string> = {
   'low-rv': 'cleanup.rule.r3',
   'keep-top-n': 'cleanup.rule.r4',
 }
+/** P2 (ui-redesign): nhãn chip rút 1 dòng → mô tả đầy đủ nằm ở title */
+const RULE_DESC: Record<CleanupRuleType, string> = {
+  'no-owner': 'cleanup.desc.r1',
+  'cost-no-crit': 'cleanup.desc.r2',
+  'low-rv': 'cleanup.desc.r3',
+  'keep-top-n': 'cleanup.desc.r4',
+}
 
 interface Props {
   echoes: Echo[]
@@ -58,7 +65,10 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
       <div className="mt-2 space-y-2 text-xs">
         <div className="flex flex-wrap gap-1.5">
           {RULES.map((r) => (
-            <button key={r} type="button" aria-pressed={ruleType === r} className={chip(ruleType === r)} onClick={() => setRuleType(r)}>
+            <button
+              key={r} type="button" aria-pressed={ruleType === r} className={`whitespace-nowrap ${chip(ruleType === r)}`}
+              title={t(RULE_DESC[r])} onClick={() => setRuleType(r)}
+            >
               {t(RULE_LABEL[r])}
             </button>
           ))}
@@ -106,11 +116,14 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
           </ul>
         )}
 
+        {/* P2: disabled = slate trung tính — amber CHỈ khi thật sự có gì để đánh dấu */}
         <button
           type="button"
           disabled={matches.length === 0}
           title={matches.length === 0 ? t('cleanup.applyDisabled') : undefined}
-          className="rounded bg-amber-700 px-3 py-1.5 font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40"
+          className={`rounded px-3 py-1.5 font-semibold ${matches.length === 0
+            ? 'cursor-not-allowed bg-slate-800 text-slate-500'
+            : 'bg-amber-700 text-white hover:bg-amber-600'}`}
           onClick={() => onApply(matches.map((m) => m.echo.id))}
         >
           {t('cleanup.apply', { n: matches.length })}

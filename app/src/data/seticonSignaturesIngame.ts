@@ -1,5 +1,5 @@
 // FILE SINH TỰ ĐỘNG — đừng sửa tay. Chạy lại: npx tsx scripts/gen-seticon-ingame.mts "<dir screenshot>"
-// Biến thể chữ ký set-icon từ BADGE IN-GAME THẬT (screenshot kho 1080p 18/07/2026, 33 set) —
+// Biến thể chữ ký set-icon từ BADGE IN-GAME THẬT (screenshot kho 1080p 18/07/2026, 34 set) —
 // gộp với template game8 (seticonSignatures.ts) trong seticon.ts templates(). Đổi pipeline seticon → regen.
 
 import type { SetIconSignature } from './seticonSignatures'
@@ -29,6 +29,7 @@ export const SET_ICON_SIGNATURES_INGAME: SetIconSignature[] = [
   { id: 'reel-of-spliced-memories', b64: 'AAAOK0Sq3G8rDgAAM1WO99Vjo933jlVNd+pxRAAAlbvuv//mM/hqAABV4///gONEM/+OCTyqzcz3cdUAM/+jIrvxYzzdXNUAEY6VAACO1e7/gNUAAFWqAABA1f//1dUAAE7xgAAAqv8z1bgAABzN1TwOh6rE1RwAAAArov+qgOa7MgAAAAAAEWa/qmYRAAAA' },
   { id: 'rejuvenating-glow', b64: 'AAAAADP/zAAAAAAAAAAAAL//9yMAAAAAAAAAANX//ysAAAAAAAAAANX//ysAAAAAMzMzPeb//4A9MzMp///////////////d///////////////mwv/////////////Mo//mcO7//4BmZmZSmf94ANX//ysAAAAAPNUHANX//ysAAAAACikAAIj/4BEAAAAA' },
   { id: 'rite-of-gilded-revelation', b64: 'AAAAAAAAGgAiAAAAAAAAAAkiAAAAMwAAAAAAABFegGYAABoAAACIswkATe7VAABmAAAAM8wAADP/zAAAAAAA3cwAADP/7iIAACJv95EAEXf/iAAAgMRVRAAau///AABVAAAAIsz397MJAAlVAAAAAGZmAAAAAGYJAAAAAAAAAAAAGgAAAAAAAAAiAFUaAAAA' },
+  { id: 'shadow-of-shattered-dreams', b64: 'AM3///////////iAqoCq////////jlVN/7bI////////tpKS////7oCAgICq4///tvPIdQAAAAAAYcj/K9yAAAAAAAAAAHj3//+AAAAAAAAAAFXM//+AAAAAAAAAAFXM//+AAAAAAAAAAFXM+P+AAABJNwAASaTiVeqAAACqsVWA1epVADJHAACO1dX3qjIA' },
   { id: 'sierra-gale', b64: 'ACkKAAAAAAAACtYzKfXWAAAAAAAArf8z1v9cAAAAAAAAUv8z/9YKHwDMrQApM////9YK4D3r6z3rXP////8zzADMKQDMZv//UvVcowAAAADMXP8zAK3/1goAACnW/9YpAArW/60AKfX/1goAAAAAuNYKCszMCgAAAAAACtbW1lIAAAAAAAAAACnW1goAAAAA' },
   { id: 'song-of-feathered-trace', b64: 'ABy/AAAAAAAAAAAAACvVAAAAAAAAK3GAALjxVQAAAABj6v+OANX/sRUAACPq/+NHACv///+qDgAAAAAAABWq1b//lYBAAAAAABWq8b/V///cVQAAAABO//+q////sQ4ADgAATtX//7/V1VUABwAAADmAlf/V1XEAAAcAAAAABzJVVSMAAAAAABUAAAAAAAAA' },
   { id: 'sound-of-true-name', b64: 'AAAAAAC2QwAAAAAAAAAAEm3qwTcAAAAAAAA+wu279c6GBQAAABXVvB6HeE/noQAAAJLGEiQAH7aktgAAuO3tcQAAABUy88KqatvbBw4AACs587wjAFPbc4AvbVuGtgAAAACx84xEbYbbXgAAAAAKVbb16rZPAAAAAAAAAADLoQAAAAAAAAAAAACeHgAAAAAA' },

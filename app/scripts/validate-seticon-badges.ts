@@ -135,7 +135,7 @@ async function main() {
     // (b) hàng tên echo "+NN" + badge tròn ở ĐẦU panel phải = đầu vào classifier.
     // Đo trên screenshot 1920×1080 17/07: dropdown ≈ (222..590, 105..152), tên+badge ≈ (1500..1860, 145..185).
     const dropCrop = cropImageData(colorImg, {
-      x: Math.round(0.09 * W), y: Math.round(0.085 * H), w: Math.round(0.26 * W), h: Math.round(0.075 * H),
+      x: Math.round(0.145 * W), y: Math.round(0.085 * H), w: Math.round(0.135 * W), h: Math.round(0.075 * H),
     })
     const dropUp = resizeImageData(dropCrop, dropCrop.width * 2, dropCrop.height * 2)
     const truth = parseEchoText((await recognize(toPngBuf(binarize(dropUp)))).text).set ?? null

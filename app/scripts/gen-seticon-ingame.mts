@@ -26,7 +26,8 @@ const __dir = dirname(fileURLToPath(import.meta.url))
 const APP = resolve(__dir, '..')
 const CHAR_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,%+-:/() '
 const NEAR = 25 // 2 chữ ký cùng badge asset thì d ≈ 0–20 (đo 18/07); khác asset ≥ 40
-const MIN_CLUSTER = 2 // outlier (icon đang-đeo/lock) chỉ xuất hiện lẻ tẻ
+// outlier (icon đang-đeo/lock) chỉ xuất hiện lẻ tẻ; --min-cluster 1 CHỈ khi đã kiểm tay dump circle
+const MIN_CLUSTER = process.argv.includes('--min-cluster') ? Number(process.argv[process.argv.indexOf('--min-cluster') + 1]) : 2
 
 const dir = process.argv.slice(2).find((a) => !a.startsWith('--'))
 if (!dir) {
@@ -70,7 +71,7 @@ async function main() {
     const colorImg = toImg(PNG.sync.read(readFileSync(join(dir!, f))))
     const { width: W, height: H } = colorImg
     const dropUp = (() => {
-      const c = cropImageData(colorImg, { x: Math.round(0.09 * W), y: Math.round(0.085 * H), w: Math.round(0.26 * W), h: Math.round(0.075 * H) })
+      const c = cropImageData(colorImg, { x: Math.round(0.145 * W), y: Math.round(0.085 * H), w: Math.round(0.135 * W), h: Math.round(0.075 * H) })
       return resizeImageData(c, c.width * 2, c.height * 2)
     })()
     const truth = parseEchoText((await recognize(toPngBuf(binarize(dropUp)))).text).set

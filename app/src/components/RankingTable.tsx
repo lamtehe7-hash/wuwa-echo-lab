@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { CharacterProfile, Echo, MainStatKey } from '../types'
 import { echoDisplayName, findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
@@ -29,6 +29,9 @@ interface Props {
   onJumpToChar?: (id: string) => void
   /** U7 (task 60): echo id → nhân vật đang ghim bộ chứa echo đó (badge "Đang dùng bởi X") */
   pinnedBy?: Map<string, PinnedOwner[]>
+  /** K8 (ui-redesign): node đổi nhanh nhân vật (App truyền CharacterPicker) — toolbar luôn
+   *  nói rõ "Chấm theo: ai" vì điểm/tư vấn phụ thuộc profile đang chọn */
+  charPicker?: ReactNode
   onDelete: (id: string) => void
   /** Xoá hàng loạt (App bỏ qua echo khoá + toast hoàn tác cả cụm) */
   onDeleteMany: (ids: string[]) => void
@@ -77,7 +80,7 @@ type SortKey = (typeof SORT_KEYS)[number]
 /** Key i18n của option sort: score → inv.sortScore … */
 const SORT_LABEL_KEY: Record<SortKey, string> = { score: 'inv.sortScore', rv: 'inv.sortRv', level: 'inv.sortLevel', new: 'inv.sortNew' }
 
-export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, pinnedBy, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
+export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, pinnedBy, charPicker, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
   const t = useT()
   const tm = useTMessage()
   const fmtN = useFmtN()
@@ -209,6 +212,13 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
           <select className={selCls} value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} aria-label={t('inv.sortScore')}>
             {SORT_KEYS.map((k) => <option key={k} value={k}>{t(SORT_LABEL_KEY[k])}</option>)}
           </select>
+          {/* K8: điểm/tư vấn phụ thuộc nhân vật đang chọn — nhắc ngay tại toolbar + đổi được tại chỗ */}
+          {charPicker && (
+            <span className="flex items-center gap-1.5">
+              <span className="text-slate-500">{t('inv.scoringFor')}</span>
+              {charPicker}
+            </span>
+          )}
           <span className="flex overflow-hidden rounded border border-slate-700">
             {(['table', 'grid'] as const).map((v) => (
               <button

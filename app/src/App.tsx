@@ -543,6 +543,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               bestOwners={bestOwnersByEcho}
               onJumpToChar={jumpToChar}
               pinnedBy={pinnedBy}
+              charPicker={<CharacterPicker value={charId} overrides={overrides} onChange={switchChar} />}
               onDelete={deleteEcho}
               onDeleteMany={deleteMany}
               onToggleFlag={toggleFlag}

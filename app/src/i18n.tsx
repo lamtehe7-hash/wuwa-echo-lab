@@ -99,6 +99,8 @@ const DICT: Record<string, Entry> = {
   'inv.viewTable': { vi: 'Xem dạng bảng', en: 'Table view' },
   'inv.viewGrid': { vi: 'Xem dạng lưới card', en: 'Card grid view' },
   'inv.flagLock': { vi: 'Khoá — không xoá được (kể cả hàng loạt), solver vẫn dùng', en: 'Lock — cannot be deleted (incl. bulk), solver still uses it' },
+  // K8 (ui-redesign): toolbar kho nhắc đang chấm điểm theo nhân vật nào
+  'inv.scoringFor': { vi: 'Chấm theo:', en: 'Scoring for:' },
   // K6 (ui-redesign): nút ẩn/hiện chú giải substat
   'inv.legendToggle': { vi: 'Chú thích substat', en: 'Substat legend' },
   // K4 (ui-redesign): cờ Bỏ dùng icon ban (không phải 🗑) — tooltip nói rõ "không xoá"

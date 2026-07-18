@@ -459,9 +459,15 @@ const DICT: Record<string, Entry> = {
 
   // ── OcrImport ──
   'ocr.title': { vi: '📷 Import từ ảnh (beta)', en: '📷 Import from image (beta)' },
-  'ocr.help': {
-    vi: 'Beta — hoạt động tốt nhất với screenshot panel echo tiếng Anh, độ phân giải 1920×1080. Tool tự nhận tên echo (dòng "+25") và sonata set (icon tròn cạnh "+25", hoặc chữ trong mục "Sonata Effect" nếu có trong ảnh). Luôn kiểm tra lại kết quả trước khi lưu — OCR có thể đọc sai.',
-    en: 'Beta — works best with English echo-panel screenshots at 1920×1080. The echo name ("+25" line) and sonata set (round icon next to "+25", or the "Sonata Effect" text when visible) are detected automatically. Always double-check results before saving — OCR can misread.',
+  // I2 (ui-redesign): cảnh báo beta 1 dòng + "chi tiết" mở rộng — hết chiếm mặt tiền panel
+  'ocr.helpShort': {
+    vi: 'Beta — tốt nhất với screenshot panel echo tiếng Anh 1920×1080; luôn kiểm tra lại trước khi lưu.',
+    en: 'Beta — best with English echo-panel screenshots at 1920×1080; always double-check before saving.',
+  },
+  'ocr.helpMore': { vi: 'chi tiết', en: 'details' },
+  'ocr.helpDetail': {
+    vi: 'Tool tự nhận tên echo (dòng "+25") và sonata set (icon tròn cạnh "+25", hoặc chữ trong mục "Sonata Effect" nếu có trong ảnh). OCR có thể đọc sai — đối chiếu kết quả trước khi lưu.',
+    en: 'The echo name ("+25" line) and sonata set (round icon next to "+25", or the "Sonata Effect" text when visible) are detected automatically. OCR can misread — review results before saving.',
   },
   'ocr.run': { vi: 'Chạy OCR ({n} ảnh)', en: 'Run OCR ({n} images)' },
   'ocr.pasteHint': { vi: 'Mẹo: Ctrl+V dán ảnh vừa chụp (Win+Shift+S), hoặc kéo-thả ảnh vào panel này.', en: 'Tip: Ctrl+V to paste a fresh screenshot (Win+Shift+S), or drag & drop images onto this panel.' },

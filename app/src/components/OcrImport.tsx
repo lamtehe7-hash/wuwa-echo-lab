@@ -358,7 +358,15 @@ export default function OcrImport({ onAdd }: Props) {
             ))}
           </div>
         </div>
-        <p className="text-xs text-amber-500/90">{t('ocr.help')}</p>
+        {/* I2 (ui-redesign): cảnh báo beta 1 dòng, phần dài gấp trong <details> — summary inline
+            (marker native mất khi inline → affordance = gạch chấm, gotcha §5 HANDOVER) */}
+        <div className="text-xs text-amber-500/90">
+          {t('ocr.helpShort')}{' '}
+          <details className="inline-block align-baseline">
+            <summary className="inline cursor-pointer text-amber-400 underline decoration-dotted">{t('ocr.helpMore')}</summary>
+            <span className="mt-1 block max-w-prose text-amber-500/80">{t('ocr.helpDetail')}</span>
+          </details>
+        </div>
       </div>
 
       <label className="flex items-center gap-1.5 text-xs text-slate-400">

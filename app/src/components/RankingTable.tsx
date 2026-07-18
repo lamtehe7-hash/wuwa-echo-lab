@@ -71,6 +71,7 @@ function BanIcon() {
   )
 }
 const VIEW_KEY = 'wuwa-inv-view'
+const LEGEND_KEY = 'wuwa-inv-legend'
 const SORT_KEYS = ['score', 'rv', 'level', 'new'] as const
 type SortKey = (typeof SORT_KEYS)[number]
 /** Key i18n của option sort: score → inv.sortScore … */
@@ -100,6 +101,16 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
   const changeView = (v: 'table' | 'grid') => {
     setView(v)
     try { localStorage.setItem(VIEW_KEY, v) } catch { /* ignore */ }
+  }
+  // K6 (ui-redesign): legend substat ẩn/hiện được — không chiếm cố định 1 hàng; nhớ lựa chọn
+  const [legendOpen, setLegendOpen] = useState(() => {
+    try { return localStorage.getItem(LEGEND_KEY) !== '0' } catch { return true }
+  })
+  const toggleLegend = () => {
+    setLegendOpen((prev) => {
+      try { localStorage.setItem(LEGEND_KEY, prev ? '0' : '1') } catch { /* ignore */ }
+      return !prev
+    })
   }
 
   // Option lọc lấy từ những gì THẬT SỰ có trong kho (danh sách đầy đủ 34 set / 13 main quá dài)
@@ -238,7 +249,14 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
               onClick={() => setExcludedOnly(!excludedOnly)}
             >{t('inv.excludedOnly', { n: trashCount })}</button>
           )}
-          <span className="ml-auto text-slate-500">{t('inv.count', { shown: rows.length, total: echoes.length })}</span>
+          {/* K6: nút ẩn/hiện chú giải màu substat (trạng thái nhớ ở localStorage) */}
+          <button
+            type="button"
+            className={`ml-auto rounded border border-slate-700 px-2 py-1 ${legendOpen ? 'bg-slate-800 text-slate-300' : 'text-slate-500 hover:bg-slate-800'}`}
+            aria-pressed={legendOpen}
+            onClick={toggleLegend}
+          >? {t('inv.legendToggle')}</button>
+          <span className="text-slate-500">{t('inv.count', { shown: rows.length, total: echoes.length })}</span>
         </div>
         {view === 'table' && selCount > 0 && (
           <div className="space-y-1 rounded border border-rose-900/60 bg-rose-950/20 px-2 py-1.5">
@@ -264,7 +282,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
         )}
       </div>
 
-      <SubstatLegend className="mx-1 mb-2" />
+      {legendOpen && <SubstatLegend className="mx-1 mb-2" />}
 
       {rows.length === 0 ? (
         <p className="p-4 text-sm text-slate-500">{t('inv.emptyFiltered')}</p>

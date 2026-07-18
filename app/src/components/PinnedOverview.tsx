@@ -39,7 +39,7 @@ export default function PinnedOverview({ rows, onJump }: {
           <li key={profile.id}>
             <button
               type="button"
-              className="group flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+              className="group flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm hover:bg-slate-800"
               title={t('pinned.openTip')}
               onClick={() => onJump(profile.id)}
             >

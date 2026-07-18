@@ -223,7 +223,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
           {/* K8: điểm/tư vấn phụ thuộc nhân vật đang chọn — nhắc ngay tại toolbar + đổi được tại chỗ */}
           {charPicker && (
             <span className="flex items-center gap-1.5">
-              <span className="text-slate-500">{t('inv.scoringFor')}</span>
+              <span className="whitespace-nowrap text-slate-500">{t('inv.scoringFor')}</span>
               {charPicker}
             </span>
           )}

@@ -484,7 +484,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
           <button
             key={k}
             type="button"
-            className={`rounded-t px-3 py-1.5 ${tab === k ? 'border border-b-0 border-slate-700 bg-slate-900 font-medium text-slate-100' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`whitespace-nowrap rounded-t px-3 py-1.5 ${tab === k ? 'border border-b-0 border-slate-700 bg-slate-900 font-medium text-slate-100' : 'text-slate-400 hover:text-slate-200'}`}
             onClick={() => setTab(k)}
           >
             {t(`tabs.${k}`)}

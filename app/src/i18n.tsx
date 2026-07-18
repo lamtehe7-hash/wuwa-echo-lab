@@ -99,7 +99,8 @@ const DICT: Record<string, Entry> = {
   'inv.viewTable': { vi: 'Xem dạng bảng', en: 'Table view' },
   'inv.viewGrid': { vi: 'Xem dạng lưới card', en: 'Card grid view' },
   'inv.flagLock': { vi: 'Khoá — không xoá được (kể cả hàng loạt), solver vẫn dùng', en: 'Lock — cannot be deleted (incl. bulk), solver still uses it' },
-  'inv.flagTrash': { vi: 'Loại — solver bỏ qua echo này', en: 'Exclude — the solver skips this echo' },
+  // K4 (ui-redesign): cờ Bỏ dùng icon ban (không phải 🗑) — tooltip nói rõ "không xoá"
+  'inv.flagTrashTip': { vi: 'Đánh dấu Bỏ — không tính khi gán bộ, không xoá', en: 'Mark as Excluded — skipped when assigning, not deleted' },
   'inv.excludedOnly': { vi: '🗑 Đã loại ({n})', en: '🗑 Excluded ({n})' },
   'inv.lockedNoDelete': { vi: 'Echo đang khoá — mở khoá trước khi xoá', en: 'Echo is locked — unlock before deleting' },
   'inv.selectAll': { vi: 'Chọn tất cả đang hiện (trừ echo khoá)', en: 'Select all visible (except locked)' },

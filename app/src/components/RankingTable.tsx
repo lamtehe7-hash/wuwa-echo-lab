@@ -55,6 +55,21 @@ const VERDICT_ACTIVE: Record<string, string> = {
 }
 
 const VERDICTS = ['keep-tuning', 'done', 'usable', 'trash'] as const
+
+/** K4 (ui-redesign): icon "ban" cho cờ Bỏ — KHÔNG dùng 🗑 (nhầm với xoá thật);
+ *  SVG stroke currentColor nên tint được theo state (emoji thì không — gotcha task 64) */
+function BanIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className="inline-block align-[-3px]" aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="m5.6 5.6 12.8 12.8" />
+    </svg>
+  )
+}
 const VIEW_KEY = 'wuwa-inv-view'
 const SORT_KEYS = ['score', 'rv', 'level', 'new'] as const
 type SortKey = (typeof SORT_KEYS)[number]
@@ -280,7 +295,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                   {advice.verdict === 'keep-tuning' && <span className="text-slate-500"> → {t('ranking.expected', { n: advice.expectedFinal.toFixed(0) })}</span>}
                 </span>
                 <span className="shrink-0">
-                  {/* 🔒/🗑 là emoji → CSS color KHÔNG đổi màu glyph (gotcha task 64) — trạng thái
+                  {/* 🔒 là emoji → CSS color KHÔNG đổi màu glyph (gotcha task 64) — trạng thái
                       active phải bằng NỀN+ring như AnchorToggle; inactive mờ bằng opacity */}
                   <button
                     className={`mr-1 rounded px-0.5 ${r.echo.lock ? 'bg-amber-500/30 ring-1 ring-amber-500/70' : 'opacity-40 hover:opacity-100'}`}
@@ -288,11 +303,13 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                     onClick={() => onToggleFlag(r.echo.id, 'lock')}
                   >🔒</button>
                   <button
-                    className={`mr-2 rounded px-0.5 ${r.echo.trash ? 'bg-rose-500/30 ring-1 ring-rose-500/70' : 'opacity-40 hover:opacity-100'}`}
-                    title={t('inv.flagTrash')} aria-label={t('inv.flagTrash')} aria-pressed={!!r.echo.trash}
+                    className={`mr-2 rounded px-0.5 ${r.echo.trash ? 'bg-rose-500/30 text-rose-300 ring-1 ring-rose-500/70' : 'opacity-40 hover:opacity-100'}`}
+                    title={t('inv.flagTrashTip')} aria-label={t('inv.flagTrashTip')} aria-pressed={!!r.echo.trash}
                     onClick={() => onToggleFlag(r.echo.id, 'trash')}
-                  >🗑</button>
+                  ><BanIcon /></button>
                   <button className="mr-2 text-slate-500 hover:text-sky-300" onClick={() => onEdit(r.echo)}>{t('ranking.edit')}</button>
+                  {/* K4: divider tách cụm cờ (đảo được) khỏi xoá thật */}
+                  <span className="mx-1 inline-block h-3.5 w-px bg-slate-800 align-middle" aria-hidden />
                   <button
                     className="text-slate-600 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-30"
                     disabled={!!r.echo.lock}
@@ -398,19 +415,20 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                       </td>
                     )}
                     <td className="whitespace-nowrap text-right">
-                      {/* emoji → trạng thái bằng NỀN+ring, không dùng text-color (gotcha task 64) */}
+                      {/* 🔒 emoji → trạng thái bằng NỀN+ring, không dùng text-color (gotcha task 64) */}
                       <button
                         className={`mr-1 rounded px-0.5 text-xs ${r.echo.lock ? 'bg-amber-500/30 ring-1 ring-amber-500/70' : 'opacity-40 hover:opacity-100'}`}
                         title={t('inv.flagLock')} aria-label={t('inv.flagLock')} aria-pressed={!!r.echo.lock}
                         onClick={() => onToggleFlag(r.echo.id, 'lock')}
                       >🔒</button>
                       <button
-                        className={`mr-2 rounded px-0.5 text-xs ${r.echo.trash ? 'bg-rose-500/30 ring-1 ring-rose-500/70' : 'opacity-40 hover:opacity-100'}`}
-                        title={t('inv.flagTrash')} aria-label={t('inv.flagTrash')} aria-pressed={!!r.echo.trash}
+                        className={`mr-2 rounded px-0.5 text-xs ${r.echo.trash ? 'bg-rose-500/30 text-rose-300 ring-1 ring-rose-500/70' : 'opacity-40 hover:opacity-100'}`}
+                        title={t('inv.flagTrashTip')} aria-label={t('inv.flagTrashTip')} aria-pressed={!!r.echo.trash}
                         onClick={() => onToggleFlag(r.echo.id, 'trash')}
-                      >🗑</button>
+                      ><BanIcon /></button>
                       <button className="mr-2 text-xs text-slate-500 hover:text-sky-300" title={t('ranking.editTip')} onClick={() => onEdit(r.echo)}>{t('ranking.edit')}</button>
-                      {/* Xoá ngay — App hiện toast kèm "Hoàn tác"; echo khoá thì chặn */}
+                      {/* K4: divider tách cụm cờ (đảo được) khỏi xoá thật; xoá có toast "Hoàn tác", echo khoá thì chặn */}
+                      <span className="mx-1 inline-block h-3.5 w-px bg-slate-800 align-middle" aria-hidden />
                       <button
                         className="text-xs text-slate-600 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-30"
                         disabled={!!r.echo.lock}

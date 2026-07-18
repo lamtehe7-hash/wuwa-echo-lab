@@ -242,7 +242,7 @@ const clickNthFlag = (prefix, n) => evaluate(`(() => {
 })()`)
 check('lock-first', await clickNthFlag('Khoá', 0))
 await sleep(200)
-check('trash-second', await clickNthFlag('Loại', 1))
+check('trash-second', await clickNthFlag('Đánh dấu Bỏ', 1))
 await sleep(250)
 check('excluded-chip', await bodyHas('Đã loại (1)'))
 check('excluded-filter-on', await clickByText('Đã loại (1)'))

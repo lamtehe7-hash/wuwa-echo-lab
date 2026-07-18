@@ -3,6 +3,7 @@ import type { ProfileOverride } from '../store'
 import { WEAPONS, WEAPON_TYPE_LABEL } from '../data/weapons'
 import { CHARACTER_BASE_BY_ID } from '../data/characterBase'
 import { resolveContext } from '../engine/damage'
+import InfoTip from './InfoTip'
 import { useT } from '../i18n'
 
 // Chỉnh "chỉ số nền" (vũ khí + base + buff) cho damage model THẬT. Lưu trong override.build.
@@ -50,11 +51,11 @@ export default function BuildEditor({ profile, override, activeSet, onChange }: 
         )}
       </div>
 
-      {/* Vũ khí */}
-      <label className="flex items-center justify-between gap-2 text-xs text-slate-300">
-        <span>{t('build.weapon')}</span>
+      {/* Vũ khí — B3 (ui-redesign): nhãn TRÊN control (hết wrap dọc ở cột hẹp), select full-width */}
+      <label className="flex flex-col gap-0.5 text-xs text-slate-300">
+        <span className="text-[11px] text-slate-400">{t('build.weapon')}</span>
         <select
-          className="w-52 rounded border border-slate-700 bg-slate-800 px-1 py-0.5 text-xs"
+          className="w-full rounded border border-slate-700 bg-slate-800 px-1 py-0.5 text-xs"
           value={build.weaponId ?? ''}
           onChange={(e) => patchBuild({ weaponId: e.target.value || undefined })}
         >
@@ -69,7 +70,11 @@ export default function BuildEditor({ profile, override, activeSet, onChange }: 
       <div className="grid grid-cols-3 gap-2">
         {(['atk', 'hp', 'def'] as const).map((k) => (
           <label key={k} className="flex flex-col gap-0.5 text-[11px] text-slate-400">
-            <span className={r.scaling === k ? 'text-emerald-300' : ''}>Base {SCALE_LABEL[k]}{r.scaling === k ? ' ★' : ''}</span>
+            {/* B3: ★ (chỉ số scale) có InfoTip giải thích — hover-only title là anti-pattern H6 */}
+            <span className={`flex items-center ${r.scaling === k ? 'text-emerald-300' : ''}`}>
+              Base {SCALE_LABEL[k]}{r.scaling === k ? ' ★' : ''}
+              {r.scaling === k && <InfoTip label={t('build.baseAtkTip')}>{t('build.baseAtkTip')}</InfoTip>}
+            </span>
             <input
               type="number" min={0} step={1}
               value={build.manualBase?.[k] ?? ''}

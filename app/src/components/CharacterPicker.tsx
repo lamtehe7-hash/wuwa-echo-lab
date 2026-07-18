@@ -4,6 +4,10 @@ import { ELEMENT_COLOR, ELEMENT_LABEL, ELEMENT_ORDER } from '../data/elementColo
 import type { ProfileOverride } from '../store'
 import { useT } from '../i18n'
 
+// B2 (ui-redesign): trigger là CONTROL CHÍNH của màn Tối ưu — to hơn, kèm badge role + hệ;
+// dropdown đổi flex-wrap → grid cột cố định, tên dài truncate + title (hết tràn "Xiangli Yao",
+// "Generic: Crit DPS (Liberation)").
+
 // Chọn nhân vật trực quan thay <select> trần (research/ui-ux.md B3): popover lưới chip
 // nhóm theo nguyên tố — chấm màu element + role badge + dấu ＊ khi có override trọng số.
 // Không dùng portrait (tránh vấn đề bản quyền ảnh) — màu + typography là đủ nhận diện.
@@ -53,13 +57,18 @@ export default function CharacterPicker({ value, onChange, overrides }: Props) {
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        className="flex items-center gap-1.5 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm hover:bg-slate-700/70"
+        className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-sm hover:bg-slate-700/70"
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: ELEMENT_COLOR[current.element] }} />
-        <span>{current.name}</span>
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: ELEMENT_COLOR[current.element] }} />
+        <span className="font-semibold text-slate-100">{current.name}</span>
+        {ROLE_BADGE[current.archetype] && (
+          <span className="whitespace-nowrap rounded border border-amber-500/40 px-1.5 text-[11px] text-amber-400">
+            {ROLE_BADGE[current.archetype]} · {ELEMENT_LABEL[current.element]}
+          </span>
+        )}
         {overrides[value] && <span className="text-amber-400" title={t('picker.overridden')}>＊</span>}
         <span className="text-xs text-slate-500">▾</span>
       </button>
@@ -89,23 +98,25 @@ export default function CharacterPicker({ value, onChange, overrides }: Props) {
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: ELEMENT_COLOR[el] }} />
                   {ELEMENT_LABEL[el]}
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                {/* B2: grid cột cố định — tên dài truncate + title, hết wrap phá layout */}
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                   {group.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       role="option"
                       aria-selected={c.id === value}
-                      className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs ${
+                      title={c.name}
+                      className={`flex min-w-0 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
                         c.id === value
                           ? 'border-sky-500 bg-sky-950/50 text-slate-100'
                           : 'border-slate-700 text-slate-300 hover:bg-slate-800'
                       }`}
                       onClick={() => { onChange(c.id); setOpen(false) }}
                     >
-                      <span>{c.name}</span>
-                      <span className="text-[10px] text-slate-500">{ROLE_BADGE[c.archetype] ?? ''}</span>
-                      {overrides[c.id] && <span className="text-amber-400" title={t('picker.overridden')}>＊</span>}
+                      <span className="min-w-0 flex-1 truncate text-left">{c.name}</span>
+                      <span className="shrink-0 text-[10px] text-slate-500">{ROLE_BADGE[c.archetype] ?? ''}</span>
+                      {overrides[c.id] && <span className="shrink-0 text-amber-400" title={t('picker.overridden')}>＊</span>}
                     </button>
                   ))}
                 </div>

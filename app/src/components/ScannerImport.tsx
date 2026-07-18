@@ -25,9 +25,14 @@ export default function ScannerImport({
 
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900 p-3 text-sm">
-      <button className="flex w-full items-center justify-between text-left" onClick={() => setOpen(!open)}>
-        <span className="font-semibold text-slate-300">{t('scanner.title')}</span>
-        <span className="text-xs text-slate-500">{open ? '▾' : '▸'}</span>
+      {/* I3 (ui-redesign): phụ đề bán hàng ngay ở header (thấy cả khi đóng) + caret dạng chip
+          bordered — header đọc ra là "bấm để mở" thay vì 1 mũi tên mờ */}
+      <button className="flex w-full items-center justify-between gap-2 text-left" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="min-w-0">
+          <span className="font-semibold text-slate-300">{t('scanner.title')}</span>
+          <span className="ml-2 text-xs font-normal text-slate-500">{t('scanner.subtitle')}</span>
+        </span>
+        <span className="shrink-0 rounded border border-slate-700 px-2 py-0.5 text-xs text-slate-400">{open ? '▾' : '▸'}</span>
       </button>
       {open && (
         <div className="mt-2 space-y-2">

@@ -40,7 +40,8 @@ import type { BuildContext, CharacterProfile, Echo, LoadoutResult } from './type
 // Kho / Tối ưu / Đội hình / Import. Trạng thái tab + nhân vật sync vào URL hash
 // (#optimize?char=changli) để F5/share giữ ngữ cảnh; replaceState để không spam history.
 
-const TABS = ['inventory', 'optimize', 'roster', 'import'] as const
+// C4 (ui-redesign): tab 'plan' gom 5 panel kế hoạch (trước rải ở Kho + Đội hình)
+const TABS = ['inventory', 'optimize', 'plan', 'roster', 'import'] as const
 type Tab = (typeof TABS)[number]
 
 // Nguồn dự án (mã nguồn mở) — hiện ở header + footer để người mở tool biết xuất xứ / cách đóng góp.
@@ -424,11 +425,15 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   const invCount = t('app.inventoryCount', { n: echoes.length, c4: stats[4], c3: stats[3], c1: stats[1] })
 
   const empty = echoes.length === 0
+  // I4 (ui-redesign): "nhập tay" từ EmptyState — mở layout Kho thật (có form) dù kho trống,
+  // vì EmptyState THAY cả layout nên form "Thêm echo" không tồn tại lúc đó
+  const [showManual, setShowManual] = useState(false)
   const emptyState = (
     <EmptyState
       onOcr={() => setTab('import')}
       onImportJson={() => fileRef.current?.click()}
       onDemo={() => replaceInventory(DEMO_ECHOES)}
+      onManual={() => { setShowManual(true); setTab('inventory') }}
     />
   )
 
@@ -479,7 +484,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
           <button
             key={k}
             type="button"
-            className={`rounded-t px-3 py-1.5 ${tab === k ? 'border border-b-0 border-slate-700 bg-slate-900 font-medium text-slate-100' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`whitespace-nowrap rounded-t px-3 py-1.5 ${tab === k ? 'border border-b-0 border-slate-700 bg-slate-900 font-medium text-slate-100' : 'text-slate-400 hover:text-slate-200'}`}
             onClick={() => setTab(k)}
           >
             {t(`tabs.${k}`)}
@@ -488,7 +493,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
         ))}
       </nav>
 
-      {tab === 'inventory' && (empty ? emptyState : (
+      {tab === 'inventory' && (empty && !showManual ? emptyState : (
         <div className="space-y-3">
         {triageActive ? (
           // F4 (task 63): view duyệt lần lượt thay chỗ CleanupPanel + bảng (KHÔNG modal — "Sửa" mở EchoEditModal đè lên)
@@ -526,11 +531,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
             ))}
           </span>
         </div>
-        {/* F11 (task 62): dọn kho theo luật — panel full-width TRÊN bảng (luật R1/R4 toàn roster, không
-            thuộc bảng scoped theo 1 nhân vật). Đóng mặc định (công cụ ít dùng). */}
-        <CleanupPanel echoes={echoes} profiles={allProfiles} ownersByEcho={bestOwnersByEcho} pinnedBy={pinnedBy} onApply={applyCleanup} />
-        {/* F3+F6 (task 72): kế hoạch nâng cấp — DƯỚI CleanupPanel (dọn rác trước → đầu tư sau) */}
-        <UpgradePlanPanel rows={upgradeRows} onJump={jumpToChar} onEdit={setEditingEcho} />
+        {/* C4 (ui-redesign): CleanupPanel + UpgradePlanPanel dời sang tab Kế hoạch */}
         <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
           <aside className="space-y-3">
             <EchoForm onAdd={addEcho} />
@@ -543,6 +544,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               bestOwners={bestOwnersByEcho}
               onJumpToChar={jumpToChar}
               pinnedBy={pinnedBy}
+              charPicker={<CharacterPicker value={charId} overrides={overrides} onChange={switchChar} />}
               onDelete={deleteEcho}
               onDeleteMany={deleteMany}
               onToggleFlag={toggleFlag}
@@ -749,13 +751,29 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
         </div>
       ))}
 
-      {/* U6 (task 60): tổng quan nhân vật đã ghim bộ — đầu tab Đội hình, chỉ khi có ≥1 nhân vật ghim
-          (bỏ khi kho trống: pin có thể là id cũ đã xoá → toàn "—", nhiễu) */}
-      {tab === 'roster' && !empty && pinnedRows.length > 0 && <PinnedOverview rows={pinnedRows} onJump={jumpToChar} />}
-      {/* F2 (task 58): ưu tiên farm set — KHÔNG cần kho nên hiện cả khi kho rỗng (giá trị cho user mới) */}
-      {tab === 'roster' && <SetFarmPriority profiles={allProfiles} />}
-      {/* F12 (task 61): backlog farm — CẦN kho (tồn kho vs nhu cầu) nên chỉ hiện khi !empty + có row */}
-      {tab === 'roster' && !empty && backlogRows.length > 0 && <FarmingBacklog rows={backlogRows} />}
+      {/* C4 (ui-redesign): tab Kế hoạch — gom 5 panel kế hoạch về 1 màn, 2 cột lg+ theo tần suất
+          dùng (trái: nâng cấp + backlog — cần kho; phải: farm set + dọn kho). PinnedOverview
+          full-width trên cùng (U6: chỉ khi có ≥1 nhân vật ghim & kho không trống — pin id cũ đã
+          xoá toàn "—", nhiễu). SetFarmPriority KHÔNG cần kho nên hiện cả khi kho trống (F2). */}
+      {tab === 'plan' && (
+        <div>
+          {!empty && pinnedRows.length > 0 && <PinnedOverview rows={pinnedRows} onJump={jumpToChar} />}
+          <div className="grid items-start gap-x-3 lg:grid-cols-2">
+            <div className="min-w-0">
+              {!empty && <UpgradePlanPanel rows={upgradeRows} onJump={jumpToChar} onEdit={setEditingEcho} />}
+              {!empty && backlogRows.length > 0 && <FarmingBacklog rows={backlogRows} />}
+            </div>
+            <div className="min-w-0">
+              <SetFarmPriority profiles={allProfiles} />
+              {!empty && (
+                <CleanupPanel echoes={echoes} profiles={allProfiles} ownersByEcho={bestOwnersByEcho} pinnedBy={pinnedBy} onApply={applyCleanup} />
+              )}
+            </div>
+          </div>
+          {empty && emptyState}
+        </div>
+      )}
+
       {tab === 'roster' && empty && emptyState}
       {/* Giữ mounted (chỉ ẩn CSS): RosterPanel giữ danh sách đội + kết quả trong state cục bộ —
           unmount khi chuyển tab sẽ mất sạch. (OcrImport thì NGƯỢC LẠI: cố ý unmount để nhả worker WASM.) */}

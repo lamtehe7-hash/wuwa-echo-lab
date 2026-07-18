@@ -29,10 +29,14 @@ const DICT: Record<string, Entry> = {
   // ── Tabs (điều hướng chính) ──
   'tabs.inventory': { vi: 'Kho Echo', en: 'Inventory' },
   'tabs.optimize': { vi: 'Tối ưu', en: 'Optimize' },
+  // C4 (ui-redesign): tab Kế hoạch gom 5 panel (nâng cấp/backlog/farm set/dọn kho/đã ghim)
+  'tabs.plan': { vi: 'Kế hoạch', en: 'Planner' },
   'tabs.roster': { vi: 'Đội hình', en: 'Team' },
   'tabs.import': { vi: 'Import', en: 'Import' },
   'importTab.jsonTitle': { vi: '📄 Sao lưu / khôi phục JSON', en: '📄 JSON backup / restore' },
   'scanner.title': { vi: '📥 Nhập từ scanner cộng đồng (wuwa-ocr / Kamera)', en: '📥 Import from community scanner (wuwa-ocr / Kamera)' },
+  // I3 (ui-redesign): phụ đề thấy cả khi panel đóng — người có scanner biết đây là đường nhanh
+  'scanner.subtitle': { vi: 'nhanh nhất nếu bạn chơi trên PC', en: 'fastest route if you play on PC' },
   'scanner.hint': { vi: 'Dán JSON (hoặc chọn file) do scanner echo xuất ra: wuwa-ocr / wuwa.build (ParsedEcho[]), WuWa Inventory Kamera (echoes.json), hoặc file JSON của chính tool này. Tự nhận dạng format, chuẩn hoá stat/set và snap mốc roll.', en: 'Paste JSON (or pick a file) exported by an echo scanner: wuwa-ocr / wuwa.build (ParsedEcho[]), WuWa Inventory Kamera (echoes.json), or this tool\'s own JSON. Format is auto-detected; stats/sets are normalized and rolls snapped.' },
   'scanner.or': { vi: 'hoặc dán ↓', en: 'or paste ↓' },
   'scanner.fmtApp': { vi: 'JSON của tool này', en: 'this tool\'s JSON' },
@@ -88,6 +92,9 @@ const DICT: Record<string, Entry> = {
   'inv.search': { vi: 'Tìm theo tên echo / set…', en: 'Search echo / set name…' },
   'inv.allSets': { vi: 'Mọi set', en: 'All sets' },
   'inv.allMains': { vi: 'Mọi main stat', en: 'All main stats' },
+  // K1 (ui-redesign): nhãn nhóm cho 2 cụm chip filter — hết cảnh 2 nút "Tất cả" liền kề không phân biệt
+  'inv.groupCost': { vi: 'Cost', en: 'Cost' },
+  'inv.groupVerdict': { vi: 'Tư vấn', en: 'Advice' },
   'inv.sortScore': { vi: 'Sắp xếp: Điểm', en: 'Sort: Score' },
   'inv.sortRv': { vi: 'Sắp xếp: RV', en: 'Sort: RV' },
   'inv.sortLevel': { vi: 'Sắp xếp: Level', en: 'Sort: Level' },
@@ -96,8 +103,18 @@ const DICT: Record<string, Entry> = {
   'inv.viewTable': { vi: 'Xem dạng bảng', en: 'Table view' },
   'inv.viewGrid': { vi: 'Xem dạng lưới card', en: 'Card grid view' },
   'inv.flagLock': { vi: 'Khoá — không xoá được (kể cả hàng loạt), solver vẫn dùng', en: 'Lock — cannot be deleted (incl. bulk), solver still uses it' },
-  'inv.flagTrash': { vi: 'Loại — solver bỏ qua echo này', en: 'Exclude — the solver skips this echo' },
-  'inv.excludedOnly': { vi: '🗑 Đã loại ({n})', en: '🗑 Excluded ({n})' },
+  // K5 (ui-redesign): sort bằng header bảng
+  'ranking.colLevel': { vi: 'Level', en: 'Level' },
+  'inv.sortByCol': { vi: 'Bấm để sắp xếp / đảo chiều', en: 'Click to sort / flip direction' },
+  // K8 (ui-redesign): toolbar kho nhắc đang chấm điểm theo nhân vật nào
+  'inv.scoringFor': { vi: 'Chấm theo:', en: 'Scoring for:' },
+  // K6 (ui-redesign): nút ẩn/hiện chú giải substat
+  'inv.legendToggle': { vi: 'Chú thích substat', en: 'Substat legend' },
+  // K4 (ui-redesign): cờ Bỏ dùng icon ban (không phải 🗑) — tooltip nói rõ "không xoá"
+  'inv.flagTrashTip': { vi: 'Đánh dấu Bỏ — không tính khi gán bộ, không xoá', en: 'Mark as Excluded — skipped when assigning, not deleted' },
+  // C5 (ui-redesign): khái niệm cờ trash thống nhất "Bỏ" (vi) / "Excluded" (en) toàn app;
+  // bỏ 🗑 khỏi chip (thùng rác CHỈ dành cho xoá thật — K4)
+  'inv.excludedOnly': { vi: 'Đã bỏ ({n})', en: 'Excluded ({n})' },
   'inv.lockedNoDelete': { vi: 'Echo đang khoá — mở khoá trước khi xoá', en: 'Echo is locked — unlock before deleting' },
   'inv.selectAll': { vi: 'Chọn tất cả đang hiện (trừ echo khoá)', en: 'Select all visible (except locked)' },
   'inv.selectRow': { vi: 'Chọn echo này', en: 'Select this echo' },
@@ -117,7 +134,8 @@ const DICT: Record<string, Entry> = {
   'empty.demoTitle': { vi: '🎲 Dữ liệu demo', en: '🎲 Demo data' },
   'empty.demoDesc': { vi: 'Nạp 10 echo mẫu để khám phá tính năng trước.', en: 'Load 10 sample echoes to explore the features first.' },
   'empty.steps': { vi: '① Nạp kho → ② Chọn nhân vật → ③ Tìm bộ 5 tối ưu', en: '① Load inventory → ② Pick a character → ③ Find the best 5-set' },
-  'empty.manualHint': { vi: 'Hoặc nhập tay từng echo bằng form "Thêm echo" bên cạnh.', en: 'Or add echoes manually with the "Add echo" form on the side.' },
+  // I4 (ui-redesign): nút mở form nhập tay — không giả định vị trí form trong copy
+  'empty.manualLink': { vi: 'Hoặc nhập tay từng echo →', en: 'Or add echoes manually →' },
 
   // ── App ──
   'app.subtitle': { vi: 'bản 3.5 · dữ liệu lưu trong trình duyệt', en: 'v3.5 · data stored in your browser' },
@@ -189,6 +207,10 @@ const DICT: Record<string, Entry> = {
   'farm.title': { vi: 'Ưu tiên farm set', en: 'Set farming priority' },
   'farm.subtitle': { vi: 'Set nào nên farm tiếp cho cả đội hình — không cần có sẵn trong kho.', en: 'Which sets are worth farming next for your whole roster — no inventory needed.' },
   'farm.row': { vi: 'Hợp {n} nhân vật · tốt nhất: {name}', en: 'Good for {n} characters · best: {name}' },
+  // P1 (ui-redesign): header bảng 3 cột (farm.row vẫn dùng trong tooltip FarmingBacklog)
+  'farm.colSet': { vi: 'Set', en: 'Set' },
+  'farm.colNeed': { vi: 'Cần', en: 'Need' },
+  'farm.colBest': { vi: 'Tốt nhất cho', en: 'Best for' },
   // F12 (task 61): Farming Backlog — tồn kho vs nhu cầu
   'backlog.title': { vi: 'Tồn kho vs nhu cầu farm', en: 'Stock vs farming need' },
   'backlog.subtitle': { vi: 'Đối chiếu echo đang có với nhu cầu ở trên — set nào nên dừng farm.', en: 'Match echoes you own against the demand above — which sets you can stop farming.' },
@@ -205,38 +227,42 @@ const DICT: Record<string, Entry> = {
   'backlog.demand': { vi: '{n} nhân vật', en: '{n} chars' },
   // F11 (task 62): Cleanup rule templates — dọn kho theo luật
   'cleanup.title': { vi: 'Dọn kho theo luật', en: 'Cleanup by rule' },
-  'cleanup.subtitle': { vi: 'Xem trước rồi mới đánh dấu loại — không xoá thẳng, không tự động.', en: 'Preview before flagging — nothing is deleted or run automatically.' },
+  'cleanup.subtitle': { vi: 'Xem trước rồi mới đánh dấu Bỏ — không xoá thẳng, không tự động.', en: 'Preview before marking as Excluded — nothing is deleted or run automatically.' },
   'cleanup.rule.r1': { vi: 'Không hợp ai', en: 'No good owner' },
-  'cleanup.rule.r2': { vi: 'Cost 1/3 thiếu Crit', en: 'Cost 1/3, no Crit' },
+  // P2 (ui-redesign): nhãn chip 1 dòng — mô tả đầy đủ chuyển vào title (desc.*)
+  'cleanup.rule.r2': { vi: 'Thiếu Crit', en: 'No Crit' },
   'cleanup.rule.r3': { vi: 'RV thấp', en: 'Low RV' },
-  'cleanup.rule.r4': { vi: 'Dư trong set', en: 'Set surplus' },
-  'cleanup.desc.r1': { vi: 'Loại echo không nằm trong top nhân vật hợp nhất của bất kỳ ai trong đội hình.', en: "Removes echoes that aren't a top fit for anyone in your roster." },
-  'cleanup.desc.r2': { vi: 'Loại echo cost 1 & 3 không có substat Crit Rate/DMG — thường là rác DPS.', en: 'Removes cost 1/3 echoes with no Crit Rate/DMG substat — usually DPS junk.' },
+  'cleanup.rule.r4': { vi: 'Dư set', en: 'Set surplus' },
+  'cleanup.desc.r1': { vi: 'Bỏ echo không nằm trong top nhân vật hợp nhất của bất kỳ ai trong đội hình.', en: "Excludes echoes that aren't a top fit for anyone in your roster." },
+  'cleanup.desc.r2': { vi: 'Bỏ echo cost 1 & 3 không có substat Crit Rate/DMG — thường là rác DPS.', en: 'Excludes cost 1/3 echoes with no Crit Rate/DMG substat — usually DPS junk.' },
+  'cleanup.desc.r3': { vi: 'Bỏ echo có RV (giá trị roll) thấp hơn ngưỡng bên dưới.', en: 'Excludes echoes whose roll value (RV) is below the threshold.' },
+  'cleanup.desc.r4': { vi: 'Mỗi nhóm set + cost chỉ giữ N echo RV cao nhất, bỏ phần dư.', en: 'Keeps only the top-N RV echoes per set + cost group, excludes the surplus.' },
   'cleanup.thresholdLabel': { vi: 'Ngưỡng RV', en: 'RV threshold' },
   'cleanup.topNLabel': { vi: 'Giữ top-N mỗi set+cost', en: 'Keep top-N per set+cost' },
-  'cleanup.preview': { vi: 'Sẽ đánh dấu loại {n} echo', en: 'Will flag {n} echoes' },
+  'cleanup.preview': { vi: 'Sẽ đánh dấu bỏ {n} echo', en: 'Will mark {n} echoes as Excluded' },
   'cleanup.lockedKept': { vi: 'giữ nguyên {m} echo đã khoá', en: '{m} locked kept' },
   'cleanup.reason.r1': { vi: 'không hợp nhân vật nào', en: 'no good owner' },
   'cleanup.reason.r2': { vi: 'cost {c}, không Crit', en: 'cost {c}, no Crit' },
   'cleanup.reason.r3': { vi: 'RV {rv} < {threshold}', en: 'RV {rv} < {threshold}' },
   'cleanup.reason.r4': { vi: 'hạng {rank}/{total} trong {set} cost {c}', en: 'rank {rank}/{total} in {set} cost {c}' },
-  'cleanup.apply': { vi: 'Đánh dấu loại ({n})', en: 'Flag {n} as trash' },
+  'cleanup.apply': { vi: 'Đánh dấu Bỏ ({n})', en: 'Mark {n} as Excluded' },
   'cleanup.applyDisabled': { vi: 'Không có echo khớp luật này', en: 'No echo matches this rule' },
-  'cleanup.marked': { vi: 'Đã đánh dấu loại {n} echo', en: 'Flagged {n} echoes as trash' },
+  'cleanup.marked': { vi: 'Đã đánh dấu bỏ {n} echo', en: 'Marked {n} echoes as Excluded' },
   // F4 (task 63): Triage Queue — duyệt lần lượt
   'triage.entry': { vi: '🔍 Duyệt lần lượt ({n})', en: '🔍 Review one-by-one ({n})' },
   'triage.orderWorst': { vi: 'Tệ trước', en: 'Worst first' },
   'triage.orderNewest': { vi: 'Mới trước', en: 'Newest first' },
   'triage.title': { vi: 'Duyệt lần lượt', en: 'Review queue' },
-  'triage.progress': { vi: 'Đang duyệt {i}/{n}', en: 'Reviewing {i}/{n}' },
+  // P5 (ui-redesign): tách label khỏi số đếm (số render to riêng)
+  'triage.progressLabel': { vi: 'Đang duyệt', en: 'Reviewing' },
   'triage.exit': { vi: 'Thoát', en: 'Exit' },
-  'triage.suggestTrash': { vi: '— ứng viên loại', en: '— trash candidate' },
+  'triage.suggestTrash': { vi: '— ứng viên bỏ', en: '— exclude candidate' },
   'triage.keep': { vi: 'Giữ', en: 'Keep' },
   'triage.lock': { vi: 'Khoá', en: 'Lock' },
-  'triage.trash': { vi: 'Loại', en: 'Trash' },
-  'triage.markedTrash': { vi: 'Đã loại {name}', en: 'Trashed {name}' },
+  'triage.trash': { vi: 'Bỏ', en: 'Exclude' },
+  'triage.markedTrash': { vi: 'Đã bỏ {name}', en: 'Excluded {name}' },
   'triage.markedLock': { vi: 'Đã khoá {name}', en: 'Locked {name}' },
-  'triage.done': { vi: 'Xong! Đã loại {trashed}, khoá {locked}, giữ {kept}.', en: 'Done! Trashed {trashed}, locked {locked}, kept {kept}.' },
+  'triage.done': { vi: 'Xong! Đã bỏ {trashed}, khoá {locked}, giữ {kept}.', en: 'Done! Excluded {trashed}, locked {locked}, kept {kept}.' },
   'triage.backToInventory': { vi: 'Về kho', en: 'Back to inventory' },
   // F14 (task 64): Anchor echo (neo echo vào bộ solve) — KHÁC equipped "ghim"/pinned.*
   'anchor.toggleOn': { vi: 'Neo echo này vào bộ (luôn có trong kết quả)', en: 'Anchor this echo into the loadout (always included)' },
@@ -249,7 +275,7 @@ const DICT: Record<string, Entry> = {
   'anchor.infeasible': { vi: 'Không ghép được bộ với echo đã neo — thử bỏ neo bớt hoặc đổi set ép.', en: "Couldn't build a loadout with the anchored echoes — try unanchoring some or changing the forced set." },
   // task 66 (F14 hardening): 1 echo chỉ neo 1 nhân vật + báo neo hỏng (echo đã loại/xoá)
   'anchor.pinnedElsewhere': { vi: 'Đã neo cho {name} — bỏ neo bên đó trước', en: 'Already anchored for {name} — unanchor there first' },
-  'anchor.dead': { vi: '{n} neo không còn hiệu lực (echo đã loại/xoá).', en: '{n} anchor(s) no longer valid (echo trashed/deleted).' },
+  'anchor.dead': { vi: '{n} neo không còn hiệu lực (echo đã bỏ/xoá).', en: '{n} anchor(s) no longer valid (echo excluded/deleted).' },
   'anchor.pruneDead': { vi: 'Dọn neo hỏng', en: 'Clear dead anchors' },
   // F15 (task 65): swap suggestions — joint solver nhẹ (đổi 2 echo cùng cost giữa 2 nhân vật)
   'swap.title': { vi: '💡 Gợi ý đổi echo (tối ưu chung)', en: '💡 Swap suggestions (joint optimization)' },
@@ -257,7 +283,8 @@ const DICT: Record<string, Entry> = {
   'swap.row': { vi: '{from} ⇄ {to}: {out} ↔ {in}', en: '{from} ⇄ {to}: {out} ↔ {in}' },
   'swap.apply': { vi: 'Áp dụng', en: 'Apply' },
   'ranking.expected': { vi: 'kỳ vọng {n}', en: 'expected {n}' },
-  'ranking.delete': { vi: 'xóa', en: 'delete' },
+  // C5 (ui-redesign): chuẩn hoá chính tả "xoá" (trước lẫn "xóa"/"Xoá")
+  'ranking.delete': { vi: 'xoá', en: 'delete' },
   'ranking.edit': { vi: 'sửa', en: 'edit' },
   'ranking.editTip': { vi: 'Xem chi tiết / sửa echo này', en: 'View details / edit this echo' },
 
@@ -343,7 +370,7 @@ const DICT: Record<string, Entry> = {
   'bench.cost': { vi: 'cost {c}/12', en: 'cost {c}/12' },
   'bench.costWarn': { vi: 'Tổng cost {c} > 12 — vượt giới hạn Data Bank trong game.', en: 'Total cost {c} > 12 — exceeds the in-game Data Bank limit.' },
   'bench.mainCostWarn': { vi: 'Ô main đang là echo cost {c} — main echo thường là cost 4.', en: 'Main slot holds a cost-{c} echo — the main echo is usually cost 4.' },
-  'bench.clear': { vi: '↺ Xóa hết', en: '↺ Clear all' },
+  'bench.clear': { vi: '↺ Xoá hết', en: '↺ Clear all' },
   'bench.stashTitle': { vi: 'Kho echo — kéo hoặc bấm để thêm', en: 'Inventory — drag or click to add' },
   'bench.stashEmpty': { vi: 'Không có echo nào khớp (hoặc đã lên bàn hết).', en: 'No matching echoes (or all already placed).' },
   'upgrade.potentialTitle': { vi: 'Tiềm năng nâng cấp', en: 'Upgrade potential' },
@@ -353,7 +380,8 @@ const DICT: Record<string, Entry> = {
   'upgrade.planSubtitle': { vi: 'Nhóm theo bậc (Tuner khoá bậc), trong bậc xếp theo điểm tăng mỗi Tuner — đổ EXP/Tuner vào đây trước.', en: 'Grouped by rarity (Tuners are rarity-locked), ranked by points per Tuner within each tier — invest here first.' },
   'upgrade.rowCost': { vi: '{exp} EXP · {tuners} Tuner', en: '{exp} EXP · {tuners} Tuner' },
   'upgrade.budgetLabel': { vi: 'Tuner 5★ đang có', en: '5★ Tuners on hand' },
-  'upgrade.budgetHelp': { vi: 'Chỉ tính echo 5★ (Tuner đúng bậc).', en: 'Only counts 5★ echoes (Tuners are rarity-locked).' },
+  // P3 (ui-redesign): luật lọc in rõ NGAY DƯỚI ô ngân sách (trước là hint nhỏ cạnh ô)
+  'upgrade.budgetRule': { vi: 'Có ngân sách → danh sách chỉ xét echo 5★ (Tuner khoá bậc).', en: 'With a budget set, the list only considers 5★ echoes (Tuners are rarity-locked).' },
   'upgrade.budgetResult': { vi: 'Đủ tune {k} echo · tổng +{gain} điểm', en: 'Enough to tune {k} echoes · total +{gain} pts' },
   'upgrade.budgetCutoff': { vi: '── hết ngân sách, còn dư {left} Tuner ──', en: '── budget ends here, {left} Tuners left ──' },
   'buildcost.title': { vi: 'Chi phí hoàn thiện bộ', en: 'Cost to finish this build' },
@@ -381,6 +409,8 @@ const DICT: Record<string, Entry> = {
   'build.title': { vi: 'Chỉ số nền (vũ khí · base · buff)', en: 'Base stats (weapon · base · buff)' },
   'build.tip': { vi: 'Nạp vũ khí + base nhân vật + Forte + buff để mode Damage tính CRIT THẬT (base 5% + vũ khí + forte + echo + buff) và tối ưu đúng cán cân CR/CD.', en: 'Feed weapon + character base + Forte + buffs so Damage mode uses REAL crit (base 5% + weapon + forte + echo + buff) and optimizes the right CR/CD balance.' },
   'build.weapon': { vi: 'Vũ khí', en: 'Weapon' },
+  // B3 (ui-redesign): giải thích dấu ★ cạnh ô base của chỉ số scale
+  'build.baseAtkTip': { vi: '★ = chỉ số damage của nhân vật scale theo (suy từ trọng số). Ô nhập dùng để override base L90 khi số trong DB lệch bản game.', en: "★ marks the stat this character's damage scales with (derived from weights). Type a value to override the L90 base if the DB is outdated." },
   'build.weaponNone': { vi: 'không chọn', en: 'none' },
   'build.buffs': { vi: 'Buff có điều kiện (giả định active):', en: 'Conditional buffs (assumed active):' },
   'build.summary': { vi: 'Base {scale} {base} · CR nền +{cr} · CD nền +{cd} (chưa gồm echo)', en: 'Base {scale} {base} · base CR +{cr} · base CD +{cd} (echoes not included)' },
@@ -391,6 +421,9 @@ const DICT: Record<string, Entry> = {
   'statbd.weapon': { vi: 'Vũ khí', en: 'Weapon' },
   'statbd.forte': { vi: 'Forte', en: 'Forte' },
   'statbd.echo': { vi: 'Echo', en: 'Echo' },
+  // B5 (ui-redesign): cột gộp Vũ khí+Forte+Buff
+  'statbd.other': { vi: 'Khác', en: 'Other' },
+  'statbd.otherTip': { vi: 'Gộp Vũ khí + Forte + Buff — rê chuột lên từng ô để xem tách nguồn.', en: 'Weapon + Forte + Buff combined — hover a cell for the per-source split.' },
   'statbd.buff': { vi: 'Buff', en: 'Buff' },
   'statbd.total': { vi: 'Tổng', en: 'Total' },
   'statbd.capped': { vi: 'Đã chạm trần 100%', en: 'Capped at 100%' },
@@ -431,6 +464,8 @@ const DICT: Record<string, Entry> = {
   'weights.arch.buffer': { vi: 'Buffer (ER)', en: 'Buffer (ER)' },
   'weights.arch.healerAtk': { vi: 'Healer (scale ATK)', en: 'Healer (ATK-scale)' },
   'weights.arch.healerHp': { vi: 'Healer (scale HP)', en: 'Healer (HP-scale)' },
+  // B1 (ui-redesign): fold stat trọng số 0
+  'weights.showZero': { vi: 'Hiện {n} stat trọng số 0', en: 'Show {n} zero-weight stats' },
   'weights.erTarget': { vi: 'Mục tiêu tổng ER% (gồm 100 gốc; tự trừ ER vũ khí/passive từ ⚔ chỉ số nền; bỏ trống = không gate)', en: 'Target total ER% (incl. 100 base; weapon/passive ER from ⚔ build auto-counted; blank = no gate)' },
   'weights.help': {
     vi: 'Thang 0–1: 1 roll MAX của stat = w điểm. CR = CD = 1 cho DPS (1 roll CD ≈ 1 roll CR về EV quanh tỉ lệ crit 1:2).',
@@ -444,13 +479,18 @@ const DICT: Record<string, Entry> = {
   },
 
   // ── OcrImport ──
-  'ocr.title': { vi: '📷 Import từ ảnh (beta)', en: '📷 Import from image (beta)' },
-  'ocr.help': {
-    vi: 'Beta — hoạt động tốt nhất với screenshot panel echo tiếng Anh, độ phân giải 1920×1080. Tool tự nhận tên echo (dòng "+25") và sonata set (icon tròn cạnh "+25", hoặc chữ trong mục "Sonata Effect" nếu có trong ảnh). Luôn kiểm tra lại kết quả trước khi lưu — OCR có thể đọc sai.',
-    en: 'Beta — works best with English echo-panel screenshots at 1920×1080. The echo name ("+25" line) and sonata set (round icon next to "+25", or the "Sonata Effect" text when visible) are detected automatically. Always double-check results before saving — OCR can misread.',
+  // I2 bản P2 (ui-redesign): "beta" thành chip; cụm "Import từ ảnh" GIỮ NGUYÊN (hợp đồng e2e)
+  'ocr.title': { vi: 'Import từ ảnh (OCR trên máy)', en: 'Import from image (on-device OCR)' },
+  // I1 (ui-redesign): dropzone làm mặt tiền
+  'ocr.dropTitle': { vi: 'Thả ảnh panel echo vào đây', en: 'Drop echo-panel screenshots here' },
+  'ocr.dropHint': { vi: 'hoặc Ctrl+V dán ảnh vừa chụp · bấm để chọn file', en: 'or Ctrl+V a fresh screenshot · click to browse' },
+  'ocr.dropBest': { vi: 'Tốt nhất: screenshot tiếng Anh 1920×1080 · OCR chạy trên máy, không upload', en: 'Best: English screenshots at 1920×1080 · OCR runs locally, nothing is uploaded' },
+  'ocr.reqTitle': { vi: 'Yêu cầu ảnh', en: 'Image requirements' },
+  'ocr.helpDetail': {
+    vi: 'Tool tự nhận tên echo (dòng "+25") và sonata set (icon tròn cạnh "+25", hoặc chữ trong mục "Sonata Effect" nếu có trong ảnh). OCR có thể đọc sai — đối chiếu kết quả trước khi lưu.',
+    en: 'The echo name ("+25" line) and sonata set (round icon next to "+25", or the "Sonata Effect" text when visible) are detected automatically. OCR can misread — review results before saving.',
   },
   'ocr.run': { vi: 'Chạy OCR ({n} ảnh)', en: 'Run OCR ({n} images)' },
-  'ocr.pasteHint': { vi: 'Mẹo: Ctrl+V dán ảnh vừa chụp (Win+Shift+S), hoặc kéo-thả ảnh vào panel này.', en: 'Tip: Ctrl+V to paste a fresh screenshot (Win+Shift+S), or drag & drop images onto this panel.' },
   'ocr.filesSelected': { vi: 'Đã chọn {n} ảnh', en: '{n} images selected' },
   'ocr.clearFiles': { vi: 'bỏ chọn', en: 'clear' },
   'ocr.starting': { vi: 'đang khởi động…', en: 'starting…' },

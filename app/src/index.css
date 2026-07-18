@@ -4,8 +4,37 @@ body {
   @apply bg-slate-950 text-slate-200 antialiased;
 }
 
-/* Vòng focus thống nhất khi điều hướng bàn phím (không hiện khi bấm chuột) */
-:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 1px;
+/* C6 (ui-redesign): vòng focus thống nhất khi điều hướng bàn phím (không hiện khi bấm chuột).
+   :where() giữ specificity 0 — KHÔNG thêm rule :focus-visible thứ 2 chồng lên (2 rule cùng
+   specificity ra 2 màu tuỳ thứ tự nạp); [role="button"] cho ô bench + dropzone OCR. */
+:where(button, a, summary, input, select, textarea, [role='button'], [role='option']):focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+
+/* B1 (ui-redesign): slider mini cho WeightEditor — track mảnh slate, thumb sky */
+input[type='range'].rng {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: #1e293b;
+}
+input[type='range'].rng::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #38bdf8;
+  border: 2px solid #0f172a;
+  cursor: pointer;
+}
+input[type='range'].rng::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #38bdf8;
+  border: 2px solid #0f172a;
+  cursor: pointer;
 }

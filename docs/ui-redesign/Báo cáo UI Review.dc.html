@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin:0; background:#020617; }
+    a { color:#7dd3fc; text-decoration:none; border-bottom:1px solid rgba(125,211,252,.3); }
+    a:hover { color:#38bdf8; border-bottom-color:#38bdf8; }
+  </style>
+</helmet>
+<div style="min-height:100vh; background:#020617; color:#e2e8f0; font-family:ui-sans-serif, system-ui, -apple-system, sans-serif;">
+  <div style="max-width:1040px; margin:0 auto; padding:40px 24px 96px; display:flex; flex-direction:column; gap:36px;">
+
+    <header style="display:flex; flex-direction:column; gap:10px; border-bottom:1px solid #1e293b; padding-bottom:24px;">
+      <div style="font-family:ui-monospace, monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#64748b;">Đánh giá giao diện · 18/07/2026</div>
+      <h1 style="margin:0; font-size:28px; font-weight:700; color:#f1f5f9; letter-spacing:-0.01em;">WuWaEcho — Báo cáo UI &amp; đề xuất cải thiện</h1>
+      <p style="margin:0; font-size:14px; color:#94a3b8; max-width:70ch; text-wrap:pretty;">Phạm vi: kho echo, chấm điểm &amp; kế hoạch, build editor, import. Phương pháp: dựng 20+ component thật của app với dữ liệu mẫu và soi từng trạng thái — xem trực tiếp tại <a href="UI Review Harness.dc.html">UI Review Harness</a>. Mỗi phát hiện có mã (K3, B1…) để bạn trỏ khi muốn tôi mock lại.</p>
+      <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:#64748b;">
+        <span>Độ nghiêm trọng: <span style="color:#fb7185; font-weight:600;">Cao</span> · <span style="color:#fbbf24; font-weight:600;">Vừa</span> · <span style="color:#7dd3fc; font-weight:600;">Thấp</span></span>
+        <span>Công sức: <span style="font-family:ui-monospace, monospace;">S</span> giờ · <span style="font-family:ui-monospace, monospace;">M</span> ngày · <span style="font-family:ui-monospace, monospace;">L</span> nhiều ngày</span>
+      </div>
+    </header>
+
+    <section style="display:flex; flex-direction:column; gap:12px;">
+      <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#34d399;">Điểm mạnh — giữ nguyên</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px; color:#cbd5e1;">
+        <div style="border:1px solid rgba(52,211,153,.2); background:rgba(6,78,59,.12); border-radius:8px; padding:12px 14px;"><strong style="color:#a7f3d0;">EchoCard xuất sắc.</strong> Bar cường độ roll, màu theo tier, badge RV, ✓/✗ main-stat fit — nhìn 1 giây hiểu chất lượng echo.</div>
+        <div style="border:1px solid rgba(52,211,153,.2); background:rgba(6,78,59,.12); border-radius:8px; padding:12px 14px;"><strong style="color:#a7f3d0;">Ngôn ngữ màu kỷ luật.</strong> Sky = tương tác, amber = cảnh báo/ghim, emerald = tốt, rose = xấu, violet = 4★ — áp dụng đều khắp nơi.</div>
+        <div style="border:1px solid rgba(52,211,153,.2); background:rgba(6,78,59,.12); border-radius:8px; padding:12px 14px;"><strong style="color:#a7f3d0;">Hệ verdict xuyên suốt.</strong> Tune tiếp / Hoàn tất / Tạm dùng / Bỏ nhất quán từ filter ↔ bảng ↔ triage ↔ cleanup; số liệu mono chuẩn.</div>
+        <div style="border:1px solid rgba(52,211,153,.2); background:rgba(6,78,59,.12); border-radius:8px; padding:12px 14px;"><strong style="color:#a7f3d0;">An toàn dữ liệu tốt.</strong> Lock chặn xóa &amp; bulk-select; cleanup chỉ đánh dấu chứ không xoá thẳng; ErrorBoundary trấn an "dữ liệu vẫn còn".</div>
+        <div style="border:1px solid rgba(52,211,153,.2); background:rgba(6,78,59,.12); border-radius:8px; padding:12px 14px;"><strong style="color:#a7f3d0;">i18n &amp; a11y hiếm thấy.</strong> vi/en phủ mọi nhãn; aria-label, aria-pressed, title rộng khắp.</div>
+        <div style="border:1px solid rgba(52,211,153,.2); background:rgba(6,78,59,.12); border-radius:8px; padding:12px 14px;"><strong style="color:#a7f3d0;">Empty state rõ ràng.</strong> 3 lối nạp kho + quy trình ①→②→③ ngay từ màn đầu.</div>
+      </div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#7dd3fc;">1 · Kho echo — RankingTable, VaultBar</h2>
+
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fb7185;">K3</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fb7185; font-weight:600;">Cao · M</span> — <strong style="color:#f1f5f9;">Hàng hành động quá nhỏ, dễ bấm nhầm.</strong> Mỗi dòng có 4 control: 🔒, 🗑, "sửa", "xóa" — emoji ~16-20px opacity 40%, chữ 12px, "xóa" (xoá hẳn) đứng sát "🗑" (chỉ đánh dấu bỏ). <span style="color:#7dd3fc;">→</span> Icon button ≥28px có padding, tách hành động huỷ hoại bằng khoảng cách hoặc gom vào menu ⋯; giữ lock/trash lộ ra vì dùng thường xuyên.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">K4</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · S</span> — <strong style="color:#f1f5f9;">"Đánh dấu bỏ" và "xóa" trùng ẩn dụ thùng rác.</strong> 🗑 là flag loại trừ, "xóa" mới là delete — người mới sẽ hiểu ngược. <span style="color:#7dd3fc;">→</span> Đổi flag thành icon/nhãn "Bỏ" (⛔ hoặc tag), tooltip nêu rõ "không tính khi gán bộ, không xoá".</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">K1</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · S</span> — <strong style="color:#f1f5f9;">Hai chip "Tất cả" trong cùng toolbar.</strong> Nhóm cost và nhóm tư vấn đều bắt đầu bằng "Tất cả", chỉ ngăn nhau bằng 1 vạch mờ — dễ bấm nhầm nhóm. <span style="color:#7dd3fc;">→</span> Thêm nhãn nhóm nhỏ ("Cost:", "Tư vấn:") trước mỗi cụm.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">K2</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · S</span> — <strong style="color:#f1f5f9;">Chip verdict mất màu ngữ nghĩa khi active.</strong> "Bỏ" màu rose nhưng chọn vào lại thành nền sky như mọi chip. <span style="color:#7dd3fc;">→</span> Active giữ màu verdict (nền emerald/sky/amber/rose đậm + ring), sky chỉ dành cho filter trung tính.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">K7</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · M</span> — <strong style="color:#f1f5f9;">Grid view không có bulk action.</strong> Chọn nhiều + xoá hàng loạt + ước tính refund chỉ tồn tại ở table view; grid (mặc định trên mobile) không có tương đương. <span style="color:#7dd3fc;">→</span> Long-press/checkbox góc card để chọn, hiện cùng thanh refund; hoặc ít nhất nêu rõ giới hạn.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">K5</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · M</span> — <strong style="color:#f1f5f9;">Không sort được bằng header bảng.</strong> Sort nằm trong 1 select riêng; header "Điểm", "Main"… không click được. <span style="color:#7dd3fc;">→</span> Header click-to-sort với mũi tên chiều, giữ select cho mobile/grid.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">K8</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">Không thấy điểm đang chấm theo nhân vật nào.</strong> Điểm/tư vấn phụ thuộc profile đang chọn nhưng toolbar kho không nhắc. <span style="color:#7dd3fc;">→</span> Chip "Chấm theo: Camellya" trong toolbar, click để đổi nhanh.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">K6</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">Legend "Đánh giá substat" luôn chiếm một hàng.</strong> Hữu ích tuần đầu, thừa về sau. <span style="color:#7dd3fc;">→</span> Cho thu gọn thành nút "?" và nhớ trạng thái.</div>
+      </div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#7dd3fc;">2 · Chấm điểm &amp; kế hoạch — UpgradePlan, Backlog, SetFarm, Cleanup, Triage</h2>
+
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">P1</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · M</span> — <strong style="color:#f1f5f9;">"Ưu tiên farm set" là 10 dòng lặp gần giống nhau.</strong> "— Hợp 1 nhân vật · tốt nhất: X" lặp lại, dòng dài thì wrap lệch (Havoc Eclipse), khó thấy set nào ưu tiên hơn. <span style="color:#7dd3fc;">→</span> Chuyển bảng 3 cột (Set · Số người cần · Tốt nhất cho), sort theo số người cần, nối màu với nhóm "Nên farm tiếp" của Backlog.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">P2</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · S</span> — <strong style="color:#f1f5f9;">CleanupPanel: chip rule wrap 2 dòng, nút disabled màu cam.</strong> "Cost 1/3 thiếu Crit", "Dư trong set" gãy dòng lệch baseline; "Đánh dấu loại (0)" disabled nhưng màu cam nổi như sắp bấm được. <span style="color:#7dd3fc;">→</span> Rút nhãn còn 1 dòng ("Thiếu crit", "RV thấp", "Dư set") + title đầy đủ; disabled dùng slate, chỉ cam khi có match.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">P5</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · M</span> — <strong style="color:#f1f5f9;">Triage thiếu phím tắt hiển thị và undo.</strong> Flow duyệt từng echo (Giữ/Khoá/Loại/Sửa) rất hợp bàn phím nhưng nút không hiện keycap; lỡ tay "Loại" là đi tiếp luôn. <span style="color:#7dd3fc;">→</span> Keycap trên nút (G · K · L · S), toast undo 5 giây, đếm tiến độ to hơn "1/6".</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">P3</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">Kế hoạch nâng cấp: tên echo bị cắt sớm, budget thiếu đơn vị.</strong> EchoLine truncate thành "cost …" khi vẫn còn chỗ; ô budget trống không nói là Tuner; luật "có budget thì chỉ xét 5★" khá ẩn. <span style="color:#7dd3fc;">→</span> min-width cho tên, suffix "Tuner" trong input, hiện luật ngay dưới ô.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">P4</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">Backlog: progress bar 40px khó so sánh.</strong> Nhóm Farm/Dừng rõ, nhưng bar quá ngắn và không thẳng cột giữa các dòng. <span style="color:#7dd3fc;">→</span> Nới bar 80–120px, căn thành cột riêng.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">P6</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">Trạng thái mở/đóng của các panel không được nhớ.</strong> Trang kế hoạch nhiều &lt;details&gt;; mỗi lần vào lại phải mở lại đúng panel hay dùng. <span style="color:#7dd3fc;">→</span> Lưu open-state vào localStorage theo id panel.</div>
+      </div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#7dd3fc;">3 · Build editor — CharacterPicker, BuildEditor, WeightEditor, Loadout</h2>
+
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fb7185;">B1</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fb7185; font-weight:600;">Cao · M</span> — <strong style="color:#f1f5f9;">WeightEditor khó scan nhất app.</strong> 13 ô number 0–1 xếp 2 cột, nhãn dài ("Basic Attack DMG%", "Element DMG% (đúng hệ)") wrap 2–3 dòng làm baseline lệch; chỉnh bằng gõ số lẻ từng ô. <span style="color:#7dd3fc;">→</span> Nhãn rút gọn 1 dòng (CR%, CD%, ATK%, Basic%…) + title đầy đủ; stat weight = 0 gấp sau nút "hiện tất cả"; cân nhắc stepper/slider mini thay vì gõ tay.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">B2</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · M</span> — <strong style="color:#f1f5f9;">CharacterPicker: control chính nhưng trông như tag phụ.</strong> Nút đóng chỉ là chip nhỏ "● Camellya ▾"; trong dropdown, chip nhân vật wrap tên dài tràn lệch ("Xiangli Yao", "Generic: Crit DPS (Liberation)"). <span style="color:#7dd3fc;">→</span> Nút to hơn kèm role + element; dropdown dùng grid cột cố định, tên truncate + title thay vì wrap.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">B4</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · S</span> — <strong style="color:#f1f5f9;">Nút trong LoadoutView wrap 2 dòng.</strong> "Xuất ảnh PNG", "Đặt làm bộ hiện tại" gãy chữ khi cột hẹp. <span style="color:#7dd3fc;">→</span> white-space:nowrap + min-width, hoặc icon-first.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">B5</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · M</span> — <strong style="color:#f1f5f9;">Bảng "Chỉ số cuối theo nguồn" sinh scroll ngang trong cột hẹp.</strong> 7 cột (Base/Vũ khí/Forte/Echo/Buff/=Tổng) bị bóp, header "= Tổng" cắt cụt. <span style="color:#7dd3fc;">→</span> Đặt min-width và cho panel chiếm full hàng khi mở, hoặc gộp Vũ khí+Forte+Buff thành "Khác" có tooltip tách nguồn.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">B3</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">BuildEditor: nhãn "Vũ khí" wrap dọc, ký hiệu ★ không được giải thích.</strong> Label nằm trái select hẹp nên gãy; "Base ATK ★" không nói ★ nghĩa gì. <span style="color:#7dd3fc;">→</span> Label đặt trên control; thêm chú thích/InfoTip cho ★.</div>
+      </div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#7dd3fc;">4 · Import — OCR, Scanner, nhập tay</h2>
+
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">I1</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · M</span> — <strong style="color:#f1f5f9;">OCR dùng input file native "Choose Files".</strong> Nút hệ điều hành lạc tông giữa UI slate; kéo-thả và Ctrl+V có hỗ trợ nhưng chỉ nói ở dòng mẹo cuối. <span style="color:#7dd3fc;">→</span> Dropzone viền đứt to làm mặt tiền ("Thả ảnh / Ctrl+V / bấm để chọn"), input native ẩn đi.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">I2</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">Khối cảnh báo beta 3 dòng màu amber chiếm mặt tiền panel OCR.</strong> Đọc 1 lần là đủ. <span style="color:#7dd3fc;">→</span> Thu còn 1 dòng + "chi tiết" mở rộng, hoặc tự ẩn sau lần OCR thành công đầu.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">I3</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">ScannerImport gập kín, caret nhỏ khó thấy.</strong> Người có scanner sẽ không nhận ra đây là đường nhập nhanh nhất. <span style="color:#7dd3fc;">→</span> Thêm 1 dòng mô tả ("nhanh nhất nếu bạn dùng PC") + caret/nút rõ.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">I4</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">EmptyState nhắc "form 'Thêm echo' bên cạnh".</strong> Copy phụ thuộc bố cục — sai khi responsive xếp dọc. <span style="color:#7dd3fc;">→</span> Đổi thành nút/link cuộn tới form.</div>
+      </div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#7dd3fc;">5 · Xuyên suốt toàn app</h2>
+
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fb7185;">C1</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fb7185; font-weight:600;">Cao · M</span> — <strong style="color:#f1f5f9;">Hit target nhỏ phổ biến.</strong> Phần lớn hành động lặp lại (flag, sửa, xoá, caret, ✎/🗑 trong VaultBar) chỉ 16–24px — dưới chuẩn 44px cho mobile, trong khi grid view là mặc định mobile. <span style="color:#7dd3fc;">→</span> Audit chung: mọi hành động chạm được ≥ 32px desktop / 44px mobile (padding, không cần icon to).</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">C2</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · L</span> — <strong style="color:#f1f5f9;">Emoji làm icon hệ thống.</strong> 🔒🗑🗄📌📈💰📦🧹⚠ render khác nhau theo OS, baseline lệch, không tint theo trạng thái được (đang phải dùng nền + ring bù). <span style="color:#7dd3fc;">→</span> Chuyển dần sang SVG icon set 1 màu (Lucide) ăn theo currentColor; giữ ngữ nghĩa màu hiện có.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#fbbf24;">C3</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#fbbf24; font-weight:600;">Vừa · M</span> — <strong style="color:#f1f5f9;">Nhiều thông tin chính ở cỡ 10–11px.</strong> Verdict dưới card, tiến độ backlog, chú thích luật… đều text-[10px]/[11px]. <span style="color:#7dd3fc;">→</span> Sàn 12px cho nội dung phải đọc để ra quyết định; 10–11px chỉ cho phụ chú.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">C4</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · M</span> — <strong style="color:#f1f5f9;">"Bức tường details" ở khu kế hoạch.</strong> 5–6 panel gập giống hệt nhau xếp dọc, không có anchor thị giác phân biệt. <span style="color:#7dd3fc;">→</span> Bố cục 2 cột theo tần suất dùng + icon màu nhấn riêng từng panel (ăn theo C2).</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">C5</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">Từ vựng hành động cần chuẩn hoá.</strong> Ghim / Đặt làm bộ hiện tại / Khoá / Bỏ / Loại / Đã loại — các cặp gần nghĩa xuất hiện ở màn khác nhau. <span style="color:#7dd3fc;">→</span> Lập bảng thuật ngữ 1 trang, mỗi khái niệm 1 từ + 1 icon, dùng thống nhất trong i18n.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:56px 1fr; gap:12px; border:1px solid #1e293b; border-radius:8px; padding:14px 16px; background:rgba(15,23,42,.5);">
+        <span style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#7dd3fc;">C6</span>
+        <div style="font-size:13px; color:#cbd5e1;"><span style="color:#7dd3fc; font-weight:600;">Thấp · S</span> — <strong style="color:#f1f5f9;">Focus ring không đồng đều.</strong> Vài chỗ có focus-visible ring sky chuẩn, đa số chip/emoji-button thì không — người dùng bàn phím (đối tượng chính của Triage) mất dấu. <span style="color:#7dd3fc;">→</span> Ring sky 2px focus-visible cho mọi control tương tác.</div>
+      </div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:12px; border:1px solid #1e293b; border-radius:10px; padding:20px; background:rgba(15,23,42,.7);">
+      <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#f1f5f9;">Lộ trình đề xuất</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; font-size:13px;">
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="color:#34d399; font-weight:600;">Quick wins — vài giờ</div>
+          <div style="color:#94a3b8; line-height:1.7;">K1 · K2 · K4 · K6 · K8<br>P2 · P3 · P4 · P6<br>B3 · B4 · I2 · I3 · I4 · C5</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="color:#fbbf24; font-weight:600;">Sprint tới — 1-3 ngày</div>
+          <div style="color:#94a3b8; line-height:1.7;">K3 · K5 · K7<br>P1 · P5<br>B1 · B2 · B5<br>I1 · C1 · C3 · C4 · C6</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="color:#fb7185; font-weight:600;">Dài hạn</div>
+          <div style="color:#94a3b8; line-height:1.7;">C2 — thay emoji bằng SVG icon set<br>Mobile pass tổng (đi cùng C1)</div>
+        </div>
+      </div>
+      <p style="margin:4px 0 0; font-size:12px; color:#64748b;">Muốn tôi mock lại màn nào theo đề xuất, chỉ cần nêu mã — vd "làm thử K3 + B1". Component sống để đối chiếu: <a href="UI Review Harness.dc.html">UI Review Harness</a>.</p>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

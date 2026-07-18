@@ -26,12 +26,12 @@ export default function AnchorToggle({
       aria-pressed={anchored}
       aria-label={title}
       title={title}
-      className={`rounded px-0.5 text-[11px] leading-none outline-none ${
+      className={`rounded px-0.5 text-[11px] leading-none ${
         anchored
           ? 'bg-amber-500/30 ring-1 ring-amber-500/70'
           : disabled
             ? 'cursor-not-allowed opacity-25'
-            : 'opacity-60 ring-1 ring-slate-700 hover:opacity-100 hover:ring-amber-500/60 focus-visible:opacity-100 focus-visible:ring-amber-500/60'
+            : 'opacity-60 ring-1 ring-slate-700 hover:opacity-100 hover:ring-amber-500/60'
       }`}
       onClick={(e) => { e.stopPropagation(); onToggle() }}
     >

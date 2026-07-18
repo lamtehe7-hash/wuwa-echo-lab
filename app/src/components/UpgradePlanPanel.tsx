@@ -3,6 +3,8 @@ import type { Echo } from '../types'
 import { tunerBudgetPlan, type UpgradeQueueRow } from '../engine/insights'
 import BestOwnerBadge from './BestOwnerBadge'
 import EchoLine from './EchoLine'
+import { IconTrendingUp } from './icons'
+import { usePanelOpen } from './usePanelOpen'
 import { useFmtN, useT } from '../i18n'
 
 // F3+F6 GỘP (task 72, spec designer 16/07): "Kế hoạch nâng cấp" — panel <details> đóng, tab Kho,
@@ -37,10 +39,13 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
     [fiveStar, budget, shown.length],
   )
 
+  const panel = usePanelOpen('upgrade') // P6: nhớ mở/đóng
+
   return (
-    <details className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
-        📈 {t('upgrade.planTitle')}
+        {/* C4/C2: icon màu nhấn riêng (emerald) thay emoji */}
+        <IconTrendingUp size={15} className="mr-1 inline align-[-2px] text-emerald-400" />{t('upgrade.planTitle')}
         <span className="ml-2 text-xs font-normal text-slate-500">
           {t('inv.count', { shown: shown.length, total: rows.length })}
         </span>
@@ -49,16 +54,23 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
       <div className="mt-2 space-y-2 text-xs">
         <p className="text-slate-500">{t('upgrade.planSubtitle')}</p>
 
-        <label className="flex flex-wrap items-center gap-2 text-slate-400">
-          {t('upgrade.budgetLabel')}
-          <input
-            type="number" min={0} step={10} value={budgetRaw}
-            aria-label={t('upgrade.budgetLabel')}
-            onChange={(e) => setBudgetRaw(e.target.value)}
-            className="w-24 rounded border border-slate-700 bg-slate-800 px-2 py-1"
-          />
-          <span className="text-[10px] text-slate-500">{t('upgrade.budgetHelp')}</span>
-        </label>
+        {/* P3 (ui-redesign): ô ngân sách có đơn vị + luật lọc 5★ in rõ ngay dưới */}
+        <div className="space-y-1">
+          <label className="flex flex-wrap items-center gap-2 text-slate-400">
+            {t('upgrade.budgetLabel')}
+            <span className="flex items-center gap-1.5">
+              <input
+                type="number" min={0} step={10} value={budgetRaw}
+                aria-label={t('upgrade.budgetLabel')}
+                onChange={(e) => setBudgetRaw(e.target.value)}
+                className="w-24 rounded border border-slate-700 bg-slate-800 px-2 py-1"
+              />
+              {/* đơn vị — thuật ngữ game, không dịch (như ROLE_BADGE) */}
+              <span className="text-slate-400">Tuner</span>
+            </span>
+          </label>
+          <p className="text-xs text-slate-500">{t('upgrade.budgetRule')}</p>
+        </div>
 
         {budget > 0 && (
           <p className="text-emerald-400">{t('upgrade.budgetResult', { k: cutoff, gain: gainSum.toFixed(1) })}</p>
@@ -71,7 +83,7 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
               return (
                 <li key={r.echo.id} className={dimmed ? 'opacity-50' : ''}>
                   {budget > 0 && i === cutoff && (
-                    <p className="mb-1 text-center text-[10px] text-amber-400">
+                    <p className="mb-1 text-center text-xs text-amber-400">
                       {t('upgrade.budgetCutoff', { left: leftover })}
                     </p>
                   )}

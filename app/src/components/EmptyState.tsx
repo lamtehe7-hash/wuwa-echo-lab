@@ -3,10 +3,13 @@ import { useT } from '../i18n'
 // Màn hình lần đầu (kho trống): 3 lối nạp kho làm nút lớn + tóm tắt luồng 3 bước
 // (tham khảo onboarding của wuwa.uk — research/ui-ux.md §3.4). Thay cho bảng trống + nút demo nhỏ.
 
-export default function EmptyState({ onOcr, onImportJson, onDemo }: {
+export default function EmptyState({ onOcr, onImportJson, onDemo, onManual }: {
   onOcr: () => void
   onImportJson: () => void
   onDemo: () => void
+  /** I4 (ui-redesign): mở form nhập tay — NÚT hành động thay copy "form bên cạnh"
+   *  (khi kho trống EmptyState thay cả layout nên form không hề "bên cạnh") */
+  onManual: () => void
 }) {
   const t = useT()
   const cards = [
@@ -38,7 +41,11 @@ export default function EmptyState({ onOcr, onImportJson, onDemo }: {
         ))}
       </div>
       <p className="text-xs text-slate-500">{t('empty.steps')}</p>
-      <p className="text-xs text-slate-600">{t('empty.manualHint')}</p>
+      <button
+        type="button"
+        className="text-xs text-sky-400 underline decoration-dotted hover:text-sky-300"
+        onClick={onManual}
+      >{t('empty.manualLink')}</button>
     </div>
   )
 }

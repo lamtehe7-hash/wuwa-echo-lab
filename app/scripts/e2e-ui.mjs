@@ -160,7 +160,7 @@ await sleep(400)
 check('tab-inventory', await clickByText('Kho Echo'))
 await sleep(250)
 check('click-delete', await evaluate(`(() => {
-  const b = [...document.querySelectorAll('tbody button')].find((x) => x.textContent === 'xóa')
+  const b = [...document.querySelectorAll('tbody button')].find((x) => (x.getAttribute('aria-label') || '') === 'xoá')
   if (!b) return false
   b.click(); return true
 })()`))
@@ -217,6 +217,13 @@ check('ocr-panel', await bodyHas('Import từ ảnh'))
 check('json-card', await bodyHas('Sao lưu / khôi phục JSON'))
 check('hash-import', (await evaluate('location.hash')).startsWith('#import'), await evaluate('location.hash'))
 
+// 7b) C4 (ui-redesign): tab Kế hoạch — 5 panel kế hoạch gom về 1 màn 2 cột
+check('tab-plan', await clickByText('Kế hoạch'))
+await sleep(250)
+check('plan-cleanup', await bodyHas('Dọn kho theo luật'))
+check('plan-upgrade', await bodyHas('Kế hoạch nâng cấp'))
+check('hash-plan', (await evaluate('location.hash')).startsWith('#plan'), await evaluate('location.hash'))
+
 // 8) Tab Đội hình
 check('tab-roster', await clickByText('Đội hình'))
 await sleep(250)
@@ -242,19 +249,19 @@ const clickNthFlag = (prefix, n) => evaluate(`(() => {
 })()`)
 check('lock-first', await clickNthFlag('Khoá', 0))
 await sleep(200)
-check('trash-second', await clickNthFlag('Loại', 1))
+check('trash-second', await clickNthFlag('Đánh dấu Bỏ', 1))
 await sleep(250)
-check('excluded-chip', await bodyHas('Đã loại (1)'))
-check('excluded-filter-on', await clickByText('Đã loại (1)'))
+check('excluded-chip', await bodyHas('Đã bỏ (1)'))
+check('excluded-filter-on', await clickByText('Đã bỏ (1)'))
 await sleep(250)
 check('excluded-count', await bodyHas('1/10 echo'))
-await clickByText('Đã loại (1)')
+await clickByText('Đã bỏ (1)')
 await sleep(200)
 check('locked-delete-disabled', await evaluate(`(() => {
   const rows = [...document.querySelectorAll('tbody tr')]
   return rows.some((tr) => {
     const lock = [...tr.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('Khoá'))
-    const del = [...tr.querySelectorAll('button')].find((b) => b.textContent === 'xóa')
+    const del = [...tr.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '') === 'xoá')
     return lock?.getAttribute('aria-pressed') === 'true' && del?.disabled
   })
 })()`))
@@ -275,7 +282,7 @@ check('inventory-10-final', await bodyHas('Kho: 10 echo'))
 // dọn cờ để screenshot cuối sạch
 await evaluate(`(() => { const b = [...document.querySelectorAll('tbody button')].find((x) => x.getAttribute('aria-pressed') === 'true' && (x.getAttribute('aria-label') || '').startsWith('Khoá')); if (b) b.click(); return true })()`)
 await sleep(150)
-await evaluate(`(() => { const b = [...document.querySelectorAll('tbody button')].find((x) => x.getAttribute('aria-pressed') === 'true' && (x.getAttribute('aria-label') || '').startsWith('Loại')); if (b) b.click(); return true })()`)
+await evaluate(`(() => { const b = [...document.querySelectorAll('tbody button')].find((x) => x.getAttribute('aria-pressed') === 'true' && (x.getAttribute('aria-label') || '').startsWith('Đánh dấu Bỏ')); if (b) b.click(); return true })()`)
 await sleep(150)
 
 const shot = await send('Page.captureScreenshot', { format: 'png' })

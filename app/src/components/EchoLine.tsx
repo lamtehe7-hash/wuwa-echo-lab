@@ -20,7 +20,9 @@ export default function EchoLine({ echo }: { echo: Echo }) {
       ) : (
         <span className="h-6 w-6 shrink-0" />
       )}
-      <span className="min-w-0 flex-1 truncate">
+      {/* P3 (ui-redesign): min-w giữ chỗ cho tên — phần đuôi row wrap xuống dòng thay vì
+          bóp tên truncate sớm khi còn chỗ */}
+      <span className="min-w-40 flex-1 truncate">
         <span className="text-slate-200">{echoDisplayName(echo)}</span>
         <span className="text-slate-500"> · cost {echo.cost} · {SONATA_BY_ID[echo.set]?.name}</span>
       </span>

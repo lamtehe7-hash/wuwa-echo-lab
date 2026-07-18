@@ -3,7 +3,9 @@ import type { CharacterProfile, Echo } from '../types'
 import type { OwnerFit } from '../engine/insights'
 import { CLEANUP_DEFAULTS, cleanupMatches, type CleanupRule, type CleanupRuleType } from '../engine/cleanup'
 import EchoLine from './EchoLine'
+import { IconBrush } from './icons'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
+import { usePanelOpen } from './usePanelOpen'
 import { useT, useTMessage } from '../i18n'
 
 // F11 (task 62): "Dọn kho theo luật" — panel <details> đóng, TRÊN RankingTable (tab Kho). Chọn 1 luật
@@ -16,6 +18,13 @@ const RULE_LABEL: Record<CleanupRuleType, string> = {
   'cost-no-crit': 'cleanup.rule.r2',
   'low-rv': 'cleanup.rule.r3',
   'keep-top-n': 'cleanup.rule.r4',
+}
+/** P2 (ui-redesign): nhãn chip rút 1 dòng → mô tả đầy đủ nằm ở title */
+const RULE_DESC: Record<CleanupRuleType, string> = {
+  'no-owner': 'cleanup.desc.r1',
+  'cost-no-crit': 'cleanup.desc.r2',
+  'low-rv': 'cleanup.desc.r3',
+  'keep-top-n': 'cleanup.desc.r4',
 }
 
 interface Props {
@@ -47,18 +56,23 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
 
   const chip = (active: boolean) =>
     `rounded px-2 py-1 ${active ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`
+  const panel = usePanelOpen('cleanup') // P6: nhớ mở/đóng
 
   return (
-    <details className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
-        🧹 {t('cleanup.title')}
+        {/* C4/C2: icon màu nhấn riêng (rose) thay emoji */}
+        <IconBrush size={15} className="mr-1 inline align-[-2px] text-rose-400" />{t('cleanup.title')}
         <span className="ml-2 text-xs font-normal text-slate-500">{t('cleanup.subtitle')}</span>
       </summary>
 
       <div className="mt-2 space-y-2 text-xs">
         <div className="flex flex-wrap gap-1.5">
           {RULES.map((r) => (
-            <button key={r} type="button" aria-pressed={ruleType === r} className={chip(ruleType === r)} onClick={() => setRuleType(r)}>
+            <button
+              key={r} type="button" aria-pressed={ruleType === r} className={`whitespace-nowrap ${chip(ruleType === r)}`}
+              title={t(RULE_DESC[r])} onClick={() => setRuleType(r)}
+            >
               {t(RULE_LABEL[r])}
             </button>
           ))}
@@ -92,7 +106,8 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
         <p className="text-slate-300">{t('cleanup.preview', { n: matches.length })}</p>
         {/* dòng khoá TÁCH RIÊNG + nhạt/nhỏ hơn (góp ý designer): đây là TỔNG echo khoá trong kho, không
             phải "trong N có M khoá" — tránh đọc gộp */}
-        {lockedCount > 0 && <p className="text-[10px] text-slate-500">🔒 {t('cleanup.lockedKept', { m: lockedCount })}</p>}
+        {/* C3: thông tin ảnh hưởng quyết định ≥12px */}
+        {lockedCount > 0 && <p className="text-xs text-slate-500">🔒 {t('cleanup.lockedKept', { m: lockedCount })}</p>}
 
         {matches.length > 0 && (
           <ul className="max-h-64 space-y-1 overflow-y-auto rounded border border-slate-800 bg-slate-950/40 p-1.5">
@@ -106,11 +121,14 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
           </ul>
         )}
 
+        {/* P2: disabled = slate trung tính — amber CHỈ khi thật sự có gì để đánh dấu */}
         <button
           type="button"
           disabled={matches.length === 0}
           title={matches.length === 0 ? t('cleanup.applyDisabled') : undefined}
-          className="rounded bg-amber-700 px-3 py-1.5 font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40"
+          className={`rounded px-3 py-1.5 font-semibold ${matches.length === 0
+            ? 'cursor-not-allowed bg-slate-800 text-slate-500'
+            : 'bg-amber-700 text-white hover:bg-amber-600'}`}
           onClick={() => onApply(matches.map((m) => m.echo.id))}
         >
           {t('cleanup.apply', { n: matches.length })}

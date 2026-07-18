@@ -4,6 +4,7 @@ import type { OwnerFit } from '../engine/insights'
 import { CLEANUP_DEFAULTS, cleanupMatches, type CleanupRule, type CleanupRuleType } from '../engine/cleanup'
 import EchoLine from './EchoLine'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
+import { usePanelOpen } from './usePanelOpen'
 import { useT, useTMessage } from '../i18n'
 
 // F11 (task 62): "Dọn kho theo luật" — panel <details> đóng, TRÊN RankingTable (tab Kho). Chọn 1 luật
@@ -54,9 +55,10 @@ export default function CleanupPanel({ echoes, profiles, ownersByEcho, pinnedBy,
 
   const chip = (active: boolean) =>
     `rounded px-2 py-1 ${active ? 'bg-sky-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'}`
+  const panel = usePanelOpen('cleanup') // P6: nhớ mở/đóng
 
   return (
-    <details className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
         🧹 {t('cleanup.title')}
         <span className="ml-2 text-xs font-normal text-slate-500">{t('cleanup.subtitle')}</span>

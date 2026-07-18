@@ -3,6 +3,7 @@ import type { CharacterProfile } from '../types'
 import { ELEMENT_COLOR } from '../data/elementColors'
 import { SONATA_SETS } from '../data/sonata'
 import { setFarmSummary } from '../engine/insights'
+import { usePanelOpen } from './usePanelOpen'
 import { useT } from '../i18n'
 
 // F2 (task 58): "set nào nên farm tiếp cho cả roster" — KHÔNG cần kho echo (hiện cả khi kho rỗng).
@@ -12,9 +13,10 @@ import { useT } from '../i18n'
 export default function SetFarmPriority({ profiles }: { profiles: CharacterProfile[] }) {
   const t = useT()
   const rows = useMemo(() => setFarmSummary(SONATA_SETS, profiles, 3), [profiles])
+  const panel = usePanelOpen('setfarm') // P6: nhớ mở/đóng
 
   return (
-    <details className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
         🗺 {t('farm.title')}
         <span className="ml-2 text-xs font-normal text-slate-500">{t('farm.subtitle')}</span>

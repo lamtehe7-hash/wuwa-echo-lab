@@ -1,6 +1,7 @@
 import type { CharacterProfile } from '../types'
 import { ELEMENT_COLOR } from '../data/elementColors'
 import { ROLE_BADGE } from './CharacterPicker'
+import { usePanelOpen } from './usePanelOpen'
 import { useT } from '../i18n'
 
 // Task 60/U6: "Nhân vật đã ghim bộ" — tổng quan mọi nhân vật có bộ hiện tại đã ghi nhớ (equipped).
@@ -23,9 +24,10 @@ export default function PinnedOverview({ rows, onJump }: {
   onJump: (id: string) => void
 }) {
   const t = useT()
+  const panel = usePanelOpen('pinned', true) // P6: nhớ mở/đóng — khối trạng thái nên mặc định MỞ
 
   return (
-    <details open className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
         📌 {t('pinned.title')}
         <span className="ml-2 text-xs font-normal text-slate-500">{t('pinned.subtitle', { n: rows.length })}</span>

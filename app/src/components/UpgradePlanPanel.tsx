@@ -3,6 +3,7 @@ import type { Echo } from '../types'
 import { tunerBudgetPlan, type UpgradeQueueRow } from '../engine/insights'
 import BestOwnerBadge from './BestOwnerBadge'
 import EchoLine from './EchoLine'
+import { usePanelOpen } from './usePanelOpen'
 import { useFmtN, useT } from '../i18n'
 
 // F3+F6 GỘP (task 72, spec designer 16/07): "Kế hoạch nâng cấp" — panel <details> đóng, tab Kho,
@@ -37,8 +38,10 @@ export default function UpgradePlanPanel({ rows, onJump, onEdit }: Props) {
     [fiveStar, budget, shown.length],
   )
 
+  const panel = usePanelOpen('upgrade') // P6: nhớ mở/đóng
+
   return (
-    <details className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
         📈 {t('upgrade.planTitle')}
         <span className="ml-2 text-xs font-normal text-slate-500">

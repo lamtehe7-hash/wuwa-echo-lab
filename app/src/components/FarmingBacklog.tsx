@@ -1,5 +1,6 @@
 import type { SetBacklogRow, BacklogStatus } from '../engine/insights'
 import { ELEMENT_COLOR } from '../data/elementColors'
+import { usePanelOpen } from './usePanelOpen'
 import { useT } from '../i18n'
 
 // F12 (task 61): "Farming Backlog" — đối chiếu tồn kho vs nhu cầu, chỉ ra set NÊN DỪNG farm.
@@ -61,9 +62,10 @@ export default function FarmingBacklog({ rows }: { rows: SetBacklogRow[] }) {
   const farm = rows.filter((r) => r.status === 'need' || r.status === 'farm')
   const stop = rows.filter((r) => r.status === 'enough' || r.status === 'surplus')
   const stopCount = stop.length
+  const panel = usePanelOpen('backlog') // P6: nhớ mở/đóng
 
   return (
-    <details className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <details {...panel} className="mb-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-slate-200">
         📦 {t('backlog.title')}
         <span className="ml-2 text-xs font-normal text-slate-500">{t('backlog.subtitle')}</span>

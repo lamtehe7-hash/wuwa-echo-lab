@@ -5,6 +5,7 @@
 // được trong node; phần canvas là wrapper mỏng — giống kiến trúc preprocess.ts.
 
 import { SET_ICON_SIGNATURES, SET_ICON_SIG_SIZE } from '../data/seticonSignatures'
+import { SET_ICON_SIGNATURES_INGAME } from '../data/seticonSignaturesIngame'
 import type { ImageDataLike, Rect } from './preprocess'
 
 const N = SET_ICON_SIG_SIZE
@@ -239,7 +240,10 @@ function b64ToBytes(b64: string): Uint8Array {
 
 let templateCache: { id: string; sig: Uint8Array }[] | null = null
 function templates(): { id: string; sig: Uint8Array }[] {
-  templateCache ??= SET_ICON_SIGNATURES.map(({ id, b64 }) => ({ id, sig: b64ToBytes(b64) }))
+  // Gộp template game8 + biến thể badge in-game thật (18/07 — sinh từ 105 screenshot kho 1080p,
+  // gen-seticon-ingame.mts). classifySignature lấy min per set nên thêm biến thể chỉ KÉO GẦN set
+  // đúng; badge thật giờ match ở d≈0–20 thay vì 45–107 với template game8 thuần.
+  templateCache ??= [...SET_ICON_SIGNATURES, ...SET_ICON_SIGNATURES_INGAME].map(({ id, b64 }) => ({ id, sig: b64ToBytes(b64) }))
   return templateCache
 }
 

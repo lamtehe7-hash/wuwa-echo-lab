@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
 import { describe, expect, it } from 'vitest'
-import { SET_ICON_SIGNATURES } from '../data/seticonSignatures'
+import { SET_ICON_SIGNATURES, SET_ICON_SIG_SIZE } from '../data/seticonSignatures'
+import { SET_ICON_SIGNATURES_INGAME } from '../data/seticonSignaturesIngame'
+import { SONATA_SETS } from '../data/sonata'
 import type { ImageDataLike } from './preprocess'
 import {
   badgeSearchRect,
@@ -132,5 +134,32 @@ describe('seticon: classifySignature margin-rule pool hẹp', () => {
     expect(MATCH_MAX_DISTANCE).toBe(70)
     expect(POOL_MATCH_MAX_DISTANCE).toBe(90)
     expect(POOL_MATCH_MIN_MARGIN).toBe(15)
+  })
+})
+
+// ---- Biến thể chữ ký in-game (data/seticonSignaturesIngame.ts — 18/07) ----
+// Sinh từ 105 screenshot kho 1080p thật (gen-seticon-ingame.mts). Test integrity: regen
+// làm hỏng dữ liệu (id lạ, sig sai cỡ, 2 set thật quá giống nhau) phải fail TO TIẾNG.
+describe('seticon: biến thể in-game gộp template', () => {
+  it('id hợp lệ theo sonata + đúng cỡ chữ ký + không trùng set trong file', () => {
+    const sonataIds = new Set(SONATA_SETS.map((s) => s.id))
+    const seen = new Set<string>()
+    for (const { id, b64 } of SET_ICON_SIGNATURES_INGAME) {
+      expect(sonataIds.has(id), `id lạ: ${id}`).toBe(true)
+      expect(seen.has(id), `id lặp: ${id}`).toBe(false)
+      seen.add(id)
+      expect(atob(b64).length).toBe(SET_ICON_SIG_SIZE * SET_ICON_SIG_SIZE)
+    }
+    expect(SET_ICON_SIGNATURES_INGAME.length).toBeGreaterThanOrEqual(30)
+  })
+
+  it('mỗi biến thể tự phân loại về ĐÚNG set của nó với pool đầy đủ (không va chạm chéo)', () => {
+    for (const { id, b64 } of SET_ICON_SIGNATURES_INGAME) {
+      const sig = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+      const m = classifySignature(sig)
+      expect(m?.setId, `biến thể ${id} match ${m?.setId ?? 'null'}`).toBe(id)
+      expect(m!.distance).toBe(0)
+      expect(m!.margin, `margin biến thể ${id}`).toBeGreaterThanOrEqual(8)
+    }
   })
 })

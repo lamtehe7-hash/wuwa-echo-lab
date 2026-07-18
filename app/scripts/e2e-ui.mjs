@@ -160,7 +160,7 @@ await sleep(400)
 check('tab-inventory', await clickByText('Kho Echo'))
 await sleep(250)
 check('click-delete', await evaluate(`(() => {
-  const b = [...document.querySelectorAll('tbody button')].find((x) => x.textContent === 'xóa')
+  const b = [...document.querySelectorAll('tbody button')].find((x) => x.textContent === 'xoá')
   if (!b) return false
   b.click(); return true
 })()`))
@@ -244,17 +244,17 @@ check('lock-first', await clickNthFlag('Khoá', 0))
 await sleep(200)
 check('trash-second', await clickNthFlag('Đánh dấu Bỏ', 1))
 await sleep(250)
-check('excluded-chip', await bodyHas('Đã loại (1)'))
-check('excluded-filter-on', await clickByText('Đã loại (1)'))
+check('excluded-chip', await bodyHas('Đã bỏ (1)'))
+check('excluded-filter-on', await clickByText('Đã bỏ (1)'))
 await sleep(250)
 check('excluded-count', await bodyHas('1/10 echo'))
-await clickByText('Đã loại (1)')
+await clickByText('Đã bỏ (1)')
 await sleep(200)
 check('locked-delete-disabled', await evaluate(`(() => {
   const rows = [...document.querySelectorAll('tbody tr')]
   return rows.some((tr) => {
     const lock = [...tr.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('Khoá'))
-    const del = [...tr.querySelectorAll('button')].find((b) => b.textContent === 'xóa')
+    const del = [...tr.querySelectorAll('button')].find((b) => b.textContent === 'xoá')
     return lock?.getAttribute('aria-pressed') === 'true' && del?.disabled
   })
 })()`))

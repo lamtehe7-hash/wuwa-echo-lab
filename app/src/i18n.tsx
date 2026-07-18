@@ -455,6 +455,8 @@ const DICT: Record<string, Entry> = {
   'weights.arch.buffer': { vi: 'Buffer (ER)', en: 'Buffer (ER)' },
   'weights.arch.healerAtk': { vi: 'Healer (scale ATK)', en: 'Healer (ATK-scale)' },
   'weights.arch.healerHp': { vi: 'Healer (scale HP)', en: 'Healer (HP-scale)' },
+  // B1 (ui-redesign): fold stat trọng số 0
+  'weights.showZero': { vi: 'Hiện {n} stat trọng số 0', en: 'Show {n} zero-weight stats' },
   'weights.erTarget': { vi: 'Mục tiêu tổng ER% (gồm 100 gốc; tự trừ ER vũ khí/passive từ ⚔ chỉ số nền; bỏ trống = không gate)', en: 'Target total ER% (incl. 100 base; weapon/passive ER from ⚔ build auto-counted; blank = no gate)' },
   'weights.help': {
     vi: 'Thang 0–1: 1 roll MAX của stat = w điểm. CR = CD = 1 cho DPS (1 roll CD ≈ 1 roll CR về EV quanh tỉ lệ crit 1:2).',

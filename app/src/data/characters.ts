@@ -89,13 +89,15 @@ export const CHARACTERS: CharacterProfile[] = [
   ch('baizhi', 'Baizhi', 'glacio', 'healerHp', ['rejuvenating-glow', 'moonlit-clouds'], { erTarget: 200, main: healerMain }),
   // ── Nhân vật 3.x — research web 13/07/2026, CHƯA kiểm chứng datamine (điểm khởi đầu, chỉnh trong app). Set id đã verify tồn tại trong sonata.ts. ──
   // Nhóm tin cậy tương đối cao (archetype + set khớp nhiều nguồn Game8/Prydwen):
-  ch('lynae', 'Lynae', 'spectro', 'critBasic', ['rite-of-gilded-revelation', 'pact-of-neonlight-leap', 'moonlit-clouds'], { erTarget: 120 }),
-  ch('aemeath', 'Aemeath', 'fusion', 'critLiberation', ['trailblazing-star', 'molten-rift'], { erTarget: 120 }),
-  ch('luuk-herssen', 'Luuk Herssen', 'spectro', 'critBasic', ['rite-of-gilded-revelation', 'celestial-light'], { erTarget: 125 }),
-  ch('hiyuki', 'Hiyuki', 'glacio', 'critLiberation', ['wishes-of-quiet-snowfall', 'freezing-frost'], { erTarget: 120 }),
-  ch('lucy', 'Lucy', 'spectro', 'critHeavy', ['shadow-of-shattered-dreams', 'celestial-light', 'lingering-tunes'], { erTarget: 120 }),
-  ch('rebecca', 'Rebecca', 'electro', 'critHeavy', ['shadow-of-shattered-dreams', 'void-thunder', 'reel-of-spliced-memories'], { erTarget: 125 }),
-  ch('suisui', 'Suisui', 'glacio', 'healerHp', ['song-of-feathered-trace', 'rejuvenating-glow', 'moonlit-clouds'], { erTarget: 260, main: healerMain }),
+  // verified:false TƯỜNG MINH (review 19/07): trước đây nhóm này để undefined — không phân biệt được
+  // với preset cũ đã kiểm chứng kỹ (cũng undefined); UI dùng cờ này hiện dấu "≈ chưa kiểm chứng".
+  ch('lynae', 'Lynae', 'spectro', 'critBasic', ['rite-of-gilded-revelation', 'pact-of-neonlight-leap', 'moonlit-clouds'], { erTarget: 120, verified: false }),
+  ch('aemeath', 'Aemeath', 'fusion', 'critLiberation', ['trailblazing-star', 'molten-rift'], { erTarget: 120, verified: false }),
+  ch('luuk-herssen', 'Luuk Herssen', 'spectro', 'critBasic', ['rite-of-gilded-revelation', 'celestial-light'], { erTarget: 125, verified: false }),
+  ch('hiyuki', 'Hiyuki', 'glacio', 'critLiberation', ['wishes-of-quiet-snowfall', 'freezing-frost'], { erTarget: 120, verified: false }),
+  ch('lucy', 'Lucy', 'spectro', 'critHeavy', ['shadow-of-shattered-dreams', 'celestial-light', 'lingering-tunes'], { erTarget: 120, verified: false }),
+  ch('rebecca', 'Rebecca', 'electro', 'critHeavy', ['shadow-of-shattered-dreams', 'void-thunder', 'reel-of-spliced-memories'], { erTarget: 125, verified: false }),
+  ch('suisui', 'Suisui', 'glacio', 'healerHp', ['song-of-feathered-trace', 'rejuvenating-glow', 'moonlit-clouds'], { erTarget: 260, main: healerMain, verified: false }),
   // ── Đã web-research 14/07/2026 (Prydwen/Game8/wuthering.gg qua 3 agent, cross-check ≥3 nguồn):
   //    cả 6 mục ĐỀU CÓ THẬT; trọng số/erTarget/set/main đã hiệu chỉnh theo nguồn (bỏ [UNVERIFIED]).
   //    Lưu ý: base-stat của bản mới chỉ đơn-nguồn, nhưng element/role/set/archetype thì ≥3 nguồn khớp.

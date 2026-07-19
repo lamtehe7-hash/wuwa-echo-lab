@@ -1,6 +1,6 @@
 // Nghi thức verify chuẩn của repo, gộp 1 lệnh (đúc kết task 29→58 — trước đây gõ tay 4 bước):
 //   node scripts/verify-all.mjs [extra-cdp-1.mjs extra-cdp-2.mjs ...]
-// Chuỗi: vitest run → npm run build (kèm tsc -b) → vite preview (4173) → e2e-ui.mjs (~76 bước)
+// Chuỗi: vitest run → npm run build (kèm tsc -b) → vite preview (4173) → e2e-ui.mjs (~78 bước)
 // → các script CDP THÊM (verify theo task, viết bằng cdp-harness.mjs) → kill preview → tổng kết.
 // Exit 0 chỉ khi TẤT CẢ pass. PNG e2e ghi vào %TEMP%.
 

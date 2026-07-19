@@ -285,6 +285,17 @@ await sleep(150)
 await evaluate(`(() => { const b = [...document.querySelectorAll('tbody button')].find((x) => x.getAttribute('aria-pressed') === 'true' && (x.getAttribute('aria-label') || '').startsWith('Đánh dấu Bỏ')); if (b) b.click(); return true })()`)
 await sleep(150)
 
+// 10) Persistence qua RELOAD (review 19/07): app client-side-only — "dữ liệu sống sót F5" là hợp
+// đồng cốt lõi nhất của sản phẩm nhưng E2E trước đây không bao giờ reload trang.
+await send('Page.navigate', { url: URL_APP })
+for (let i = 0; i < 50; i++) {
+  if ((await evaluate('document.readyState')) === 'complete' && (await evaluate("!!document.querySelector('h1')"))) break
+  await sleep(200)
+}
+await sleep(300)
+check('reload-persist-10', await bodyHas('Kho: 10 echo'))
+check('reload-no-empty-state', !(await bodyHas('Kho echo đang trống')))
+
 const shot = await send('Page.captureScreenshot', { format: 'png' })
 writeFileSync(process.argv[2] ?? 'e2e-ui.png', Buffer.from(shot.data, 'base64'))
 

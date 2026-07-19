@@ -255,6 +255,31 @@ X ATK 52
     expect(d.substats).toContainEqual({ stat: 'atk', value: 50 })
     expect(d.substats.filter((s) => s.stat === 'atk')).toHaveLength(1)
   })
+
+  // Review 19/07: LEVEL không đọc được thì isFixedPanelLine chỉ khớp được giá trị MAX (factor=1) —
+  // dòng cố định ở mức partial (vd "ATK 58" của echo +12 cost-3) lọt vào vùng roll substat và
+  // từng được thêm IM LẶNG thành substat giả (snap 58→60 lệch 3.4% < 5% nên không có snapOff).
+  // Fix: vẫn nhận là sub (không đoán mò) nhưng cảnh báo maybeFixedLine để user soát.
+  it('level không đọc được + dòng flat trùng family cố định (ATK 58, cost-3) → cảnh báo maybeFixedLine', () => {
+    const d = parseEchoText(`COST 3
+Havoc DMG Bonus 15.6%
+ATK 58
++ Crit. DMG 17.4%
++ Energy Regen 8.4%`)
+    expect(d.level).toBeUndefined()
+    expect(d.substats).toContainEqual({ stat: 'atk', value: 60 }) // vẫn giữ (snap mốc) — không tự vứt
+    expect(d.warnings.some((w) => w.key === 'ocrParse.maybeFixedLine')).toBe(true)
+  })
+
+  it('level ĐỌC ĐƯỢC thì không có cảnh báo maybeFixedLine (dòng cố định đã bị tiêu thụ đúng)', () => {
+    const d = parseEchoText(`Zzz Fake Echo +10
+COST 3
+(3 Havoc DMG Bonus 15.6%
+X ATK 52
++ ATK 50
++ Crit. DMG 17.4%`)
+    expect(d.warnings.some((w) => w.key === 'ocrParse.maybeFixedLine')).toBe(false)
+  })
 })
 
 // ---- Confidence theo KỲ VỌNG substat của level (cải tiến video 18/07) ----

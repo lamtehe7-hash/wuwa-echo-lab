@@ -120,6 +120,9 @@ export interface StatBuff {
   stats: Partial<Record<WeightKey, number>>
   /** Mặc định bật? (buff uptime cao / gần như luôn có trong rotation) */
   defaultOn: boolean
+  /** Số mảnh set tối thiểu để defaultOn tự kích (chỉ có nghĩa với SET_BUFFS — vd hiệu ứng 5pc = 5).
+   *  Bỏ trống = không ràng buộc (buff vũ khí/kit). Override tay trong buffStates luôn thắng. */
+  pieces?: number
 }
 
 export interface Weapon {

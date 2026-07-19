@@ -10,7 +10,9 @@ export type TParams = Record<string, string | number>
 
 interface Entry { vi: string; en: string }
 
-const DICT: Record<string, Entry> = {
+// export cho i18n.keys.test.ts (review 19/07): scan tĩnh mọi lời gọi t('...')/key literal trong
+// component đối chiếu DICT — t() nhận string trần nên gõ nhầm key là UI hiện nguyên key thô.
+export const DICT: Record<string, Entry> = {
   // ── common ──
   'common.exportJson': { vi: 'Export JSON', en: 'Export JSON' },
   'common.importJson': { vi: 'Import JSON', en: 'Import JSON' },
@@ -25,6 +27,7 @@ const DICT: Record<string, Entry> = {
   'toast.savedBatch': { vi: 'Đã lưu {n} echo vào kho', en: 'Saved {n} echoes to inventory' },
   'toast.undoExpired': { vi: 'Hoàn tác không còn hiệu lực — kho đã bị thay thế toàn bộ', en: 'Undo no longer valid — inventory was replaced' },
   'app.persistError': { vi: 'Không lưu được vào bộ nhớ trình duyệt (đầy hoặc bị chặn) — thay đổi sẽ MẤT khi tải lại trang. Hãy Xuất JSON để sao lưu.', en: 'Could not save to browser storage (full or blocked) — changes will be LOST on reload. Use Export JSON to back up.' },
+  'app.crossTab': { vi: 'App đang mở ở tab/cửa sổ khác và vừa lưu dữ liệu ở đó — thao tác tiếp ở đây có thể GHI ĐÈ mất thay đổi đó. Hãy đóng bớt tab rồi tải lại trang.', en: 'The app is open in another tab/window and just saved data there — continuing here may OVERWRITE those changes. Close the other tab, then reload this page.' },
 
   // ── Tabs (điều hướng chính) ──
   'tabs.inventory': { vi: 'Kho Echo', en: 'Inventory' },
@@ -42,6 +45,14 @@ const DICT: Record<string, Entry> = {
   'scanner.fmtApp': { vi: 'JSON của tool này', en: 'this tool\'s JSON' },
   'scanner.placeholder': { vi: 'Dán nội dung JSON scanner vào đây…', en: 'Paste scanner JSON here…' },
   'scanner.result': { vi: 'Format: {fmt} · đọc được {n} echo · bỏ {m}', en: 'Format: {fmt} · {n} echoes parsed · {m} skipped' },
+  // Warnings của importScanner — LocMessage (review 19/07: trước là chuỗi VI hard-code, user EN không đọc được)
+  'scanner.warnSubstat': { vi: 'substat "{name}" không nhận ra', en: 'unrecognized substat "{name}"' },
+  'scanner.warnSubstatKamera': { vi: 'substat Kamera "{name}" không nhận ra', en: 'unrecognized Kamera substat "{name}"' },
+  'scanner.warnKameraCost': { vi: 'Format Kamera: cost suy từ ATK nội tại (150→4, 100→3, còn lại→1) — kiểm tra lại nếu sai', en: 'Kamera format: cost inferred from innate ATK (150→4, 100→3, else→1) — double-check if wrong' },
+  'scanner.warnTooLarge': { vi: 'File quá lớn (>20MB) — không phải file scanner hợp lệ', en: 'File too large (>20MB) — not a valid scanner file' },
+  'scanner.warnCapped': { vi: 'File có {n} mục — chỉ nhập {max} mục đầu', en: 'File has {n} entries — only the first {max} were imported' },
+  'scanner.warnBadJson': { vi: 'JSON không hợp lệ', en: 'Invalid JSON' },
+  'scanner.warnUnknownFormat': { vi: 'Không nhận ra format scanner', en: 'Unrecognized scanner format' },
   'scanner.add': { vi: '➕ Thêm {n} vào kho', en: '➕ Add {n} to inventory' },
   'scanner.replace': { vi: '↻ Thay thế kho ({n})', en: '↻ Replace inventory ({n})' },
   'vault.tip': { vi: 'Kho echo đang dùng. Tạo nhiều kho (tài khoản chính/phụ) — mỗi kho lưu riêng echo, trọng số, bộ đang đeo.', en: 'Active echo vault. Create multiple vaults (main/alt account) — each stores its own echoes, weights, equipped sets.' },
@@ -73,6 +84,7 @@ const DICT: Record<string, Entry> = {
 
   // ── CharacterPicker ──
   'picker.overridden': { vi: 'Đã chỉnh trọng số riêng', en: 'Custom weights applied' },
+  'picker.unverified': { vi: 'Preset research web, CHƯA kiểm chứng datamine — nên tự soát trọng số/set trước khi tin hẳn', en: 'Web-researched preset, NOT datamine-verified yet — double-check weights/sets before relying on it' },
   'picker.hint': { vi: '＊ = đã chỉnh trọng số riêng · badge: DPS / Sub / Buff / Heal', en: '＊ = custom weights · badges: DPS / Sub / Buff / Heal' },
   'picker.search': { vi: 'Tìm nhân vật…', en: 'Search character…' },
   'picker.noResults': { vi: 'Không tìm thấy nhân vật nào', en: 'No character found' },
@@ -551,8 +563,10 @@ const DICT: Record<string, Entry> = {
   'ocrParse.dupSubs': { vi: 'Bỏ qua {n} dòng phụ trùng loại (chỉ giữ lần xuất hiện đầu tiên).', en: 'Skipped {n} duplicate substat line(s) (kept the first occurrence only).' },
   'ocrParse.tooManySubs': { vi: 'Nhận diện được {n} dòng phụ (>5) — đã cắt bớt, kiểm tra lại thủ công.', en: 'Detected {n} substat lines (>5) — trimmed, please double-check.' },
   'ocrParse.snapOff': { vi: 'Dòng phụ {label} = {value}{pct} lệch {off}% so với mốc gần nhất ({snapped}) — đã tự làm tròn, kiểm tra lại.', en: 'Substat {label} = {value}{pct} is {off}% off the nearest tier ({snapped}) — auto-rounded, please verify.' },
+  'ocrParse.maybeFixedLine': { vi: 'Không đọc được level — dòng {label} {value} có thể là stat CỐ ĐỊNH của panel (không phải substat). Kiểm lại trước khi lưu.', en: 'Level unreadable — the {label} {value} line may be the panel\'s FIXED stat (not a substat). Double-check before saving.' },
   'ocrParse.noContent': { vi: 'Không nhận diện được nội dung hợp lệ trong ảnh này — hãy thử chụp rõ hơn hoặc nhập tay.', en: 'No valid content recognized in this image — try a clearer screenshot or enter manually.' },
   'ocr.error': { vi: 'Lỗi OCR: {msg}', en: 'OCR error: {msg}' },
+  'ocr.cropMismatch': { vi: 'Ảnh này khác độ phân giải với ảnh chọn vùng cắt — vùng cắt có thể lệch, kết quả dễ sai. Chạy riêng nhóm ảnh cùng độ phân giải.', en: 'This image has a different resolution than the crop reference — the crop region may be misaligned and results wrong. Run same-resolution images together.' },
 }
 
 function interpolate(s: string, params?: TParams): string {

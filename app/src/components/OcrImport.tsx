@@ -174,6 +174,9 @@ export default function OcrImport({ onAdd }: Props) {
     if (files.length === 0 || running) return
     setRunning(true)
     cancelRef.current = false
+    // Crop lấy toạ độ PIXEL từ ảnh đầu hàng chờ — ảnh khác độ phân giải sẽ bị cắt sai vùng
+    // (review 19/07). Không đoán lại vùng; ghi nhớ kích thước tham chiếu để cảnh báo rõ trên card.
+    const refDims = imgCrop && imgEl ? { w: imgEl.naturalWidth, h: imgEl.naturalHeight } : null
     const queue = files
     setFiles([])
     if (inputRef.current) inputRef.current.value = ''
@@ -187,6 +190,15 @@ export default function OcrImport({ onAdd }: Props) {
         // Luôn qua canvas (crop + word-box): crop áp vùng panel user chọn; word-box cho phép
         // nhận set-từ-icon KỂ CẢ khi tắt binarize (trước đây nhánh else mất word-box → mất set).
         const cropOpt = imgCrop ?? undefined
+        // Ảnh lệch kích thước so với ảnh chọn crop → vùng cắt trỏ sai chỗ, OCR ra rác không rõ lý do
+        let cropMismatch = false
+        if (cropOpt && refDims) {
+          try {
+            const bmp = await createImageBitmap(file)
+            cropMismatch = bmp.width !== refDims.w || bmp.height !== refDims.h
+            bmp.close()
+          } catch { /* không đọc được kích thước → bỏ qua check, OCR vẫn chạy */ }
+        }
         const ocrCanvas = await fileToPreprocessedCanvas(file, { crop: cropOpt, scale: 'auto', binarize: preprocessOn })
         const { text, words } = await recognizeImageWithBoxes(ocrCanvas, onP)
         let draft: EchoDraft = parseEchoText(text)
@@ -197,7 +209,9 @@ export default function OcrImport({ onAdd }: Props) {
           const match = detectSetFromCanvas(colorCanvas, words, draft.setCandidates)
           if (match) draft = { ...draft, set: match.setId }
         }
-        setResults((prev) => [...prev, draftToItem(file.name, recoverDraft(draft))])
+        let finalDraft = recoverDraft(draft)
+        if (cropMismatch) finalDraft = { ...finalDraft, warnings: [...finalDraft.warnings, { key: 'ocr.cropMismatch' }] }
+        setResults((prev) => [...prev, draftToItem(file.name, finalDraft)])
       } catch (err) {
         setResults((prev) => [
           ...prev,

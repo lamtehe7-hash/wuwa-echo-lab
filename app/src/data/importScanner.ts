@@ -9,7 +9,7 @@
 //   3) Format của chính app: { version, echoes:[Echo] }  hoặc  [Echo] (mainStat + substats:[{stat,value}])
 // Không match được set/cost/main → bỏ mục đó (đếm vào dropped) + cảnh báo. sanitizeEcho lo snap mốc.
 
-import type { Echo, EchoCost, MainStatKey, SubstatKey } from '../types'
+import type { Echo, EchoCost, LocMessage, MainStatKey, SubstatKey } from '../types'
 import { SONATA_SETS } from './sonata'
 import { MAINSTATS } from './mainstats'
 import { SUBSTATS } from './substats'
@@ -87,12 +87,13 @@ export interface ScannerImportResult {
   echoes: Echo[]
   dropped: number
   format: 'parsed-echo' | 'kamera' | 'app' | 'unknown'
-  warnings: string[]
+  /** LocMessage (review 19/07) — trước đây là chuỗi VI hard-code, người dùng EN không đọc được lỗi import */
+  warnings: LocMessage[]
 }
 
 // ---- Nhận dạng + parse từng format thành RawEcho[] (key nội bộ) ----
 
-function fromParsedEcho(arr: Record<string, unknown>[], warn: string[]): RawEcho[] {
+function fromParsedEcho(arr: Record<string, unknown>[], warn: LocMessage[]): RawEcho[] {
   return arr.map((it) => {
     const subs: { stat: string; value: number }[] = []
     const rawSubs = Array.isArray(it.substats) ? (it.substats as Record<string, unknown>[]) : []
@@ -101,7 +102,7 @@ function fromParsedEcho(arr: Record<string, unknown>[], warn: string[]): RawEcho
       const stat = resolveStat(name, hasPct(name, s.subStatValue))
       const value = toNumber(s.subStatValue)
       if (stat && Number.isFinite(value)) subs.push({ stat, value })
-      else if (name) warn.push(`substat "${name}" không nhận ra`)
+      else if (name) warn.push({ key: 'scanner.warnSubstat', params: { name } })
     }
     const mainLabel = String(it.mainStatLabel ?? '')
     const mainStat = resolveStat(mainLabel, hasPct(mainLabel, it.mainStatLabel)) ?? undefined
@@ -116,7 +117,7 @@ function fromParsedEcho(arr: Record<string, unknown>[], warn: string[]): RawEcho
   })
 }
 
-function fromKamera(arr: Record<string, unknown>[], warn: string[]): RawEcho[] {
+function fromKamera(arr: Record<string, unknown>[], warn: LocMessage[]): RawEcho[] {
   const out: RawEcho[] = []
   for (const wrapper of arr) {
     // mỗi phần tử = object 1-khoá (id echo) → data
@@ -142,7 +143,7 @@ function fromKamera(arr: Record<string, unknown>[], warn: string[]): RawEcho[] {
         const stat = resolveStat(k, hasPct(k, v))
         const value = toNumber(v)
         if (stat && Number.isFinite(value)) subs.push({ stat, value })
-        else warn.push(`substat Kamera "${k}" không nhận ra`)
+        else warn.push({ key: 'scanner.warnSubstatKamera', params: { name: k } })
       }
       out.push({
         cost: inferCostFromInnateAtk(innateAtk),
@@ -154,7 +155,7 @@ function fromKamera(arr: Record<string, unknown>[], warn: string[]): RawEcho[] {
       })
     }
   }
-  if (out.length) warn.push('Format Kamera: cost suy từ ATK nội tại (150→4, 100→3, còn lại→1) — kiểm tra lại nếu sai')
+  if (out.length) warn.push({ key: 'scanner.warnKameraCost' })
   return out
 }
 
@@ -182,20 +183,20 @@ const MAX_TEXT_BYTES = 20 * 1024 * 1024
 const MAX_ENTRIES = 5000
 
 export function parseScannerEchoes(text: string): ScannerImportResult {
-  const warnings: string[] = []
+  const warnings: LocMessage[] = []
   if (text.length > MAX_TEXT_BYTES) {
-    return { echoes: [], dropped: 0, format: 'unknown', warnings: ['File quá lớn (>20MB) — không phải file scanner hợp lệ'] }
+    return { echoes: [], dropped: 0, format: 'unknown', warnings: [{ key: 'scanner.warnTooLarge' }] }
   }
   const capArr = <T,>(arr: T[]): T[] => {
     if (arr.length <= MAX_ENTRIES) return arr
-    warnings.push(`File có ${arr.length} mục — chỉ nhập ${MAX_ENTRIES} mục đầu`)
+    warnings.push({ key: 'scanner.warnCapped', params: { n: arr.length, max: MAX_ENTRIES } })
     return arr.slice(0, MAX_ENTRIES)
   }
   let data: unknown
   try {
     data = JSON.parse(text)
   } catch {
-    return { echoes: [], dropped: 0, format: 'unknown', warnings: ['JSON không hợp lệ'] }
+    return { echoes: [], dropped: 0, format: 'unknown', warnings: [{ key: 'scanner.warnBadJson' }] }
   }
 
   // Format app: { echoes:[...] } hoặc [Echo] có mainStat + substats:[{stat,value}]
@@ -232,7 +233,7 @@ export function parseScannerEchoes(text: string): ScannerImportResult {
   }
 
   if (format === 'unknown' || raws.length === 0) {
-    return { echoes: [], dropped: 0, format, warnings: warnings.length ? warnings : ['Không nhận ra format scanner'] }
+    return { echoes: [], dropped: 0, format, warnings: warnings.length ? warnings : [{ key: 'scanner.warnUnknownFormat' }] }
   }
 
   const seen = new Set<string>()
@@ -244,5 +245,13 @@ export function parseScannerEchoes(text: string): ScannerImportResult {
     if (e) echoes.push(e)
     else dropped++
   }
-  return { echoes, dropped, format, warnings: [...new Set(warnings)] }
+  // Dedup theo key+params (Set không dedup được object — warnings giờ là LocMessage)
+  const seenWarn = new Set<string>()
+  const uniqueWarnings = warnings.filter((w) => {
+    const k = w.key + JSON.stringify(w.params ?? {})
+    if (seenWarn.has(k)) return false
+    seenWarn.add(k)
+    return true
+  })
+  return { echoes, dropped, format, warnings: uniqueWarnings }
 }

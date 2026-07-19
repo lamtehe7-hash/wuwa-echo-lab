@@ -15,15 +15,17 @@ function labelOf(stat: WeightKey): string {
 }
 const fmt = (n: number) => (n === 0 ? '·' : n.toFixed(1))
 
-export default function StatBreakdown({ echoes, profile, ctx, activeSet, defaultOpen = false }: {
+export default function StatBreakdown({ echoes, profile, ctx, activeSet, activeSetPieces, defaultOpen = false }: {
   echoes: Echo[]
   profile: CharacterProfile
   ctx?: BuildContext
   activeSet?: string
+  /** Số mảnh activeSet đang đeo — buff set có ngưỡng pieces chỉ tự bật khi đủ (review 19/07) */
+  activeSetPieces?: number
   defaultOpen?: boolean
 }) {
   const t = useT()
-  const rows = finalStatBreakdown(echoes, profile, ctx, activeSet)
+  const rows = finalStatBreakdown(echoes, profile, ctx, activeSet, activeSetPieces)
   if (rows.length === 0) return null
   return (
     <details open={defaultOpen} className="rounded border border-slate-800 bg-slate-900/40">

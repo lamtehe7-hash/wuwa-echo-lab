@@ -41,10 +41,13 @@ export function maxRoll(stat: SubstatKey): number {
   return r[r.length - 1]
 }
 
-/** Kỳ vọng giá trị 1 roll của stat (theo phân phối xác suất mốc) */
+/** Kỳ vọng giá trị 1 roll của stat (theo phân phối xác suất mốc).
+ *  Chia Σprobs vì bảng probs cộng đồng không chuẩn (PROB4 Σ=0.9971, PROB8 Σ=1.0001) — khớp cách
+ *  sampleRoll (economy.ts) chuẩn hoá CDF, hết lệch ~0.3% giữa evFinal closed-form và MC (review 19/07). */
 export function expectedRoll(stat: SubstatKey): number {
   const d = SUBSTATS[stat]
-  return d.rolls.reduce((s, v, i) => s + v * d.probs[i], 0)
+  const total = d.probs.reduce((s, p) => s + p, 0)
+  return d.rolls.reduce((s, v, i) => s + v * d.probs[i], 0) / total
 }
 
 /** Số substat tối đa theo rarity */

@@ -66,10 +66,11 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
   }, [slots, byId, profile, ctx])
 
   const activeSet = result ? dominantSet(result.setCounts) : undefined
+  const activeSetPieces = result && activeSet ? result.setCounts[activeSet] : undefined
   const totalCost = filled.reduce((s, e) => s + e.cost, 0)
   const overCost = totalCost > COST_CAP
   const mainEcho = resolved[0]
-  const dmg = result ? loadoutDamage(result.echoes.map((s) => s.echo), profile, ctx, activeSet) : null
+  const dmg = result ? loadoutDamage(result.echoes.map((s) => s.echo), profile, ctx, activeSet, activeSetPieces) : null
   const delta = result && compareTotal !== null ? result.total - compareTotal : null
   // U11: delta vs bộ solver còn mới — cùng thang màu với delta-vs-equipped (số lớn hơn = xanh hơn,
   // rose thường xuyên là BÌNH THƯỜNG: bench đa phần kém bộ solver quét cả kho)
@@ -269,7 +270,7 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
             </div>
           )}
 
-          {result && <StatBreakdown echoes={filled} profile={profile} ctx={ctx} activeSet={activeSet} defaultOpen={false} />}
+          {result && <StatBreakdown echoes={filled} profile={profile} ctx={ctx} activeSet={activeSet} activeSetPieces={activeSetPieces} defaultOpen={false} />}
 
           {/* B4 (ui-redesign): whitespace-nowrap như LoadoutView — nút không gãy chữ ở cột hẹp */}
           <div className="flex flex-wrap gap-2">
@@ -279,7 +280,7 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
                   type="button"
                   className="whitespace-nowrap rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
                   title={t('loadout.exportTip')}
-                  onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet)}
+                  onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet, activeSetPieces)}
                 >{t('loadout.exportPng')}</button>
                 <button
                   type="button"

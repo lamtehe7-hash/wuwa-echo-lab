@@ -13,15 +13,18 @@ interface Props {
   override?: ProfileOverride
   /** Set đang chạy (forcedSet || preferred[0]) — để liệt kê buff của set */
   activeSet?: string
+  /** Số mảnh activeSet THẬT (setCounts của bộ solve còn mới) — buff ngưỡng pieces (5pc) chỉ tự bật
+   *  khi đủ mảnh; undefined (chưa solve / set chỉ là đoán) → mặc định tắt, user vẫn toggle tay được */
+  activeSetPieces?: number
   onChange: (ov: ProfileOverride | undefined) => void
 }
 
 const SCALE_LABEL = { atk: 'ATK', hp: 'HP', def: 'DEF' } as const
 
-export default function BuildEditor({ profile, override, activeSet, onChange }: Props) {
+export default function BuildEditor({ profile, override, activeSet, activeSetPieces, onChange }: Props) {
   const t = useT()
   const build: BuildContext = override?.build ?? {}
-  const r = resolveContext(profile, build, activeSet)
+  const r = resolveContext(profile, build, activeSet, activeSetPieces)
   const inDb = !!CHARACTER_BASE_BY_ID[profile.id]
   // Lọc dropdown theo loại vũ khí nhân vật (DB datamine, task 55) — 110 option → ~20 đúng loại.
   // Vũ khí ĐÃ chọn giữ lại dù lệch loại (dữ liệu cũ) để <select> không mất value.

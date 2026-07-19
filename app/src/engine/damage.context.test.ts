@@ -18,7 +18,7 @@ describe('finalStatBreakdown: cộng dồn đúng nguồn (ví dụ user 92.1% C
   it('CR = base 5 + weapon 24.3 + forte 8 + echo 34.8 + buff 20 = 92.1', () => {
     // echo tổng CR 34.8 (chia 2 dòng cho giống thực tế nhiều echo)
     const echoes = [echo('a', 'critRate', 20.0), echo('b', 'critRate', 14.8)]
-    const rows = finalStatBreakdown(echoes, xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace')
+    const rows = finalStatBreakdown(echoes, xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace', 5)
     const cr = rows.find((r) => r.stat === 'critRate')!
     expect(cr.base).toBe(5)
     expect(cr.weapon).toBeCloseTo(24.3, 5)
@@ -31,7 +31,7 @@ describe('finalStatBreakdown: cộng dồn đúng nguồn (ví dụ user 92.1% C
 
   it('CR cap 100 khi tổng vượt', () => {
     const echoes = [echo('a', 'critRate', 60)]
-    const rows = finalStatBreakdown(echoes, xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace')
+    const rows = finalStatBreakdown(echoes, xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace', 5)
     const cr = rows.find((r) => r.stat === 'critRate')!
     expect(cr.total).toBe(100)
     expect(cr.capped).toBe(true)
@@ -39,7 +39,8 @@ describe('finalStatBreakdown: cộng dồn đúng nguồn (ví dụ user 92.1% C
 
   it('tắt buff feather → không cộng 20 CR', () => {
     const echoes = [echo('a', 'critRate', 10)]
-    const rows = finalStatBreakdown(echoes, xuanling, { weaponId: 'azure-oath', buffStates: { 'sft-feather': false } }, 'song-of-feathered-trace')
+    // pieces 5 để chắc chắn buff LẼ RA tự bật — test khoá riêng đường override tắt tay
+    const rows = finalStatBreakdown(echoes, xuanling, { weaponId: 'azure-oath', buffStates: { 'sft-feather': false } }, 'song-of-feathered-trace', 5)
     const cr = rows.find((r) => r.stat === 'critRate')!
     expect(cr.buff).toBe(0)
     expect(cr.total).toBeCloseTo(5 + 24.3 + 8 + 10, 5)
@@ -49,6 +50,39 @@ describe('finalStatBreakdown: cộng dồn đúng nguồn (ví dụ user 92.1% C
     const rows = finalStatBreakdown([], xuanling, { weaponId: 'azure-oath', buffStates: { 'sft-feather': false } }, 'song-of-feathered-trace')
     const el = rows.find((r) => r.stat === 'elementDmg')
     expect(el?.weapon).toBe(12)
+  })
+})
+
+describe('buff set ngưỡng pieces (5pc) — review 19/07: không cộng khống khi chưa đủ mảnh', () => {
+  it('pieces 3 (< 5) → feather KHÔNG tự bật, buff CR = 0', () => {
+    const rows = finalStatBreakdown([], xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace', 3)
+    const cr = rows.find((r) => r.stat === 'critRate')!
+    expect(cr.buff).toBe(0)
+  })
+
+  it('pieces undefined (BuildEditor chưa solve / set chỉ đoán) → feather KHÔNG tự bật', () => {
+    const r = resolveContext(xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace')
+    const feather = r.buffs.find((b) => b.buff.id === 'sft-feather')!
+    expect(feather).toBeDefined() // vẫn LIỆT KÊ cho user toggle tay
+    expect(feather.on).toBe(false)
+    expect(r.buffMap.critRate ?? 0).toBe(0)
+  })
+
+  it('pieces 5 → feather tự bật như cũ', () => {
+    const r = resolveContext(xuanling, {}, 'song-of-feathered-trace', 5)
+    expect(r.buffs.find((b) => b.buff.id === 'sft-feather')!.on).toBe(true)
+    expect(r.buffMap.critRate).toBe(20)
+  })
+
+  it('override buffStates true thắng ngưỡng pieces (user chủ động bật để preview)', () => {
+    const r = resolveContext(xuanling, { buffStates: { 'sft-feather': true } }, 'song-of-feathered-trace', 2)
+    expect(r.buffs.find((b) => b.buff.id === 'sft-feather')!.on).toBe(true)
+  })
+
+  it('buff vũ khí (không có pieces) không bị ảnh hưởng bởi gating', () => {
+    // bloodpacts-pledge có buff Aero team defaultOn false — chỉ kiểm buff vũ khí vẫn liệt kê bình thường
+    const r = resolveContext(xuanling, { weaponId: 'azure-oath' }, undefined, undefined)
+    for (const b of r.buffs) expect(b.buff.pieces).toBeUndefined()
   })
 })
 
@@ -94,8 +128,8 @@ describe('loadoutDamage: tương thích ngược khi không context', () => {
     const lowBare = loadoutDamage([], xuanling).index
     const lowWithCd = loadoutDamage([crMain], xuanling).index
     // CR cao: vũ khí Azure Oath (+24.3 CR) + forte 8 + feather (+20 CR).
-    const hiBare = loadoutDamage([], xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace').index
-    const hiWithCd = loadoutDamage([crMain], xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace').index
+    const hiBare = loadoutDamage([], xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace', 5).index
+    const hiWithCd = loadoutDamage([crMain], xuanling, { weaponId: 'azure-oath' }, 'song-of-feathered-trace', 5).index
     // Tỉ lệ tăng khi thêm Crit DMG cao hơn hẳn ở build CR cao.
     expect(hiWithCd / hiBare).toBeGreaterThan(lowWithCd / lowBare)
   })

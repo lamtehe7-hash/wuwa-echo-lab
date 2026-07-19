@@ -45,7 +45,7 @@ const RARITY_BORDER: Record<number, string> = { 5: '#f59e0b', 4: '#a78bfa', 3: '
 
 /** `build`/`activeSet` PHẢI truyền y hệt chỗ hiển thị (LoadoutView/BenchPanel) — review 16/07:
  *  export từng bỏ trống build context nên số ⚔× trên PNG lệch với số đang hiện trong app. */
-export async function exportLoadoutCard(result: LoadoutResult, profile: CharacterProfile, build?: BuildContext, activeSet?: string): Promise<void> {
+export async function exportLoadoutCard(result: LoadoutResult, profile: CharacterProfile, build?: BuildContext, activeSet?: string, activeSetPieces?: number): Promise<void> {
   const echoes = result.echoes
   const icons = await Promise.all(
     echoes.map((s) => {
@@ -96,7 +96,7 @@ export async function exportLoadoutCard(result: LoadoutResult, profile: Characte
   ctx.font = '400 13px system-ui, "Segoe UI", sans-serif'
   ctx.fillText(`${profile.element} · ${profile.archetype}`, PAD + 16, PAD + 47)
 
-  const dmg = loadoutDamage(echoes.map((s) => s.echo), profile, build, activeSet)
+  const dmg = loadoutDamage(echoes.map((s) => s.echo), profile, build, activeSet, activeSetPieces)
   ctx.textAlign = 'right'
   ctx.fillStyle = '#6ee7b7'
   ctx.font = '700 30px system-ui, "Segoe UI", sans-serif'

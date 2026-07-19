@@ -42,7 +42,8 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
   const setList = Object.entries(result.setCounts).map(([id, n]) => `${SONATA_BY_ID[id]?.name ?? id} ×${n}`).join(', ')
   const setBreakdown = setBonusBreakdown(result.setCounts, profile).filter((e) => e.statScore > 0.05 || e.prefBonus > 0)
   const activeSet = dominantSet(result.setCounts)
-  const dmg = loadoutDamage(echoList, profile, ctx, activeSet)
+  const activeSetPieces = activeSet ? result.setCounts[activeSet] : undefined
+  const dmg = loadoutDamage(echoList, profile, ctx, activeSet, activeSetPieces)
   // Main echo đề cử (research/main-echo.md): bộ solver có chứa echo đề cử nào không?
   const recs = mainEchoesFor(profile.id)
   const loadoutNames = new Set(result.echoes.map((s) => s.echo.name?.trim().toLowerCase()).filter(Boolean))
@@ -80,7 +81,7 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
           <span className="ml-2 text-slate-500">CR <span className="font-mono text-slate-300">{dmg.critRateTotal.toFixed(1)}%</span> · CD <span className="font-mono text-slate-300">{dmg.critDmgTotal.toFixed(1)}%</span></span>
         )}
       </div>
-      <StatBreakdown echoes={echoList} profile={profile} ctx={ctx} activeSet={activeSet} defaultOpen={!!ctx} />
+      <StatBreakdown echoes={echoList} profile={profile} ctx={ctx} activeSet={activeSet} activeSetPieces={activeSetPieces} defaultOpen={!!ctx} />
       {/* F10 (task 73): chi phí hoàn thiện bộ — <details> đóng, tự ẩn khi bộ đã full (return null) */}
       <BuildCostEstimator echoes={echoList} profile={profile} />
       {recs.length > 0 && (
@@ -124,7 +125,7 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
           type="button"
           className="whitespace-nowrap rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
           title={t('loadout.exportTip')}
-          onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet)}
+          onClick={() => void exportLoadoutCard(result, profile, ctx, activeSet, activeSetPieces)}
         >{t('loadout.exportPng')}</button>
         {onPin && (
           <button

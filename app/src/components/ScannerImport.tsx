@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Echo } from '../types'
 import { parseScannerEchoes, type ScannerImportResult } from '../data/importScanner'
-import { useT } from '../i18n'
+import { useT, useTMessage } from '../i18n'
 
 // Import JSON từ scanner echo cộng đồng (wuwa-ocr/wuwa.build ParsedEcho[], Kamera echoes.json,
 // hoặc chính export của app). Dán text hoặc chọn file → parse → xem trước → thêm/thay kho.
@@ -13,6 +13,7 @@ export default function ScannerImport({
   onImport: (echoes: Echo[], mode: 'append' | 'replace') => void
 }) {
   const t = useT()
+  const tm = useTMessage()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [result, setResult] = useState<ScannerImportResult | null>(null)
@@ -63,7 +64,7 @@ export default function ScannerImport({
               </div>
               {result.warnings.length > 0 && (
                 <ul className="list-inside list-disc text-amber-500/80">
-                  {result.warnings.slice(0, 4).map((w, i) => <li key={i}>{w}</li>)}
+                  {result.warnings.slice(0, 4).map((w, i) => <li key={i}>{tm(w)}</li>)}
                 </ul>
               )}
               {result.echoes.length > 0 && (

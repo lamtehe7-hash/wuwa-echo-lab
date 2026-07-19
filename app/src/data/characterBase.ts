@@ -68,6 +68,6 @@ export const CHARACTER_BASE_BY_ID: Record<string, CharacterBase> = Object.fromEn
 // ─────────────────────────────────────────────────────────────────────────────
 export const SET_BUFFS: Record<string, StatBuff[]> = {
   'song-of-feathered-trace': [
-    { id: 'sft-feather', label: "Havoc Bane → Xuanling's Feather: +20% Crit Rate, +35% Heavy Attack DMG", stats: { critRate: 20, heavyAtk: 35 }, defaultOn: true },
+    { id: 'sft-feather', label: "Havoc Bane → Xuanling's Feather: +20% Crit Rate, +35% Heavy Attack DMG", stats: { critRate: 20, heavyAtk: 35 }, defaultOn: true, pieces: 5 },
   ],
 }

@@ -31,7 +31,7 @@ import TriagePanel from './components/TriagePanel'
 import PinnedOverview, { type PinnedRow } from './components/PinnedOverview'
 import type { PinnedOwner } from './components/PinnedByBadge'
 import { useLang, useT } from './i18n'
-import { exportJson, importJson, mergeProfile, newId, onPersistError, useEchoInventory, useEquipped, useOverrides, usePinned, useVaults } from './store'
+import { exportJson, importJson, mergeProfile, newId, onPersistError, useCrossTabWarning, useEchoInventory, useEquipped, useOverrides, usePinned, useVaults } from './store'
 import ScannerImport from './components/ScannerImport'
 import VaultBar from './components/VaultBar'
 import type { BuildContext, CharacterProfile, Echo, LoadoutResult } from './types'
@@ -144,6 +144,13 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
     onPersistError(() => push(t('app.persistError'), { kind: 'error' }))
     return () => onPersistError(null)
   }, [push, t])
+
+  // 2 tab cùng origin = tab ghi sau ĐÈ toàn bộ kho của tab kia (review 19/07). Phát hiện tab khác
+  // vừa ghi vào namespace app → cảnh báo user đóng bớt tab / tải lại trước khi thao tác tiếp.
+  const crossTab = useCrossTabWarning()
+  useEffect(() => {
+    if (crossTab) push(t('app.crossTab'), { kind: 'error' })
+  }, [crossTab, push, t])
 
   // Hoàn tác xoá an toàn (review 16/07): closure undo cũ không được hồi sinh echo vào kho đã bị
   // THAY THẾ toàn bộ (import/demo) — generation bump vô hiệu nó; và bỏ qua id đã tồn tại
@@ -258,6 +265,9 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // đoán theo forcedSet/preferred[0] như cũ.
   const assumedSet = forcedSet || profile.preferredSets[0]
   const activeSet = (solved && !stale && loadout ? dominantSet(loadout.setCounts) : undefined) ?? assumedSet
+  // Số mảnh THẬT của activeSet trong bộ solve còn mới — buff set ngưỡng pieces (5pc) chỉ tự bật khi
+  // đủ; set chỉ là ĐOÁN (assumedSet, chưa solve/stale) → undefined = không tự bật (review 19/07).
+  const activeSetPieces = solved && !stale && loadout ? loadout.setCounts[activeSet] : undefined
 
   const solve = () => {
     setLoadout(solveBest5(usableEchoes, profile, { forcedSet: forcedSet || undefined, objective, ctx: buildCtx, pinned: activePinned[charId] }))
@@ -664,6 +674,7 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               profile={profile}
               override={overrides[charId]}
               activeSet={activeSet}
+              activeSetPieces={activeSetPieces}
               onChange={(ov) => {
                 const next = { ...overrides }
                 if (ov === undefined) delete next[charId]
@@ -700,8 +711,11 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
               </span>
               {equippedInfo.result && (
                 <span className="text-xs text-slate-500">
-                  {/* set buff theo set TRỘI của CHÍNH bộ đang đeo (không phải set đề cử/ép) */}
-                  ⚔ ×{loadoutDamage(equippedInfo.result.echoes.map((s) => s.echo), profile, buildCtx, dominantSet(equippedInfo.result.setCounts)).multiplier.toFixed(2)}
+                  {/* set buff theo set TRỘI của CHÍNH bộ đang đeo (không phải set đề cử/ép) + số mảnh thật */}
+                  ⚔ ×{(() => {
+                    const ds = dominantSet(equippedInfo.result.setCounts)
+                    return loadoutDamage(equippedInfo.result.echoes.map((s) => s.echo), profile, buildCtx, ds, ds ? equippedInfo.result.setCounts[ds] : undefined).multiplier.toFixed(2)
+                  })()}
                 </span>
               )}
               {equippedInfo.missing > 0 && <span className="text-xs text-amber-400">{t('equip.missing', { n: equippedInfo.missing })}</span>}

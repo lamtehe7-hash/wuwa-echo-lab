@@ -70,6 +70,8 @@ export default function CharacterPicker({ value, onChange, overrides }: Props) {
           </span>
         )}
         {overrides[value] && <span className="text-amber-400" title={t('picker.overridden')}>＊</span>}
+        {/* review 19/07: preset 3.x web-research chưa kiểm chứng datamine — báo để user biết nên tự soát */}
+        {current.verified === false && <span className="text-rose-400" title={t('picker.unverified')}>≈</span>}
         <span className="text-xs text-slate-500">▾</span>
       </button>
 
@@ -117,6 +119,7 @@ export default function CharacterPicker({ value, onChange, overrides }: Props) {
                       <span className="min-w-0 flex-1 truncate text-left">{c.name}</span>
                       <span className="shrink-0 text-[10px] text-slate-500">{ROLE_BADGE[c.archetype] ?? ''}</span>
                       {overrides[c.id] && <span className="shrink-0 text-amber-400" title={t('picker.overridden')}>＊</span>}
+                      {c.verified === false && <span className="shrink-0 text-rose-400" title={t('picker.unverified')}>≈</span>}
                     </button>
                   ))}
                 </div>

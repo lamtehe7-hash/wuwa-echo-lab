@@ -488,6 +488,17 @@ export function parseEchoText(text: string): EchoDraft {
           else candidates.push({ kind: 'main', mainKey: key as MainStatKey, value: extracted.value, lineIndex })
         }
       } else {
+        // Review 19/07: LEVEL không đọc được + dòng FLAT trùng family stat cố định của panel
+        // (cost-1 HP, cost-3/4 ATK) → không loại trừ được đây là dòng cố định ở mức CHƯA max
+        // (isFixedPanelLine thiếu level chỉ khớp được giá trị MAX). Giá trị nằm trong dải khả dĩ
+        // của dòng cố định (max×0.2..max ±8%) → vẫn nhận là sub nhưng CẢNH BÁO để user soát lại
+        // — trước đây substat ATK/HP giả được thêm im lặng (snap gần mốc nên không có snapOff).
+        if (level === undefined && cost !== undefined && FIXED_FAMILY[cost] === family && !fixedConsumed) {
+          const fmax = FIXED_SECONDARY[cost].max
+          if (extracted.value >= fmax * 0.2 * 0.92 && extracted.value <= fmax * 1.08) {
+            warnings.push({ key: 'ocrParse.maybeFixedLine', params: { label: SUBSTATS[key].label, value: extracted.value } })
+          }
+        }
         candidates.push({ kind: 'sub', subKey: key, value: extracted.value, lineIndex })
       }
       return

@@ -84,7 +84,8 @@ interface VaultsState {
   activeId: string
 }
 
-function loadVaults(): VaultsState {
+/** export cho store.test.ts (review 19/07) — logic recovery/migration là đường sống còn của kho */
+export function loadVaults(): VaultsState {
   try {
     const raw = localStorage.getItem(VAULTS_KEY)
     if (raw) {
@@ -282,8 +283,20 @@ export function useOverrides(vaultId: string) {
 
 /** Factory dùng chung (task 67 — useEquipped/usePinned trước đây là 2 bản chép nguyên xi):
  *  load 1 lần theo vault + tự save mỗi lần đổi, lỗi persist báo qua reportPersistError. */
+/** Load map charId → id[] với guard HÌNH DẠNG value (review 19/07): loadRecord chỉ guard object
+ *  cấp cao nhất — entry hỏng (value là string thay vì string[], do extension/sync/sửa tay) lọt qua
+ *  sẽ crash render ở scoreEquipped `.map` (string có .length nên qua được filter). Chỉ nhận mảng string. */
+export function loadIdMap(key: string): Record<string, string[]> {
+  const raw = loadRecord<unknown>(key)
+  const clean: Record<string, string[]> = {}
+  for (const [k, v] of Object.entries(raw)) {
+    if (Array.isArray(v)) clean[k] = v.filter((x): x is string => typeof x === 'string')
+  }
+  return clean
+}
+
 function usePersistedIdMap(keyOf: (v: string) => string, vaultId: string, saveLabel: string) {
-  const [map, setMap] = useState<Record<string, string[]>>(() => loadRecord<string[]>(keyOf(vaultId)))
+  const [map, setMap] = useState<Record<string, string[]>>(() => loadIdMap(keyOf(vaultId)))
   useEffect(() => {
     try {
       localStorage.setItem(keyOf(vaultId), JSON.stringify(map))
@@ -304,6 +317,22 @@ export function useEquipped(vaultId: string) {
 export function usePinned(vaultId: string) {
   const [pinned, setPinned] = usePersistedIdMap(pinnedKeyOf, vaultId, 'savePinned')
   return { pinned, setPinned }
+}
+
+/** Cảnh báo đa tab (review 19/07): app giữ state in-memory và mỗi thao tác ghi ĐÈ toàn bộ mảng
+ *  xuống localStorage → 2 tab cùng origin thì tab ghi sau thắng, xoá im lặng thay đổi của tab kia.
+ *  Chưa làm hoà giải tự động — phát hiện tab KHÁC ghi vào namespace kho (sự kiện `storage` chỉ bắn
+ *  cho tab KHÔNG thực hiện ghi) rồi để App hiện banner khuyên tải lại/đóng bớt tab. */
+export function useCrossTabWarning(): boolean {
+  const [conflict, setConflict] = useState(false)
+  useEffect(() => {
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key && ev.key.startsWith('wuwa-echo-optimizer:')) setConflict(true)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+  return conflict
 }
 
 /** Preset + override → profile dùng thực tế (erTarget null = đã xoá gate, KHÔNG rơi về preset) */

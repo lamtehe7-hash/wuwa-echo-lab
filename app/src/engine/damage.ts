@@ -232,8 +232,11 @@ export interface ResolvedContext {
   buffs: { buff: StatBuff; on: boolean }[]
 }
 
-/** Gộp mọi nguồn non-echo cho 1 nhân vật theo context. `activeSet` = set đang chạy (nạp buff set). */
-export function resolveContext(profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): ResolvedContext {
+/** Gộp mọi nguồn non-echo cho 1 nhân vật theo context. `activeSet` = set đang chạy (nạp buff set).
+ *  `activeSetPieces` = số mảnh activeSet THẬT đang đeo (setCounts[activeSet]) — buff set có ngưỡng
+ *  `pieces` (vd hiệu ứng 5pc) chỉ tự bật khi đủ mảnh; thiếu/không rõ (undefined) → mặc định TẮT,
+ *  buff vẫn liệt kê để user toggle tay (override buffStates thắng cả 2 chiều). Review 19/07. */
+export function resolveContext(profile: CharacterProfile, ctx?: BuildContext, activeSet?: string, activeSetPieces?: number): ResolvedContext {
   const scaling = deriveScaling(profile)
   const attackType = deriveAttackType(profile)
   const cb = CHARACTER_BASE_BY_ID[profile.id]
@@ -259,9 +262,11 @@ export function resolveContext(profile: CharacterProfile, ctx?: BuildContext, ac
   if (weapon) { addW(weaponMap, weapon.secondary, weaponSecondaryValue(weapon)); mergeW(weaponMap, weapon.passiveFlat) }
   const forteMap: WeightMap = { ...(cb?.forte ?? {}) }
 
-  // Buff khả dụng = buff vũ khí + buff set đang chạy. Trạng thái: override hoặc defaultOn.
+  // Buff khả dụng = buff vũ khí + buff set đang chạy. Trạng thái: override hoặc defaultOn
+  // (defaultOn của buff có ngưỡng `pieces` chỉ kích khi đeo đủ mảnh — hết cộng khống 5pc cho bộ 0-4 mảnh).
   const availBuffs: StatBuff[] = [...(weapon?.buffs ?? []), ...(activeSet ? SET_BUFFS[activeSet] ?? [] : [])]
-  const buffs = availBuffs.map((buff) => ({ buff, on: ctx?.buffStates?.[buff.id] ?? buff.defaultOn }))
+  const piecesOk = (b: StatBuff) => b.pieces == null || (activeSetPieces ?? 0) >= b.pieces
+  const buffs = availBuffs.map((buff) => ({ buff, on: ctx?.buffStates?.[buff.id] ?? (buff.defaultOn && piecesOk(buff)) }))
   const buffMap: WeightMap = {}
   for (const { buff, on } of buffs) if (on) mergeW(buffMap, buff.stats)
 
@@ -324,8 +329,8 @@ export function damageBreakdown(t: StatTotals, b: DamageBaseline): DamageBreakdo
  * không echo). Dùng so sánh damage tương đối. `ctx`/`activeSet` bật baseline THẬT (vũ khí+base+forte+buff);
  * bỏ trống = giả định cũ (tương thích ngược).
  */
-export function loadoutDamage(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): DamageBreakdown {
-  const r = resolveContext(profile, ctx, activeSet)
+export function loadoutDamage(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string, activeSetPieces?: number): DamageBreakdown {
+  const r = resolveContext(profile, ctx, activeSet, activeSetPieces)
   const b: DamageBaseline = {
     scaling: r.scaling, baseStat: r.baseStat,
     baseCR: DEFAULT_BASELINE.baseCR, baseCD: DEFAULT_BASELINE.baseCD, baseDmgBonus: 0,
@@ -338,8 +343,8 @@ export function loadoutDamage(echoes: Echo[], profile: CharacterProfile, ctx?: B
 }
 
 /** Rút gọn: ×lần damage so với không đeo echo (≥1). */
-export function loadoutDamageMultiplier(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): number {
-  return loadoutDamage(echoes, profile, ctx, activeSet).multiplier
+export function loadoutDamageMultiplier(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string, activeSetPieces?: number): number {
+  return loadoutDamage(echoes, profile, ctx, activeSet, activeSetPieces).multiplier
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -371,8 +376,8 @@ const BASE_CONST: Partial<Record<WeightKey, number>> = { critRate: DEFAULT_BASEL
  * Bảng cộng dồn từng stat theo nguồn cho 1 loadout. Chỉ hiện stat có đóng góp (hoặc luôn hiện CR/CD).
  * Ví dụ CR: base 5 + weapon 24.3 + forte 8 + echo 34.8 + buff 20 = 92.1.
  */
-export function finalStatBreakdown(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string): StatBreakdownRow[] {
-  const r = resolveContext(profile, ctx, activeSet)
+export function finalStatBreakdown(echoes: Echo[], profile: CharacterProfile, ctx?: BuildContext, activeSet?: string, activeSetPieces?: number): StatBreakdownRow[] {
+  const r = resolveContext(profile, ctx, activeSet, activeSetPieces)
   const echoMap = echoWeightMap(echoes)
   const rows: StatBreakdownRow[] = []
   for (const stat of BREAKDOWN_ORDER) {

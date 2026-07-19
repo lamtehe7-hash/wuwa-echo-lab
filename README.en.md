@@ -84,6 +84,10 @@ bonuses** (Engine v2).
   vault keeps its own weight overrides and "current sets".
 - **Tuning advice** — for Echoes with the right main stat but unfinished substats, an expected-value
   estimate tells you whether to keep pouring tuners in or stop.
+- **Planner tab — farm/tune with a roadmap** — five panels in one place: 1-click cleanup rules
+  (undoable exclude flag), an upgrade queue ranked by tuner ROI (with your current tuner budget),
+  a pinned-echo overview, set farming priorities and a farming backlog — so you always know where
+  the next resource should go.
 - **Custom weights** — override the substat weights / ER target per character (with role presets: Crit
   DPS / Sub-DPS / Buffer / Healer… for quick apply), saved per browser.
 - **Damage with real stats** — declare a **weapon (109-weapon DB)** + the character's **base stats**
@@ -96,7 +100,7 @@ bonuses** (Engine v2).
 
 ## How to use (4 steps)
 
-> Open the app (web or portable). The UI has **4 tabs**: Inventory · Optimize · Team · Import.
+> Open the app (web or portable). The UI has **5 tabs**: Inventory · Optimize · Planner · Team · Import.
 
 **① Load your inventory** → **Import** tab
 - Fastest path: open an Echo's detail panel in-game, screenshot it (Win+Shift+S), then **Ctrl+V paste**
@@ -122,7 +126,8 @@ bonuses** (Engine v2).
   character, prioritized top-down.
 
 > 💡 The ranking on the **Inventory** tab always follows the character selected on Optimize — handy for
-> quickly checking which Echoes are worth keeping / tuning for that character.
+> quickly checking which Echoes are worth keeping / tuning for that character. Once your box has settled,
+> visit the **Planner** tab to clean up, queue upgrades and see which set to farm next.
 
 ## Portable Windows build
 
@@ -136,8 +141,8 @@ For offline use without a preinstalled browser / network dependency:
 
 Notes:
 - On first run Windows **SmartScreen** may warn (the exe is unsigned) → *More info → Run anyway*.
-- OCR runs fully offline. Only the **Echo icons** are fetched from the web (game8) — with no network,
-  cards show a letter instead of the icon, and everything else still works.
+- Runs **100% offline** — both OCR and the Echo icons are self-contained (icons are bundled with the
+  app; nothing is fetched from the web at runtime).
 - Data is stored per the `localhost:36925` origin — use **Export JSON** to back up / move machines.
 
 ## Run locally
@@ -214,6 +219,9 @@ architecture & roadmap in [`PROPOSAL.md`](./PROPOSAL.md) and the foundational re
   `app/src/data/` source.
 - This is a personal / community project, **not affiliated with, sponsored by, or endorsed by Kuro
   Games** or any official Wuthering Waves publisher. All character names, Echo sets and related imagery
-  (if any) are the property of Kuro Games.
+  are the property of Kuro Games.
+- The app **bundles Echo/set icons** (image source: game8.co; original artwork © Kuro Games) so it can
+  run offline — used non-commercially in the spirit of a fan project. Rights holders: open an issue and
+  any image will be removed promptly.
 - The tool only computes on data you enter / import — it does not read from or interfere with the game.
 </content>

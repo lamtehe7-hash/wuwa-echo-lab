@@ -415,7 +415,8 @@ export function solveBest5(
     let bestI = 0
     let bestD = -Infinity
     for (let i = 0; i < topN.length; i++) {
-      const d = loadoutDamage(topN[i].echoes.map((se) => se.echo), profile, ctx, dominantSet(topN[i].setCounts)).multiplier
+      const ds = dominantSet(topN[i].setCounts)
+      const d = loadoutDamage(topN[i].echoes.map((se) => se.echo), profile, ctx, ds, ds ? topN[i].setCounts[ds] : undefined).multiplier
       if (d > bestD) { bestD = d; bestI = i }
     }
     return topN[bestI]

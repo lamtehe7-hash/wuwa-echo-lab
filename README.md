@@ -79,6 +79,9 @@ solver tìm bộ tốt nhất — có xét cả **giá trị main stat thật** 
   trọng số override + "bộ hiện tại" riêng.
 - **Tư vấn tune tiếp** — với Echo main stat đúng nhưng substat còn dở, ước lượng kỳ vọng (EV) để
   quyết định có nên đổ tuner tiếp hay bỏ.
+- **Tab Kế hoạch — farm/tune có lộ trình** — gom 5 panel: dọn kho theo luật 1-click (đánh dấu Bỏ,
+  hoàn tác được), hàng đợi nâng cấp xếp theo ROI tuner (kèm ngân sách tuner đang có), tổng quan echo
+  đã neo, ưu tiên farm set và backlog farm — biết nên đổ tài nguyên vào đâu tiếp theo.
 - **Chỉnh trọng số theo ý riêng** — ghi đè bộ trọng số substat / mục tiêu ER cho từng nhân vật (có
   preset role: Crit DPS / Sub-DPS / Buffer / Healer… để áp nhanh), lưu riêng theo trình duyệt.
 - **Đánh giá damage với chỉ số thật** — khai báo **vũ khí (DB 109 vũ khí)** + **base stat nhân vật**
@@ -91,7 +94,7 @@ solver tìm bộ tốt nhất — có xét cả **giá trị main stat thật** 
 
 ## Cách dùng (4 bước)
 
-> Mở app (web hoặc bản portable). Giao diện chia **4 tab**: Kho Echo · Tối ưu · Đội hình · Import.
+> Mở app (web hoặc bản portable). Giao diện chia **5 tab**: Kho Echo · Tối ưu · Kế hoạch · Đội hình · Import.
 
 **① Nạp kho Echo** → tab **Import**
 - Cách nhanh nhất: mở panel chi tiết Echo trong game, chụp màn hình (Win+Shift+S), rồi **Ctrl+V dán**
@@ -112,7 +115,8 @@ solver tìm bộ tốt nhất — có xét cả **giá trị main stat thật** 
   nhân vật, ưu tiên từ trên xuống.
 
 > 💡 Xếp hạng trong tab **Kho Echo** luôn theo nhân vật đang chọn ở tab Tối ưu — dùng để soi nhanh
-> con nào đáng giữ / đáng tune cho nhân vật đó.
+> con nào đáng giữ / đáng tune cho nhân vật đó. Khi kho đã ổn định, ghé tab **Kế hoạch** để dọn kho,
+> xếp hàng đợi nâng cấp và xem nên farm set nào tiếp.
 
 ## Bản portable Windows
 
@@ -126,8 +130,8 @@ Dành cho người muốn dùng offline, không cần trình duyệt cài sẵn 
 
 Lưu ý:
 - Lần đầu Windows **SmartScreen** có thể cảnh báo (exe không ký số) → *More info → Run anyway*.
-- OCR chạy hoàn toàn offline. Chỉ **icon Echo** là lấy từ web (game8) — không mạng thì card hiện chữ
-  cái thay icon, mọi tính năng khác vẫn đủ.
+- Chạy **offline 100%** — OCR lẫn icon Echo đều tự chứa trong app (icon đã đóng gói sẵn, không gọi
+  web khi dùng).
 - Dữ liệu lưu theo địa chỉ `localhost:36925` — dùng **Export JSON** để sao lưu / chuyển máy.
 
 ## Chạy thử ở máy local
@@ -203,7 +207,10 @@ kiến trúc & lộ trình đầy đủ ở [`PROPOSAL.md`](./PROPOSAL.md) và c
   `research/` và mã nguồn `app/src/data/`.
 - Đây là dự án cá nhân / cộng đồng, **không liên kết, không được tài trợ hay xác nhận bởi Kuro Games**
   hay bất kỳ bên phát hành chính thức nào của Wuthering Waves. Mọi tên nhân vật, set Echo, hình ảnh
-  liên quan (nếu có) thuộc bản quyền Kuro Games.
+  liên quan thuộc bản quyền Kuro Games.
+- App **đóng gói sẵn icon Echo/set** (nguồn ảnh: game8.co; tác phẩm gốc © Kuro Games) để chạy được
+  offline — dùng phi lợi nhuận theo tinh thần fan project. Chủ sở hữu bản quyền muốn gỡ ảnh nào,
+  mở issue là gỡ ngay.
 - Tool chỉ tính toán trên dữ liệu người dùng tự nhập / import — không đọc, không can thiệp vào game.
 </content>
 </invoke>

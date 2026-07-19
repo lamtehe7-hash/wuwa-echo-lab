@@ -16,7 +16,9 @@ interface ToastItem {
   action?: ToastAction
 }
 
-type PushToast = (text: string, opts?: { action?: ToastAction; kind?: 'info' | 'error' }) => void
+/** sticky: KHÔNG tự tắt sau 6s — cho cảnh báo phải chờ user hành động (vd cross-tab: user rời máy
+ *  lúc toast hiện thì quay lại vẫn phải thấy; review đối kháng 19/07). Đóng bằng ✕ hoặc action. */
+type PushToast = (text: string, opts?: { action?: ToastAction; kind?: 'info' | 'error'; sticky?: boolean }) => void
 
 const Ctx = createContext<PushToast | null>(null)
 
@@ -35,7 +37,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback<PushToast>((text, opts) => {
     const id = nextId.current++
     setToasts((prev) => [...prev.slice(1 - MAX_STACK), { id, text, kind: opts?.kind ?? 'info', action: opts?.action }])
-    window.setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
+    if (!opts?.sticky) window.setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
   }, [dismiss])
 
   return (

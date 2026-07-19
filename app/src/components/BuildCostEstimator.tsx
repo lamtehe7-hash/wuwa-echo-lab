@@ -1,13 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import type { CharacterProfile, Echo } from '../types'
 import { upgradePotential } from '../engine/economy'
 import { useFmtN, useT } from '../i18n'
+import { incomeExpKeyOf, incomeTunerKeyOf, VaultIdContext } from '../store'
 
 // F10 (task 73, spec designer 16/07): "Chi phí hoàn thiện bộ" — <details> đóng trong LoadoutView
 // (sau StatBreakdown): tổng EXP/Tuner/Credit còn thiếu của 5 echo trong bộ + ước tính SỐ NGÀY farm.
 // Income/ngày là THAM SỐ user chỉnh được (persist localStorage) — datamine KHÔNG có số income live-ops.
 // Tuner và EXP đến từ nguồn farm khác nhau → KHÔNG gộp 1 số, lấy max + ghi rõ nút thắt.
 
+// Key global CŨ (trước 19/07 dùng chung mọi vault) — giữ làm nguồn seed: vault chưa từng nhập
+// riêng sẽ thừa hưởng giá trị user từng nhập; ghi thì LUÔN vào key per-vault (backlog #7 19/07,
+// helper keyOf sống ở store.ts để deleteVault dọn cùng chỗ).
 const LS_TUNER = 'wuwa-income-tuner'
 const LS_EXP = 'wuwa-income-exp'
 
@@ -27,13 +31,15 @@ interface Props {
 export default function BuildCostEstimator({ echoes, profile }: Props) {
   const t = useT()
   const fmtN = useFmtN()
+  // AppInner remount theo key=vaultId → initializer useState đọc đúng key vault mới khi đổi vault
+  const vaultId = useContext(VaultIdContext)
   // localStorage bị chặn (private mode/policy) sẽ THROW ngay trong init → sập cả cây render;
   // guard như mọi chỗ khác trong app (pattern App.tsx wuwa-seen)
   const [tunerRate, setTunerRate] = useState(() => {
-    try { return localStorage.getItem(LS_TUNER) ?? String(DEFAULT_TUNER_PER_DAY) } catch { return String(DEFAULT_TUNER_PER_DAY) }
+    try { return localStorage.getItem(incomeTunerKeyOf(vaultId)) ?? localStorage.getItem(LS_TUNER) ?? String(DEFAULT_TUNER_PER_DAY) } catch { return String(DEFAULT_TUNER_PER_DAY) }
   })
   const [expRate, setExpRate] = useState(() => {
-    try { return localStorage.getItem(LS_EXP) ?? String(DEFAULT_EXP_PER_DAY) } catch { return String(DEFAULT_EXP_PER_DAY) }
+    try { return localStorage.getItem(incomeExpKeyOf(vaultId)) ?? localStorage.getItem(LS_EXP) ?? String(DEFAULT_EXP_PER_DAY) } catch { return String(DEFAULT_EXP_PER_DAY) }
   })
 
   const need = useMemo(() => {
@@ -80,7 +86,7 @@ export default function BuildCostEstimator({ echoes, profile }: Props) {
             {t('buildcost.tunerPerDayLabel')}
             <input
               type="number" min={0} value={tunerRate} aria-label={t('buildcost.tunerPerDayLabel')}
-              onChange={(e) => save(LS_TUNER, e.target.value, setTunerRate)}
+              onChange={(e) => save(incomeTunerKeyOf(vaultId), e.target.value, setTunerRate)}
               className={inputCls}
             />
           </label>
@@ -89,7 +95,7 @@ export default function BuildCostEstimator({ echoes, profile }: Props) {
             <input
               type="number" min={0} value={expRate} aria-label={t('buildcost.expPerDayLabel')}
               placeholder={t('buildcost.expPerDayHint')}
-              onChange={(e) => save(LS_EXP, e.target.value, setExpRate)}
+              onChange={(e) => save(incomeExpKeyOf(vaultId), e.target.value, setExpRate)}
               className={`${inputCls} w-40`}
             />
           </label>

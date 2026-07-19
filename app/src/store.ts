@@ -1,13 +1,21 @@
-import { useEffect, useState } from 'react'
+import { createContext, useEffect, useState } from 'react'
 import type { BuildContext, CharacterProfile, Echo, EchoCost, MainStatKey, Substat, SubstatKey, WeightKey } from './types'
 import { MAINSTATS } from './data/mainstats'
 import { MAX_SUBSTATS, SUBSTATS } from './data/substats'
 
 // ---- Storage namespaced theo VAULT (nhiều "kho" tách biệt: main/alt account — C5) ----
+/** vaultId đang active — cho component sâu trong cây (vd BuildCostEstimator) đọc mà không luồn
+ *  prop qua LoadoutView/RosterPanel. Provider đặt ở App wrapper; default 'main' khớp vault đầu. */
+export const VaultIdContext = createContext('main')
+
 const echoesKeyOf = (v: string) => `wuwa-echo-optimizer:v1:${v}`
 const overrideKeyOf = (v: string) => `wuwa-echo-optimizer:overrides:v1:${v}`
 const equippedKeyOf = (v: string) => `wuwa-echo-optimizer:equipped:v1:${v}`
 const pinnedKeyOf = (v: string) => `wuwa-echo-optimizer:pinned:v1:${v}`
+/** Income farm/ngày của BuildCostEstimator (per-vault từ 19/07) — định nghĩa Ở ĐÂY để deleteVault
+ *  dọn được cùng chỗ với 4 key kia (review đối kháng 19/07: từng orphan vì key nằm ở component). */
+export const incomeTunerKeyOf = (v: string) => `wuwa-income-tuner:${v}`
+export const incomeExpKeyOf = (v: string) => `wuwa-income-exp:${v}`
 // Key CŨ (chưa namespace) — di trú sang vault mặc định lần đầu chạy bản multi-vault.
 const OLD_ECHOES_KEY = 'wuwa-echo-optimizer:v1'
 const OLD_OVERRIDE_KEY = 'wuwa-echo-optimizer:overrides:v1'
@@ -163,6 +171,8 @@ export function useVaults() {
         localStorage.removeItem(overrideKeyOf(id))
         localStorage.removeItem(equippedKeyOf(id))
         localStorage.removeItem(pinnedKeyOf(id))
+        localStorage.removeItem(incomeTunerKeyOf(id))
+        localStorage.removeItem(incomeExpKeyOf(id))
       } catch {
         // bỏ qua
       }

@@ -28,6 +28,8 @@ export const DICT: Record<string, Entry> = {
   'toast.undoExpired': { vi: 'Hoàn tác không còn hiệu lực — kho đã bị thay thế toàn bộ', en: 'Undo no longer valid — inventory was replaced' },
   'app.persistError': { vi: 'Không lưu được vào bộ nhớ trình duyệt (đầy hoặc bị chặn) — thay đổi sẽ MẤT khi tải lại trang. Hãy Xuất JSON để sao lưu.', en: 'Could not save to browser storage (full or blocked) — changes will be LOST on reload. Use Export JSON to back up.' },
   'app.crossTab': { vi: 'App đang mở ở tab/cửa sổ khác và vừa lưu dữ liệu ở đó — thao tác tiếp ở đây có thể GHI ĐÈ mất thay đổi đó. Hãy đóng bớt tab rồi tải lại trang.', en: 'The app is open in another tab/window and just saved data there — continuing here may OVERWRITE those changes. Close the other tab, then reload this page.' },
+  // Hoà giải tối thiểu (backlog #10 19/07): tải lại = nhận state tab kia vừa ghi, bỏ state RAM cũ ở đây
+  'app.crossTabReload': { vi: 'Tải lại ngay', en: 'Reload now' },
 
   // ── Tabs (điều hướng chính) ──
   'tabs.inventory': { vi: 'Kho Echo', en: 'Inventory' },
@@ -128,7 +130,10 @@ export const DICT: Record<string, Entry> = {
   // bỏ 🗑 khỏi chip (thùng rác CHỈ dành cho xoá thật — K4)
   'inv.excludedOnly': { vi: 'Đã bỏ ({n})', en: 'Excluded ({n})' },
   'inv.lockedNoDelete': { vi: 'Echo đang khoá — mở khoá trước khi xoá', en: 'Echo is locked — unlock before deleting' },
-  'inv.selectAll': { vi: 'Chọn tất cả đang hiện (trừ echo khoá)', en: 'Select all visible (except locked)' },
+  // "đang hiện" → đếm tường minh (19/07): render giờ cap theo "Hiện thêm" nhưng select-all vẫn
+  // nhắm TOÀN BỘ kết quả lọc (kể cả phần chưa render) — chữ cũ thành nói sai
+  'inv.selectAll': { vi: 'Chọn tất cả {n} echo khớp bộ lọc (trừ khoá)', en: 'Select all {n} filtered echoes (except locked)' },
+  'inv.showMore': { vi: 'Hiện thêm ({shown}/{total})', en: 'Show more ({shown}/{total})' },
   'inv.selectRow': { vi: 'Chọn echo này', en: 'Select this echo' },
   'inv.deleteSelected': { vi: '🗑 Xoá {n} đã chọn', en: '🗑 Delete {n} selected' },
   // Task 58/F9: nhắc cơ chế hoàn tài nguyên in-game trước khi xoá hàng loạt (% theo wiki, không có số tuyệt đối)
@@ -553,6 +558,9 @@ export const DICT: Record<string, Entry> = {
   // ── Engine: solver note (solver.ts) ──
   'note.partialSlots': { vi: 'Chỉ ghép được {n}/5 slot từ kho hiện tại.', en: 'Only {n}/5 slots filled from current inventory.' },
   'note.erShort': { vi: 'ER từ echo {er}% < mức cần từ echo {need}% (vũ khí/passive/forte đã góp {extra}%).', en: 'ER from echoes {er}% < {need}% needed from echoes (weapon/passive/forte contributes {extra}%).' },
+  // Dòng lead dễ hiểu cho người mới (backlog #1 19/07, phương án A user chốt — solver KHÔNG đổi):
+  // erShort được nâng thành cảnh báo nổi bật, dòng kỹ thuật trên thành sub-line giữ số liệu
+  'note.erShortLead': { vi: 'Thiếu ER — có thể không đủ năng lượng mở Liberation đúng nhịp.', en: 'ER shortfall — Liberation may not come off cooldown on time.' },
   'note.mainStatOff': { vi: 'Có echo main stat chưa chuẩn — thay khi farm được bản đúng.', en: 'Some echo main stats are off — replace when you farm the correct ones.' },
 
   // ── Engine: OCR parser warnings (ocr/parse.ts) + OcrImport ──

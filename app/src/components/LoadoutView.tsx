@@ -117,7 +117,22 @@ export default function LoadoutView({ result, profile, compareTotal = null, onPi
           />
         ))}
       </div>
-      {result.note.map((n, i) => <p key={i} className="text-xs text-amber-400">⚠ {tm(n)}</p>)}
+      {/* Backlog #1 19/07 (phương án A, spec designer): note gom vào box amber (pattern OcrImport);
+          note.erShort nâng cấp = dòng lead dễ hiểu đậm + dòng kỹ thuật cũ demoted giữ số liệu */}
+      {result.note.length > 0 && (
+        <div className="space-y-1.5 rounded border border-amber-800/50 bg-amber-950/20 p-2">
+          {result.note.map((n, i) =>
+            n.key === 'note.erShort' ? (
+              <div key={i}>
+                <p className="text-xs font-semibold text-amber-300">⚠ {t('note.erShortLead')}</p>
+                <p className="pl-4 text-[11px] text-amber-400/80">{tm(n)}</p>
+              </div>
+            ) : (
+              <p key={i} className="text-[11px] text-amber-400/80">⚠ {tm(n)}</p>
+            ),
+          )}
+        </div>
+      )}
       {/* B4 (ui-redesign): whitespace-nowrap — cột hẹp thì CẢ NÚT xuống dòng (flex-wrap),
           không gãy chữ bên trong nút */}
       <div className="flex flex-wrap gap-2">

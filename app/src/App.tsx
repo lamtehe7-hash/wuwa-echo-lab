@@ -31,7 +31,7 @@ import TriagePanel from './components/TriagePanel'
 import PinnedOverview, { type PinnedRow } from './components/PinnedOverview'
 import type { PinnedOwner } from './components/PinnedByBadge'
 import { useLang, useT } from './i18n'
-import { exportJson, importJson, mergeProfile, newId, onPersistError, useCrossTabWarning, useEchoInventory, useEquipped, useOverrides, usePinned, useVaults } from './store'
+import { exportJson, importJson, mergeProfile, newId, onPersistError, useCrossTabWarning, useEchoInventory, useEquipped, useOverrides, usePinned, useVaults, VaultIdContext } from './store'
 import ScannerImport from './components/ScannerImport'
 import VaultBar from './components/VaultBar'
 import type { BuildContext, CharacterProfile, Echo, LoadoutResult } from './types'
@@ -149,7 +149,11 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
   // vừa ghi vào namespace app → cảnh báo user đóng bớt tab / tải lại trước khi thao tác tiếp.
   const crossTab = useCrossTabWarning()
   useEffect(() => {
-    if (crossTab) push(t('app.crossTab'), { kind: 'error' })
+    // Nút "Tải lại ngay" = hoà giải tối thiểu: reload đọc lại localStorage (bản tab kia vừa ghi
+    // thắng), bỏ state RAM cũ ở tab này — hết cửa ghi đè chéo mà không cần merge theo timestamp.
+    // sticky: cảnh báo phải sống tới khi user hành động — tự tắt 6s thì user rời máy quay lại
+    // không thấy gì và ghi đè đúng như kịch bản backlog #10 định chặn (review đối kháng 19/07).
+    if (crossTab) push(t('app.crossTab'), { kind: 'error', sticky: true, action: { label: t('app.crossTabReload'), fn: () => location.reload() } })
   }, [crossTab, push, t])
 
   // Hoàn tác xoá an toàn (review 16/07): closure undo cũ không được hồi sinh echo vào kho đã bị
@@ -858,5 +862,9 @@ function AppInner({ vaultId, vaults }: { vaultId: string; vaults: ReturnType<typ
 // equipped riêng; remount để useState(load…) đọc đúng vault mới, tránh race persist khi đổi vault).
 export default function App() {
   const vaults = useVaults()
-  return <AppInner key={vaults.activeId} vaultId={vaults.activeId} vaults={vaults} />
+  return (
+    <VaultIdContext.Provider value={vaults.activeId}>
+      <AppInner key={vaults.activeId} vaultId={vaults.activeId} vaults={vaults} />
+    </VaultIdContext.Provider>
+  )
 }

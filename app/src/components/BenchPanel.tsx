@@ -254,10 +254,24 @@ export default function BenchPanel({ echoes, profile, slots, onChange, ctx, comp
           </div>
 
           {/* Cảnh báo MỀM (không chặn): tổng cost > 12, ô main không phải cost-4, + note engine —
-              đặt DƯỚI slot-grid để đích thả không xô khi cảnh báo xuất hiện/biến mất */}
-          {overCost && <p className="text-xs text-amber-400">⚠ {t('bench.costWarn', { c: totalCost })}</p>}
-          {mainEcho && mainEcho.cost !== 4 && <p className="text-xs text-amber-400">⚠ {t('bench.mainCostWarn', { c: mainEcho.cost })}</p>}
-          {result?.note.map((n, i) => <p key={i} className="text-xs text-amber-400">⚠ {tm(n)}</p>)}
+              đặt DƯỚI slot-grid để đích thả không xô khi cảnh báo xuất hiện/biến mất.
+              Gom vào box amber chung (spec designer 19/07) — note.erShort có dòng lead đậm dễ hiểu */}
+          {(overCost || (mainEcho && mainEcho.cost !== 4) || (result?.note.length ?? 0) > 0) && (
+            <div className="space-y-1.5 rounded border border-amber-800/50 bg-amber-950/20 p-2">
+              {overCost && <p className="text-[11px] text-amber-400/80">⚠ {t('bench.costWarn', { c: totalCost })}</p>}
+              {mainEcho && mainEcho.cost !== 4 && <p className="text-[11px] text-amber-400/80">⚠ {t('bench.mainCostWarn', { c: mainEcho.cost })}</p>}
+              {result?.note.map((n, i) =>
+                n.key === 'note.erShort' ? (
+                  <div key={i}>
+                    <p className="text-xs font-semibold text-amber-300">⚠ {t('note.erShortLead')}</p>
+                    <p className="pl-4 text-[11px] text-amber-400/80">{tm(n)}</p>
+                  </div>
+                ) : (
+                  <p key={i} className="text-[11px] text-amber-400/80">⚠ {tm(n)}</p>
+                ),
+              )}
+            </div>
+          )}
 
           {setBd.length > 0 && (
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500" title={t('loadout.setBonusTip')}>

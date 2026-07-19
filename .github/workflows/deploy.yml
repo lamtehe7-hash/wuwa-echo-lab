@@ -41,6 +41,17 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Gate E2E 78 bước (review 19/07 backlog #5): e2e-ui.mjs nói CDP thuần nên chạy thẳng trên
+      # google-chrome có sẵn của runner ubuntu — không cần playwright. SLEEP_SCALE=2 vì CI chậm.
+      - name: E2E (chrome headless)
+        env:
+          E2E_SLEEP_SCALE: "2"
+        run: |
+          npm run preview &
+          for i in $(seq 1 60); do curl -sf http://localhost:4173/ >/dev/null && break; sleep 0.5; done
+          curl -sf http://localhost:4173/ >/dev/null || { echo "::error::vite preview không lên sau 30s"; exit 1; }
+          node scripts/e2e-ui.mjs "$RUNNER_TEMP/e2e-ui.png"
+
       - name: Setup Pages
         uses: actions/configure-pages@v6
 

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { CharacterProfile, Echo, MainStatKey } from '../types'
 import { echoDisplayName, findEchoInfo } from '../data/echoIndex'
 import { iconUrl } from '../data/iconAssets'
@@ -12,7 +12,7 @@ import { rateSubstat } from '../engine/substatRating'
 import { useFmtN, useT, useTMessage } from '../i18n'
 import BestOwnerBadge from './BestOwnerBadge'
 import EchoCard from './EchoCard'
-import { IconBan, IconGrid, IconInfo, IconList, IconLock, IconPencil, IconSearch, IconTrash } from './icons'
+import { IconBan, IconChevronDown, IconGrid, IconInfo, IconList, IconLock, IconPencil, IconSearch, IconTrash } from './icons'
 import PinnedByBadge, { type PinnedOwner } from './PinnedByBadge'
 import ScoreBadge from './ScoreBadge'
 import SubstatLegend from './SubstatLegend'
@@ -71,6 +71,9 @@ const SORT_KEYS = ['score', 'rv', 'level', 'new'] as const
 type SortKey = (typeof SORT_KEYS)[number]
 /** Key i18n của option sort: score → inv.sortScore … */
 const SORT_LABEL_KEY: Record<SortKey, string> = { score: 'inv.sortScore', rv: 'inv.sortRv', level: 'inv.sortLevel', new: 'inv.sortNew' }
+/** Backlog #4 review 19/07 (spec wuwa-ui-designer): cap số hàng RENDER mỗi đợt — kho 500+ hết
+ *  giật khi gõ tìm. 60 đủ ~15 hàng bảng/vài màn lưới và > demo 10 (e2e không bao giờ chạm nút). */
+const INV_PAGE = 60
 
 export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar, pinnedBy, charPicker, onDelete, onDeleteMany, onToggleFlag, onEdit }: Props) {
   const t = useT()
@@ -148,6 +151,44 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
     } else if (sortDir === 'asc') list = [...list].reverse()
     return list
   }, [echoes, profile, q, costF, setF, mainF, verdictF, excludedOnly, sortKey, sortDir])
+
+  // "Hiện thêm" tăng dần thay vì windowing/pagination: <table> khó window (hàng cao biến thiên),
+  // phân trang vỡ cột # + select-all; slice từ 0 nên rank #, select-all và bulk-delete vẫn hoạt
+  // động trên TOÀN BỘ rows đã lọc (kể cả phần chưa render).
+  const [visibleCount, setVisibleCount] = useState(INV_PAGE)
+  // Reset CHỈ theo filter/sort/view — KHÔNG theo echoes/profile: khoá/cờ 1 echo giữa chừng cuộn
+  // mà snap về đầu danh sách là regression UX (echoes đổi mỗi lần toggle cờ)
+  useEffect(() => { setVisibleCount(INV_PAGE) }, [q, costF, setF, mainF, verdictF, excludedOnly, sortKey, sortDir, view])
+  const visibleRows = rows.slice(0, visibleCount)
+  const hasMore = rows.length > visibleCount
+  const moreRef = useRef<HTMLButtonElement | null>(null)
+  const listRef = useRef<HTMLDivElement | null>(null)
+  // rows.length qua ref: IO callback là closure của effect [hasMore, view] — đọc trực tiếp sẽ stale
+  const rowsLenRef = useRef(rows.length)
+  rowsLenRef.current = rows.length
+  const visibleCountRef = useRef(visibleCount)
+  visibleCountRef.current = visibleCount
+  // Lần nạp CUỐI làm nút unmount — nếu focus đang ở nút thì dời về container danh sách trước,
+  // kẻo focus rơi về <body> và user bàn phím/screen-reader bị ném về đầu trang (review 19/07)
+  const showMore = () => {
+    const next = visibleCountRef.current + INV_PAGE
+    if (next >= rowsLenRef.current && document.activeElement === moreRef.current) {
+      requestAnimationFrame(() => listRef.current?.focus({ preventScroll: true }))
+    }
+    setVisibleCount(next)
+  }
+  useEffect(() => {
+    const el = moreRef.current
+    if (!el) return
+    // rootMargin 400px: tự nạp TRƯỚC khi user chạm đáy; nút vẫn bấm được (bàn phím/không-IO)
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((en) => en.isIntersecting)) showMore()
+    }, { rootMargin: '400px' })
+    io.observe(el)
+    return () => io.disconnect()
+    // showMore đọc mọi thứ qua ref nên closure không stale — deps chỉ cần mount/unmount nút
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, view])
 
   // Chọn hàng loạt (chỉ chế độ bảng): echo khoá không chọn được
   const selectableIds = rows.filter((x) => !x.r.echo.lock).map((x) => x.r.echo.id)
@@ -306,8 +347,8 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
       {rows.length === 0 ? (
         <p className="p-4 text-sm text-slate-500">{t('inv.emptyFiltered')}</p>
       ) : view === 'grid' ? (
-        <div className="grid items-start gap-2 p-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-          {rows.map(({ r, advice }) => (
+        <div ref={listRef} tabIndex={-1} className="grid items-start gap-2 p-1 outline-none sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+          {visibleRows.map(({ r, advice }) => (
             <div key={r.echo.id} className={`relative ${r.echo.trash ? 'opacity-50' : ''}`}>
               {/* K7: checkbox chọn hàng loạt góc trên-trái (echo khoá không chọn được); label đệm
                   đủ hit-target 44/36px, stopPropagation để bấm không mở modal Sửa */}
@@ -381,17 +422,26 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
               </div>
             </div>
           ))}
+          {hasMore && (
+            <button
+              ref={moreRef}
+              type="button"
+              className="col-span-full mx-auto rounded border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800"
+              aria-label={t('inv.showMore', { shown: visibleRows.length, total: rows.length })}
+              onClick={showMore}
+            ><IconChevronDown size={13} className="mr-1 inline align-[-2px]" />{t('inv.showMore', { shown: visibleRows.length, total: rows.length })}</button>
+          )}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div ref={listRef} tabIndex={-1} className="overflow-x-auto outline-none">
           <table className="w-full text-left text-sm">
             <thead className="text-xs text-slate-500">
               <tr className="border-b border-slate-800">
                 <th className="py-1.5 pr-1">
                   <input
                     type="checkbox"
-                    aria-label={t('inv.selectAll')}
-                    title={t('inv.selectAll')}
+                    aria-label={t('inv.selectAll', { n: selectableIds.length })}
+                    title={t('inv.selectAll', { n: selectableIds.length })}
                     checked={allSelected}
                     onChange={() => setSelected(allSelected ? new Set() : new Set(selectableIds))}
                   />
@@ -423,7 +473,7 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ r, advice }, i) => {
+              {visibleRows.map(({ r, advice }, i) => {
                 return (
                   <tr key={r.echo.id} className={`border-b border-slate-800/60 align-top hover:bg-slate-900/60 ${r.echo.trash ? 'opacity-50' : ''}`}>
                     <td className="py-1.5 pr-1">
@@ -526,6 +576,22 @@ export default function RankingTable({ echoes, profile, bestOwners, onJumpToChar
                 )
               })}
             </tbody>
+            {hasMore && (
+              <tfoot>
+                <tr>
+                  {/* tfoot thật giữ semantics <table>; colSpan đếm đúng số <th> (9 + cột Best Owner) */}
+                  <td colSpan={bestOwners ? 10 : 9} className="py-2 text-center">
+                    <button
+                      ref={moreRef}
+                      type="button"
+                      className="rounded border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800"
+                      aria-label={t('inv.showMore', { shown: visibleRows.length, total: rows.length })}
+                      onClick={showMore}
+                    ><IconChevronDown size={13} className="mr-1 inline align-[-2px]" />{t('inv.showMore', { shown: visibleRows.length, total: rows.length })}</button>
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}

@@ -1,16 +1,30 @@
 // Smoke E2E UI (bản tab — B1): node e2e-ui.mjs <png>
 // Yêu cầu: vite preview đang chạy ở http://localhost:4173/
-import { writeFileSync } from 'node:fs'
+// Chạy được cả Windows (Edge) lẫn linux CI (google-chrome/chromium) — nói chuyện CDP thuần,
+// mọi trình duyệt gốc Chromium đều dùng được; E2E_BROWSER_BIN override khi cần.
+import { writeFileSync, existsSync } from 'node:fs'
 import { spawn } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
-const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+const BROWSER_CANDIDATES = process.platform === 'win32'
+  ? [
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    ]
+  : ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium-browser', '/usr/bin/chromium', '/snap/bin/chromium']
+const BROWSER = process.env.E2E_BROWSER_BIN ?? BROWSER_CANDIDATES.find((p) => existsSync(p))
+if (!BROWSER) { console.error('NO BROWSER — cài Edge/Chrome/Chromium hoặc set E2E_BROWSER_BIN'); process.exit(1) }
 const PORT = 9333
 const URL_APP = 'http://localhost:4173/'
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+// CI machine chậm hơn máy dev — E2E_SLEEP_SCALE=2 nhân đôi mọi wait cố định
+const SLEEP_SCALE = Number(process.env.E2E_SLEEP_SCALE) || 1
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms * SLEEP_SCALE))
 
-const edge = spawn(EDGE, [
+const edge = spawn(BROWSER, [
   `--remote-debugging-port=${PORT}`, '--headless=new', '--disable-gpu',
-  `--user-data-dir=${process.env.TEMP}\\e2e-ui-profile-${Date.now()}`, '--window-size=1440,1100', 'about:blank',
+  ...(process.platform !== 'win32' ? ['--no-sandbox'] : []),
+  `--user-data-dir=${join(tmpdir(), `e2e-ui-profile-${Date.now()}`)}`, '--window-size=1440,1100', 'about:blank',
 ], { stdio: 'ignore' })
 
 let ws

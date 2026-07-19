@@ -5,6 +5,10 @@
 // Exit 0 chỉ khi TẤT CẢ pass. PNG e2e ghi vào %TEMP%.
 
 import { spawn, spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+const IS_WIN = process.platform === 'win32'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const steps = []
@@ -25,9 +29,10 @@ if (!allOk) {
   summary()
 }
 
-// preview nền — kill cả cây tiến trình bằng taskkill (kill child.pid chỉ giết shell npm)
+// preview nền — kill cả cây tiến trình: Windows dùng taskkill /T, POSIX dùng detached + kill(-pid)
+// (kill child.pid trực tiếp chỉ giết shell npm, vite con vẫn giữ port 4173)
 console.log('\n── preview: npm run preview (port 4173)')
-const preview = spawn('npm', ['run', 'preview'], { shell: true, stdio: 'ignore' })
+const preview = spawn('npm', ['run', 'preview'], { shell: true, stdio: 'ignore', detached: !IS_WIN })
 let up = false
 for (let i = 0; i < 50 && !up; i++) {
   try { up = (await fetch('http://localhost:4173/')).ok } catch { /* chưa lên */ }
@@ -39,16 +44,18 @@ if (!up) {
   summary()
 }
 
-allOk = run('e2e-ui', 'node', ['scripts/e2e-ui.mjs', `${process.env.TEMP}\\verify-all-e2e.png`]) && allOk
+allOk = run('e2e-ui', 'node', ['scripts/e2e-ui.mjs', join(tmpdir(), 'verify-all-e2e.png')]) && allOk
 for (const extra of process.argv.slice(2)) {
-  allOk = run(`cdp:${extra.split(/[\\/]/).pop()}`, 'node', [extra, process.env.TEMP]) && allOk
+  allOk = run(`cdp:${extra.split(/[\\/]/).pop()}`, 'node', [extra, tmpdir()]) && allOk
 }
 
 killPreview()
 summary()
 
 function killPreview() {
-  if (preview?.pid) spawnSync('taskkill', ['/F', '/T', '/PID', String(preview.pid)], { stdio: 'ignore', shell: true })
+  if (!preview?.pid) return
+  if (IS_WIN) spawnSync('taskkill', ['/F', '/T', '/PID', String(preview.pid)], { stdio: 'ignore', shell: true })
+  else { try { process.kill(-preview.pid, 'SIGTERM') } catch { /* đã chết */ } }
 }
 function summary() {
   console.log('\n════ TỔNG KẾT VERIFY ════')
